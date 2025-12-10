@@ -1,0 +1,3 @@
+- The app fluxid is a thin CLI wrapper around coding agents (claude, codex, opencode) written in go
+- The app is a workflow controller that enables coding agents to break the context window with a IMPLEMENT - REVIEW loop
+- The loop steps allow the coding agents to stop working and provides a structured way to hand over past, current and future task states
