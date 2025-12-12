@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -27,19 +26,29 @@ type Config struct {
 }
 
 func main() {
-	// Parse command-line flags
-	claudeFlag := flag.Bool("claude", false, "Run with Claude agent")
-	flag.Parse()
+	// Parse command-line arguments manually to support arbitrary Claude args
+	// We cannot use flag.Parse() because it would reject unknown flags
+	var claudeFlag bool
+	var claudeArgs []string
+
+	// Find --claude flag and separate fluxid args from Claude args
+	for i := 1; i < len(os.Args); i++ {
+		if os.Args[i] == "--claude" {
+			claudeFlag = true
+			// All remaining args after --claude belong to Claude
+			if i+1 < len(os.Args) {
+				claudeArgs = os.Args[i+1:]
+			}
+			break
+		}
+	}
 
 	// Check if --claude flag is provided
-	if !*claudeFlag {
+	if !claudeFlag {
 		fmt.Println("Hello, FluxID!")
 		fmt.Println("Usage: fluxid --claude [claude-args...]")
 		os.Exit(0)
 	}
-
-	// Get remaining args for Claude
-	claudeArgs := flag.Args()
 
 	// Generate session UUID v4
 	sessionID := uuid.New().String()
