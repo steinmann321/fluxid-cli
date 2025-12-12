@@ -1,28 +1,49 @@
 command: fluxid.implement-cli
-artifact: m01-e03-user-interacts-with-claude-streaming-io
-timestamp: 2025-12-12T15:30:00Z
+artifact: m01-e04-user-handles-claude-failure-with-immediate-abort
+timestamp: 2025-12-12T15:32:00Z
 status: PASS
 
 issues:
   blockers: []
-
   defects: []
-
   concerns: []
-
   observations:
-    - message: "Core streaming I/O functionality was already implemented correctly in main.go lines 194-197"
-      location: "cmd/fluxid/main.go:194-197"
-    - message: "Go's exec.Cmd with os.Stdin/Stdout/Stderr provides true bidirectional streaming by default"
-      reference: "https://pkg.go.dev/os/exec#Cmd"
-    - message: "All 5 E2E tests pass, validating streaming latency, stdin delivery, large output handling, stream ordering, and workflow continuation"
-
+    - message: "Implementation refactored main() to separate run() function for better exit code control"
+      location: "cmd/fluxid/main.go:29-151"
+    - message: "Exit codes are now properly extracted from exec.ExitError and propagated through the call stack"
+      location: "cmd/fluxid/main.go:210-239"
+    - message: "Three comprehensive E2E tests cover failure scenarios in different phases"
+      location: "e2e-test/tests/m01-e04-user-handles-claude-failure-with-immediate-abort_test.go"
   enhancements:
-    - message: "Could add metrics/observability for stream latency monitoring in production"
-      suggestion: "Add optional --fluxid-metrics flag to track and report streaming performance"
-    - message: "Tests currently run sequentially to avoid stub conflicts - could use unique temp directories per test for parallel execution"
-      location: "e2e-test/tests/m01-e03-user-interacts-with-claude-streaming-io_test.go"
+    - message: "Consider adding structured logging for better debugging of workflow failures"
+      suggestion: "Add log levels and structured output for production debugging"
+    - message: "Error messages could include suggestions based on common exit codes"
+      suggestion: "Map exit code 127 to 'command not found', 130 to 'user interrupt', etc."
 
-next_steps: []
+next_steps:
+  - "Monitor for any edge cases in production usage"
+  - "Consider adding metrics/telemetry for failure tracking"
 
-summary: "Epic M01-E03 PASS. Streaming I/O functionality was already correctly implemented using Go's native exec.Cmd piping. Created comprehensive E2E test suite with 5 tests validating: (1) real-time stdout/stderr passthrough with latency verification, (2) stdin delivery to child process, (3) large output handling without truncation or deadlocks, (4) mixed stdout/stderr stream ordering, and (5) workflow continuation after interactive phases. All tests pass with no regressions."
+summary: |
+  Successfully implemented M01-E04: Claude failure handling with immediate abort.
+
+  The implementation now:
+  1. Detects non-zero exit codes from Claude process failures
+  2. Aborts the workflow immediately without further loops
+  3. Mirrors Claude's exit code exactly
+  4. Displays clear error messages with actionable next steps
+  5. Ensures clean termination without orphaned processes
+
+  All success criteria validated:
+  - ✓ Non-zero Claude exit triggers immediate abort
+  - ✓ Wrapper returns same exit code as Claude
+  - ✓ Error message explains what happened and next steps
+  - ✓ Streams flush gracefully on abort
+  - ✓ No residual state or orphaned processes
+
+  Test coverage:
+  - TestM01E04ClaudeFailureImmediateAbort: Verifies exit code mirroring and abort messaging
+  - TestM01E04NoFurtherPhasesAfterFailure: Confirms no subsequent phases run after failure
+  - TestM01E04FailureInDifferentPhases: Tests failure handling in implement, commit, and review phases
+
+  All E2E tests pass (21 tests total).

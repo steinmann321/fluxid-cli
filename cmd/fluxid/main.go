@@ -27,6 +27,11 @@ type Config struct {
 }
 
 func main() {
+	exitCode := run()
+	os.Exit(exitCode)
+}
+
+func run() int {
 	// Parse command-line arguments manually to support arbitrary Claude args
 	var claudeFlag bool
 	var claudeArgs []string
@@ -47,12 +52,12 @@ func main() {
 		if arg == "--fluxid-iterations" {
 			if i+1 >= len(os.Args) {
 				fmt.Fprintf(os.Stderr, "Error: --fluxid-iterations requires a value\n")
-				os.Exit(1)
+				return 1
 			}
 			fluxidIterations, err = parsePositiveInt(os.Args[i+1], "--fluxid-iterations")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
+				return 1
 			}
 			i++ // skip the value
 			continue
@@ -61,12 +66,12 @@ func main() {
 		if arg == "--fluxid-implement-retries" {
 			if i+1 >= len(os.Args) {
 				fmt.Fprintf(os.Stderr, "Error: --fluxid-implement-retries requires a value\n")
-				os.Exit(1)
+				return 1
 			}
 			fluxidImplementRetries, err = parsePositiveInt(os.Args[i+1], "--fluxid-implement-retries")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v\n", err)
-				os.Exit(1)
+				return 1
 			}
 			i++ // skip the value
 			continue
@@ -80,7 +85,7 @@ func main() {
 
 	if !claudeFlag {
 		fmt.Fprintf(os.Stderr, "Usage: fluxid --claude [--fluxid-iterations N] [--fluxid-implement-retries R] [claude-args]\n")
-		os.Exit(1)
+		return 1
 	}
 
 	// Apply defaults if not specified
@@ -95,7 +100,7 @@ func main() {
 	if _, err := exec.LookPath("claude"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: claude command not found in PATH\n")
 		fmt.Fprintf(os.Stderr, "Please install Claude CLI: https://github.com/anthropics/claude-cli\n")
-		os.Exit(1)
+		return 1
 	}
 
 	// Generate UUID v4 session ID
@@ -122,9 +127,17 @@ func main() {
 	fmt.Println()
 
 	// Run nested loops: review cycles -> implement retries
-	if err := runWorkflow(config); err != nil {
-		fmt.Fprintf(os.Stderr, "Workflow failed: %v\n", err)
-		os.Exit(1)
+	exitCode, err := runWorkflow(config)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\n=== Workflow Aborted ===\n")
+		fmt.Fprintf(os.Stderr, "Agent execution failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Exit code: %d\n", exitCode)
+		fmt.Fprintf(os.Stderr, "\nNext steps:\n")
+		fmt.Fprintf(os.Stderr, "1. Check agent output above for error details\n")
+		fmt.Fprintf(os.Stderr, "2. Fix the issue and re-run fluxid\n")
+		fmt.Fprintf(os.Stderr, "3. Review logs for Session ID: %s\n", config.SessionID)
+		fmt.Fprintf(os.Stderr, "========================\n")
+		return exitCode
 	}
 
 	// Display completion summary
@@ -134,9 +147,10 @@ func main() {
 	fmt.Println("Status: SUCCESS")
 	fmt.Println("All workflow loops completed.")
 	fmt.Println("===================================")
+	return 0
 }
 
-func runWorkflow(config Config) error {
+func runWorkflow(config Config) (int, error) {
 	// Outer loop: Review cycles (1-N)
 	for reviewCycle := 1; reviewCycle <= config.MaxReviewCycles; reviewCycle++ {
 		fmt.Printf("--- Review Cycle %d/%d ---\n", reviewCycle, config.MaxReviewCycles)
@@ -147,15 +161,23 @@ func runWorkflow(config Config) error {
 			fmt.Printf("Implement attempt %d/%d...\n", retry, config.MaxImplementRetries)
 
 			// Phase 1: Implement
-			if err := runPhase(config, "implement", implementPrompt); err != nil {
+			if exitCode, err := runPhase(config, "implement", implementPrompt); err != nil {
+				if exitCode != 0 {
+					// Non-zero exit code from Claude: abort immediately
+					return exitCode, fmt.Errorf("implement phase failed with exit code %d", exitCode)
+				}
 				log.Printf("Implement phase failed (retry %d/%d): %v", retry, config.MaxImplementRetries, err)
 				continue
 			}
 
 			// Phase 2: Commit
 			fmt.Println("Running commit phase...")
-			if err := runPhase(config, "commit", commitPrompt); err != nil {
-				return fmt.Errorf("commit phase failed: %w", err)
+			if exitCode, err := runPhase(config, "commit", commitPrompt); err != nil {
+				if exitCode != 0 {
+					// Non-zero exit code from Claude: abort immediately
+					return exitCode, fmt.Errorf("commit phase failed with exit code %d", exitCode)
+				}
+				return 1, fmt.Errorf("commit phase failed: %w", err)
 			}
 
 			implementSuccess = true
@@ -163,13 +185,17 @@ func runWorkflow(config Config) error {
 		}
 
 		if !implementSuccess {
-			return fmt.Errorf("implement phase failed after %d retries", config.MaxImplementRetries)
+			return 1, fmt.Errorf("implement phase failed after %d retries", config.MaxImplementRetries)
 		}
 
 		// Phase 3: Review
 		fmt.Println("Running review phase...")
-		if err := runPhase(config, "review", reviewPrompt); err != nil {
-			return fmt.Errorf("review phase failed: %w", err)
+		if exitCode, err := runPhase(config, "review", reviewPrompt); err != nil {
+			if exitCode != 0 {
+				// Non-zero exit code from Claude: abort immediately
+				return exitCode, fmt.Errorf("review phase failed with exit code %d", exitCode)
+			}
+			return 1, fmt.Errorf("review phase failed: %w", err)
 		}
 
 		// TODO: Parse review report to determine if workflow should complete early
@@ -178,10 +204,10 @@ func runWorkflow(config Config) error {
 		break
 	}
 
-	return nil
+	return 0, nil
 }
 
-func runPhase(config Config, phase string, prompt string) error {
+func runPhase(config Config, phase string, prompt string) (int, error) {
 	timestamp := time.Now().Format("15:04:05")
 	fmt.Printf("[%s] Starting phase: %s\n", timestamp, phase)
 
@@ -198,13 +224,18 @@ func runPhase(config Config, phase string, prompt string) error {
 
 	// Execute Claude CLI
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("phase %s failed: %w", phase, err)
+		// Extract exit code from error
+		exitCode := 1 // Default to 1 if we can't determine the actual code
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		}
+		return exitCode, fmt.Errorf("phase %s failed: %w", phase, err)
 	}
 
 	timestamp = time.Now().Format("15:04:05")
 	fmt.Printf("[%s] Phase %s completed successfully\n", timestamp, phase)
 
-	return nil
+	return 0, nil
 }
 
 func buildClaudeCommand(config Config, prompt string) *exec.Cmd {
