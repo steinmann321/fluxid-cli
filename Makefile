@@ -1,30 +1,22 @@
-.PHONY: build clean test run install
+.PHONY: build clean run test tools
 
-# Build the fluxid binary
+# Build hello-world binary into bin/
 build:
 	mkdir -p bin
-	go build -o bin/fluxid .
+	go build -o bin/hello ./src
 
-# Install binary to PATH (optional)
-install: build
-	cp bin/fluxid $(shell go env GOPATH)/bin/
+# Install required developer tools for hooks
+tools:
+	./hooks/setup_tools.sh
 
-# Run the application
+# Run the app
 run:
-	go run .
+	go run ./src
 
-# Run tests
+# Run Go tests (including e2e)
 test:
 	go test ./...
 
-# Clean build artifacts
+# Clean artifacts
 clean:
 	rm -rf bin/
-
-# Install dependencies
-deps:
-	go mod download
-	go mod tidy
-
-# Default target
-all: build

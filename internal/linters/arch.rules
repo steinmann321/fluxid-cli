@@ -1,0 +1,29 @@
+# ruleguard rules for enforcing clean architecture within src/
+
+# Ban os.Exit outside main packages (libraries should return errors instead)
+matches[osExitInLib]:
+  m.Exit(_)
+  where m as import("os")
+  and not package().Name == "main"
+  -> "use error returns; os.Exit only allowed in main packages"
+
+# Disallow direct environment access in libraries (inject config)
+matches[osGetenvInLib]:
+  m.Getenv(_)
+  where m as import("os")
+  and not package().Name == "main"
+  -> "do not use os.Getenv in libraries; pass config via parameters"
+
+# Require error wrapping on propagation (fmt.Errorf should wrap when rethrowing)
+matches[fmtErrorfNoWrap]:
+  fmt.Errorf(_)
+  and not m contains "%w"
+  where fmt as import("fmt"), m as text()
+  -> "wrap errors with %%w when propagating"
+
+# Forbid testing imports in non-test files under src/
+matches[testingInNonTest]:
+  _ as import("testing")
+  and not filename().endsWith("_test.go")
+  and filename().matches(".*/src/.*")
+  -> "do not import testing from production src code"

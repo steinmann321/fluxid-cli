@@ -1,0 +1,111 @@
+# CRITICAL: Modifying this file without explicit user approval is considered cheating and strictly forbidden.
+# All lint rules and thresholds are locked. Do not change.
+version: 2
+run:
+  timeout: 5m
+  tests: true
+  go: "1.25"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - revive
+    - staticcheck
+    - unused
+    - gocyclo
+    - gocognit
+    - asciicheck
+    - durationcheck
+    - errorlint
+    - exhaustive
+    - copyloopvar
+    - forbidigo
+    - gochecknoinits
+    - gochecknoglobals
+    - goconst
+    - gocritic
+    - godot
+    - godox
+    - gomoddirectives
+    - gomodguard
+    - lll
+    - misspell
+    - nolintlint
+    - prealloc
+    - unconvert
+    - unparam
+    - whitespace
+    - depguard
+    - bodyclose
+    - dupl
+    - dogsled
+    - errchkjson
+    - exhaustruct
+    - nakedret
+    - nestif
+    - nilerr
+    - noctx
+    - paralleltest
+    - tagliatelle
+    - usetesting
+    - thelper
+    - tparallel
+    - wrapcheck
+
+  settings:
+    gocyclo:
+      min-complexity: 10
+    gocognit:
+      min-complexity: 12
+    lll:
+      line-length: 120
+    revive:
+      severity: error
+      rules:
+        - name: exported
+        - name: error-return
+        - name: argument-limit
+    depguard:
+      rules:
+        Main:
+          list-mode: strict
+          files:
+            - "$all"
+          allow:
+            - $gostd
+            - fluxid-loop/src/app
+          deny:
+            - pkg: "math/rand$"
+              desc: use math/rand/v2
+        Src:
+          list-mode: original
+          files:
+            - "src/**"
+          allow:
+            - $gostd
+            - fluxid-loop/src/
+          deny:
+            - pkg: "main$"
+              desc: src must not import main packages
+            - pkg: "testing$"
+              desc: do not import testing in production src code
+    tagliatelle:
+      case:
+        constants: camel
+        variables: camel
+        packages: lower
+    wrapcheck:
+      ignore-sigs:
+        - errors.New
+        - .Errorf(
+        - fmt.Errorf
+
+formatters:
+  enable:
+    - gofumpt
+
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0

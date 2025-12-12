@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Epic E2E Review Loop Script
-# Runs fluxid.implement-e2e and fluxid.review-e2e for a single epic id
+# Epic Review Loop Script
+# Runs configured implement and review commands for a single epic id
 # Usage: ./epic-loop.sh [--codex|--claude|--opencode] <epic-id>
 
 set -euo pipefail
@@ -26,18 +26,30 @@ source "$EPIC_LOOP_DIR/lib/progress-tracking.sh"
 source "$EPIC_LOOP_DIR/lib/workflow-steps.sh"
 
 # Configuration
-IMPLEMENT_COMMAND_FILE="$PROJECT_ROOT/.fluxid/commands/fluxid.implement-e2e.md"
-VALIDATE_COMMAND_FILE="$PROJECT_ROOT/.fluxid/commands/fluxid.review-e2e.md"
+CONFIG_FILE="$PROJECT_ROOT/.fluxid/scripts/loop/config.yaml"
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  error "Loop config not found: $CONFIG_FILE"
+  exit 1
+fi
+impl_rel=$(sed -n 's/^[[:space:]]*implement:[[:space:]]*\(.*\)$/\1/p' "$CONFIG_FILE" | tail -n1)
+rev_rel=$(sed -n 's/^[[:space:]]*review:[[:space:]]*\(.*\)$/\1/p' "$CONFIG_FILE" | tail -n1)
+if [[ -z "${impl_rel:-}" || -z "${rev_rel:-}" ]]; then
+  error "Loop config missing implement/review entries"
+  exit 1
+fi
+IMPLEMENT_COMMAND_FILE="$PROJECT_ROOT/.fluxid/commands/$impl_rel"
+VALIDATE_COMMAND_FILE="$PROJECT_ROOT/.fluxid/commands/$rev_rel"
 REPORT_FILE=$("$PROJECT_ROOT/.fluxid/scripts/command/files.sh" --report)
 HISTORY_FILE=$("$PROJECT_ROOT/.fluxid/scripts/command/files.sh" --history)
-IMPLEMENT_COMMAND_NAME="fluxid.implement-e2e"
-VALIDATE_COMMAND_NAME="fluxid.review-e2e"
+IMPLEMENT_COMMAND_NAME="$(basename "${IMPLEMENT_COMMAND_FILE%.md}")"
+VALIDATE_COMMAND_NAME="$(basename "${VALIDATE_COMMAND_FILE%.md}")"
 COMMIT_CMD="$PROJECT_ROOT/.fluxid/scripts/commands/commit.sh"
 PROGRESS_CMD="$PROJECT_ROOT/.fluxid/scripts/command/progress.sh"
 MAX_ITERATIONS=20
 AGENT="claude"
 STREAMING_SCRIPT=""
 DRY_RUN=false
+
 
 # Handle Ctrl+C - exit immediately
 trap 'echo ""; echo "Interrupted by user (Ctrl+C)"; exit 130' INT TERM
@@ -86,17 +98,14 @@ while [[ $# -gt 0 ]]; do
       AGENT="opencode"
       shift
       ;;
-    --headed)
-      export PLAYWRIGHT_HEADED=1
-      shift
-      ;;
+
     --dry-run)
       DRY_RUN=true
       shift
       ;;
     -*)
       echo "Unknown option: $1" >&2
-      echo "Usage: $0 [--codex|--claude|--opencode] [--headed] [--dry-run] <epic-id>" >&2
+      echo "Usage: $0 [--codex|--claude|--opencode] [--dry-run] <epic-id>" >&2
       exit 1
       ;;
     *)
@@ -125,16 +134,15 @@ esac
 
 # Validate inputs
 if [[ -z "${EPIC_ID:-}" ]]; then
-  echo "Usage: $0 [--codex|--claude|--opencode] [--headed] [--dry-run] <epic-id>" >&2
+  echo "Usage: $0 [--codex|--claude|--opencode] [--dry-run] <epic-id>" >&2
   echo "" >&2
   echo "Options:" >&2
   echo "  --claude   Use claude CLI (default)" >&2
   echo "  --codex    Use codex CLI" >&2
   echo "  --opencode Use opencode CLI" >&2
-  echo "  --headed   Run Playwright tests in headed mode (visible browser)" >&2
   echo "  --dry-run  Run through loop once without executing actual commands (for testing)" >&2
   echo "" >&2
-  echo "Example: $0 --headed m01-e01-some-flow.md" >&2
+  echo "Example: $0 m01-e01-some-flow.md" >&2
   exit 1
 fi
 
@@ -153,7 +161,17 @@ if [[ ! -f "$EPIC_PATH" ]]; then
   exit 1
 fi
 
+# Resolve test file and directory (used for Playwright screenshot cleanup)
 TEST_FILE=$("$PROJECT_ROOT/.fluxid/scripts/command/files.sh" --testfile "$EPIC_BASENAME")
+TEST_DIR="$(dirname "$TEST_FILE")"
+
+# Initial cleanup: remove stale screenshots
+if [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]]; then
+  log "Cleaning up old screenshots in tests directory..."
+  find "$TEST_DIR" -maxdepth 1 -name "*.png" -type f -delete 2>/dev/null || true
+fi
+
+
 
 # Helper function for dry-run mode to determine if implementation should succeed
 should_impl_succeed_dryrun() {
@@ -211,7 +229,7 @@ log "Agent: $AGENT"
 log "Streaming Script: $STREAMING_SCRIPT"
 log "Epic id: $EPIC_BASENAME"
 log "Epic path: $EPIC_PATH"
-log "Resolved test file: $TEST_FILE"
+
 log "Report file: $REPORT_FILE"
 if [[ "$DRY_RUN" == true ]]; then
   log "DRY RUN MODE: Will simulate workflow without executing actual commands"
@@ -263,15 +281,13 @@ else
   fi
 fi
 
-TEST_DIR="$(dirname "$TEST_FILE")"
-log "Cleaning up old screenshots in tests directory..."
-find "$TEST_DIR" -maxdepth 1 -name "*.png" -type f -delete 2>/dev/null || true
+
 
 TOTAL_TESTS=1
 SUCCESSFUL=0
 
 log ""
-log "--- Processing epic: $EPIC_BASENAME (test: $TEST_FILE) ---"
+log "--- Processing epic: $EPIC_BASENAME ---"
 
 # Clear terminal for clean display
 clear
@@ -298,26 +314,26 @@ while [[ $outer -lt $MAX_ITERATIONS ]]; do
       outer_display=$((outer + 1))
       inner_display=$((inner + 1))
 
-      # ───────────────────────────────────────────────────────
-      # IMPLEMENT PHASE
-      # ───────────────────────────────────────────────────────
-      step_start "Outer $outer_display/20, Inner $inner_display/3: IMPLEMENT"
-      set_task_status "$EPIC_ID_TOKEN" "implement" || log "Warning: failed to set status to 'implement'"
+# ───────────────────────────────────────────────────────
+# IMPLEMENT PHASE
+# ───────────────────────────────────────────────────────
+step_start "Outer $outer_display/20, Inner $inner_display/3: IMPLEMENT"
+set_task_status "$EPIC_ID_TOKEN" "implement" || log "Warning: failed to set status to 'implement'"
 
-      if [[ "$DRY_RUN" == true ]]; then
-        # Dry-run mode: check control file
-        artifact_token="${EPIC_BASENAME%.md}"
+if [[ "$DRY_RUN" == true ]]; then
+  # Dry-run mode: check control file
+  artifact_token="${EPIC_BASENAME%.md}"
 
-        if should_impl_succeed_dryrun "$outer" "$inner"; then
-          impl_status="PASS"
-          log "[DRY-RUN] Outer $outer_display, Inner $inner_display: IMPLEMENT PASS"
-        else
-          impl_status="FAIL"
-          log "[DRY-RUN] Outer $outer_display, Inner $inner_display: IMPLEMENT FAIL"
-        fi
+  if should_impl_succeed_dryrun "$outer" "$inner"; then
+    impl_status="PASS"
+    log "[DRY-RUN] Outer $outer_display, Inner $inner_display: IMPLEMENT PASS"
+  else
+    impl_status="FAIL"
+    log "[DRY-RUN] Outer $outer_display, Inner $inner_display: IMPLEMENT FAIL"
+  fi
 
-        mkdir -p "$(dirname "$REPORT_FILE")"
-        cat > "$REPORT_FILE" << EOF
+  mkdir -p "$(dirname "$REPORT_FILE")"
+  cat > "$REPORT_FILE" << EOF
 command: $IMPLEMENT_COMMAND_NAME
 artifact: $artifact_token
 timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -330,16 +346,16 @@ issues:
   observations: []
   enhancements: []
 EOF
-      else
-        # Real mode
-        if ! invoke_implement_step "$EPIC_BASENAME" "$TEST_FILE" "$REPORT_FILE"; then
-          step_end "IMPLEMENT" "FAIL"
-          loop_state_set "$EPIC_BASENAME" "error"
-          error "Implement step failed for epic $EPIC_BASENAME (Outer $outer_display, Inner $inner_display)"
-          error "CRITICAL: Halting workflow loop due to implement step failure."
-          exit 1
-        fi
-      fi
+else
+  # Real mode
+  if ! invoke_implement_step "$EPIC_BASENAME" "$REPORT_FILE"; then
+    step_end "IMPLEMENT" "FAIL"
+    loop_state_set "$EPIC_BASENAME" "error"
+    error "Implement step failed for epic $EPIC_BASENAME (Outer $outer_display, Inner $inner_display)"
+    error "CRITICAL: Halting workflow loop due to implement step failure."
+    exit 1
+  fi
+fi
       step_end "IMPLEMENT" "DONE"
 
       # ───────────────────────────────────────────────────────
@@ -425,31 +441,34 @@ EOF
   # ───────────────────────────────────────────────────────
   # REVIEW PHASE (always executed after inner loop)
   # ───────────────────────────────────────────────────────
-  log "Cleaning up screenshots before review step..."
-  find "$TEST_DIR" -maxdepth 1 -name "*.png" -type f -delete 2>/dev/null || true
+  # Cleanup screenshots before review
+  if [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]]; then
+    log "Cleaning up screenshots before review step..."
+    find "$TEST_DIR" -maxdepth 1 -name "*.png" -type f -delete 2>/dev/null || true
+  fi
 
   outer_display=$((outer + 1))
-  step_start "Outer $outer_display/20: REVIEW"
-  set_task_status "$EPIC_ID_TOKEN" "review" || log "Warning: failed to set status to 'review'"
+step_start "Outer $outer_display/20: REVIEW"
+set_task_status "$EPIC_ID_TOKEN" "review" || log "Warning: failed to set status to 'review'"
 
-  # Track if review should fail
-  review_failed=false
-  review_status=""
+# Track if review should fail
+review_failed=false
+review_status=""
 
-  if [[ "$DRY_RUN" == true ]]; then
-    # Dry-run mode: check control file
-    artifact_token="${EPIC_BASENAME%.md}"
+if [[ "$DRY_RUN" == true ]]; then
+  # Dry-run mode: check control file
+  artifact_token="${EPIC_BASENAME%.md}"
 
-    if should_review_succeed_dryrun "$outer"; then
-      report_status="PASS"
-      log "[DRY-RUN] Outer $outer_display: REVIEW PASS"
-    else
-      report_status="FAIL"
-      log "[DRY-RUN] Outer $outer_display: REVIEW FAIL"
-    fi
+  if should_review_succeed_dryrun "$outer"; then
+    report_status="PASS"
+    log "[DRY-RUN] Outer $outer_display: REVIEW PASS"
+  else
+    report_status="FAIL"
+    log "[DRY-RUN] Outer $outer_display: REVIEW FAIL"
+  fi
 
-    mkdir -p "$(dirname "$REPORT_FILE")"
-    cat > "$REPORT_FILE" << EOF
+  mkdir -p "$(dirname "$REPORT_FILE")"
+  cat > "$REPORT_FILE" << EOF
 command: $VALIDATE_COMMAND_NAME
 artifact: $artifact_token
 timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -462,16 +481,16 @@ issues:
   observations: []
   enhancements: []
 EOF
-  else
-    # Real mode
-    if ! invoke_review_step "$EPIC_BASENAME" "$TEST_FILE" "$REPORT_FILE"; then
-      loop_state_set "$EPIC_BASENAME" "error"
-      error "Review step failed for epic $EPIC_BASENAME (Outer $outer_display)"
-      error "CRITICAL: Halting workflow loop due to review step failure."
-      step_end "REVIEW" "FAIL"
-      exit 1
-    fi
+else
+  # Real mode
+  if ! invoke_review_step "$EPIC_BASENAME" "$REPORT_FILE"; then
+    loop_state_set "$EPIC_BASENAME" "error"
+    error "Review step failed for epic $EPIC_BASENAME (Outer $outer_display)"
+    error "CRITICAL: Halting workflow loop due to review step failure."
+    step_end "REVIEW" "FAIL"
+    exit 1
   fi
+fi
 
   # Check review report
   if ! report_exists "$REPORT_FILE"; then
@@ -510,7 +529,7 @@ EOF
 
     SUCCESSFUL=$((SUCCESSFUL + 1))
 
-    # Final cleanup
+    # Final cleanup: remove screenshots after success
     if [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]]; then
       log "Cleaning up screenshots after successful completion..."
       find "$TEST_DIR" -maxdepth 1 -name "*.png" -type f -delete 2>/dev/null || true
@@ -540,7 +559,7 @@ EOF
     log "🧹 CLEANUP: Outer $outer_display (every 5th loop) - removing all artifacts"
     log "═══════════════════════════════════════════════════════════"
 
-    # Clean up screenshots
+    # Periodic cleanup: remove screenshots every 5 loops
     if [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]]; then
       log "Removing screenshots from tests directory..."
       find "$TEST_DIR" -maxdepth 1 -name "*.png" -type f -delete 2>/dev/null || true

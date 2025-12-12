@@ -1,4 +1,4 @@
-# FluxID Loop
+# fluxid Loop
 
 ## CRITICAL REMINDER (2025-12-12T10:51:42.483Z)
 This is a reimplementation project: the final system must be a pure Go implementation. Any shell scripts present are examples/templates of a prior hacky solution and must not be used as runtime dependencies.
