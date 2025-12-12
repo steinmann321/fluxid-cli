@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"time"
 
+	"fluxid-loop/internal/config"
+
 	"github.com/google/uuid"
 )
 
@@ -32,14 +34,20 @@ func main() {
 }
 
 func run() int {
+	// Load home configuration
+	homeConfig, err := config.LoadHomeConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading home configuration: %v\n", err)
+		return 1
+	}
+
 	// Parse command-line arguments manually to support arbitrary Claude args
 	var claudeFlag bool
 	var claudeArgs []string
-	var fluxidIterations int
-	var fluxidImplementRetries int
+	var cliIterations *int
+	var cliImplementRetries *int
 
 	// Manual argument parsing to allow passthrough of unknown flags
-	var err error
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 
@@ -54,11 +62,12 @@ func run() int {
 				fmt.Fprintf(os.Stderr, "Error: --fluxid-iterations requires a value\n")
 				return 1
 			}
-			fluxidIterations, err = parsePositiveInt(os.Args[i+1], "--fluxid-iterations")
+			val, err := parsePositiveInt(os.Args[i+1], "--fluxid-iterations")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v\n", err)
 				return 1
 			}
+			cliIterations = &val
 			i++ // skip the value
 			continue
 		}
@@ -68,11 +77,12 @@ func run() int {
 				fmt.Fprintf(os.Stderr, "Error: --fluxid-implement-retries requires a value\n")
 				return 1
 			}
-			fluxidImplementRetries, err = parsePositiveInt(os.Args[i+1], "--fluxid-implement-retries")
+			val, err := parsePositiveInt(os.Args[i+1], "--fluxid-implement-retries")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v\n", err)
 				return 1
 			}
+			cliImplementRetries = &val
 			i++ // skip the value
 			continue
 		}
@@ -88,13 +98,8 @@ func run() int {
 		return 1
 	}
 
-	// Apply defaults if not specified
-	if fluxidIterations == 0 {
-		fluxidIterations = defaultMaxReviewCycles
-	}
-	if fluxidImplementRetries == 0 {
-		fluxidImplementRetries = defaultMaxImplementRetries
-	}
+	// Resolve configuration from home config, CLI args, and defaults
+	resolved := config.Resolve(homeConfig, cliIterations, cliImplementRetries)
 
 	// Validate Claude CLI is available
 	if _, err := exec.LookPath("claude"); err != nil {
@@ -106,28 +111,29 @@ func run() int {
 	// Generate UUID v4 session ID
 	sessionID := uuid.New().String()
 
-	config := Config{
-		Agent:               "claude",
+	cfg := Config{
+		Agent:               resolved.Agent,
 		ClaudeArgs:          claudeArgs,
 		SessionID:           sessionID,
-		MaxReviewCycles:     fluxidIterations,
-		MaxImplementRetries: fluxidImplementRetries,
+		MaxReviewCycles:     resolved.Iterations,
+		MaxImplementRetries: resolved.ImplementRetries,
 	}
 
-	// Display initialization status
+	// Display initialization status with source information
 	fmt.Println("=== fluxid Workflow Initialization ===")
-	fmt.Printf("Agent: %s\n", config.Agent)
-	fmt.Printf("Session ID: %s\n", config.SessionID)
-	fmt.Printf("Max Review Cycles: %d\n", config.MaxReviewCycles)
-	fmt.Printf("Max Implement Retries: %d\n", config.MaxImplementRetries)
-	if len(config.ClaudeArgs) > 0 {
-		fmt.Printf("Claude Args: %v\n", config.ClaudeArgs)
+	fmt.Printf("Agent: %s (source: %s)\n", cfg.Agent, resolved.Sources["agent"])
+	fmt.Printf("Session ID: %s\n", cfg.SessionID)
+	fmt.Printf("Max Review Cycles: %d (source: %s)\n", cfg.MaxReviewCycles, resolved.Sources["iterations"])
+	fmt.Printf("Max Implement Retries: %d (source: %s)\n", cfg.MaxImplementRetries, resolved.Sources["implement_retries"])
+	fmt.Printf("Commit Enabled: %v (source: %s)\n", resolved.CommitEnabled, resolved.Sources["commit_enabled"])
+	if len(cfg.ClaudeArgs) > 0 {
+		fmt.Printf("Claude Args: %v\n", cfg.ClaudeArgs)
 	}
 	fmt.Println("======================================")
 	fmt.Println()
 
 	// Run nested loops: review cycles -> implement retries
-	exitCode, err := runWorkflow(config)
+	exitCode, err := runWorkflow(cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\n=== Workflow Aborted ===\n")
 		fmt.Fprintf(os.Stderr, "Agent execution failed: %v\n", err)
@@ -135,7 +141,7 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "\nNext steps:\n")
 		fmt.Fprintf(os.Stderr, "1. Check agent output above for error details\n")
 		fmt.Fprintf(os.Stderr, "2. Fix the issue and re-run fluxid\n")
-		fmt.Fprintf(os.Stderr, "3. Review logs for Session ID: %s\n", config.SessionID)
+		fmt.Fprintf(os.Stderr, "3. Review logs for Session ID: %s\n", cfg.SessionID)
 		fmt.Fprintf(os.Stderr, "========================\n")
 		return exitCode
 	}
@@ -143,7 +149,7 @@ func run() int {
 	// Display completion summary
 	fmt.Println()
 	fmt.Println("=== Workflow Completion Summary ===")
-	fmt.Printf("Session ID: %s\n", config.SessionID)
+	fmt.Printf("Session ID: %s\n", cfg.SessionID)
 	fmt.Println("Status: SUCCESS")
 	fmt.Println("All workflow loops completed.")
 	fmt.Println("===================================")

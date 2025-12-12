@@ -3,7 +3,7 @@ last_updated: "2025-12-10"
 milestones:
   - id: m01
     artifact: "m01-basic-wrapper-loop"
-    status: in_progress
+    status: done
     epics:
       - id: m01-e01
         artifact: "m01-e01-user-runs-workflow-to-completion"
@@ -16,14 +16,14 @@ milestones:
         status: done
       - id: m01-e04
         artifact: "m01-e04-user-handles-claude-failure-with-immediate-abort"
-        status: implement
+        status: done
   - id: m02
     artifact: "m02-hierarchical-configuration"
-    status: pending
+    status: in_progress
     epics:
       - id: m02-e01
         artifact: "m02-e01-user-configures-home-defaults-and-verifies-init-status"
-        status: pending
+        status: implement
       - id: m02-e02
         artifact: "m02-e02-user-applies-project-overrides-and-sees-precedence-in-status"
         status: pending
