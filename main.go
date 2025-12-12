@@ -50,6 +50,14 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Validate that Claude binary exists on PATH
+	if _, err := exec.LookPath("claude"); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Claude CLI not found on PATH\n")
+		fmt.Fprintf(os.Stderr, "Please ensure the Claude CLI is installed and accessible\n")
+		fmt.Fprintf(os.Stderr, "See: https://claude.ai/download for installation instructions\n")
+		os.Exit(1)
+	}
+
 	// Generate session UUID v4
 	sessionID := uuid.New().String()
 
@@ -122,17 +130,15 @@ func executeWorkflow(config Config) error {
 			return fmt.Errorf("review phase failed: %w", err)
 		}
 
-		// Check if workflow should continue (stub - always completes for now)
+		// Check if maximum review cycles reached
 		if reviewCycle >= config.MaxReviewCycles {
 			fmt.Println("Maximum review cycles reached, completing workflow.")
 			break
 		}
 
-		// Simulated early completion check (could be based on review report)
-		if reviewCycle >= 1 {
-			fmt.Println("Workflow completed successfully.")
-			break
-		}
+		// TODO: Implement report-based early completion
+		// Future enhancement: Parse review report to determine if workflow should continue
+		// For now, continue until max cycles reached
 	}
 
 	return nil
@@ -165,15 +171,12 @@ func runPhase(phase string, config Config) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
-	// For stubbed implementation, simulate success
-	// Uncomment when Claude CLI is available:
-	// if err := cmd.Run(); err != nil {
-	// 	return fmt.Errorf("phase %s failed: %w", phase, err)
-	// }
+	// Execute Claude CLI command
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("phase %s failed: %w", phase, err)
+	}
 
-	// Stubbed success simulation
-	fmt.Printf("[%s] Phase %s completed successfully (stubbed)\n", time.Now().Format("15:04:05"), phase)
-	time.Sleep(100 * time.Millisecond) // Simulate some work
+	fmt.Printf("[%s] Phase %s completed successfully\n", time.Now().Format("15:04:05"), phase)
 
 	return nil
 }
