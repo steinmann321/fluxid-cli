@@ -7,10 +7,10 @@ milestones:
     epics:
       - id: m01-e01
         artifact: "m01-e01-user-runs-workflow-to-completion"
-        status: implement
+        status: done
       - id: m01-e02
         artifact: "m01-e02-user-configures-loop-counts-and-runs-workflow"
-        status: pending
+        status: implement
       - id: m01-e03
         artifact: "m01-e03-user-interacts-with-claude-streaming-io"
         status: pending
