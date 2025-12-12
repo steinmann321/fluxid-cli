@@ -10,10 +10,10 @@ milestones:
         status: done
       - id: m01-e02
         artifact: "m01-e02-user-configures-loop-counts-and-runs-workflow"
-        status: implement
+        status: done
       - id: m01-e03
         artifact: "m01-e03-user-interacts-with-claude-streaming-io"
-        status: pending
+        status: implement
       - id: m01-e04
         artifact: "m01-e04-user-handles-claude-failure-with-immediate-abort"
         status: pending
