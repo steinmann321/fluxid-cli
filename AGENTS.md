@@ -1,5 +1,8 @@
 # FluxID Loop
 
+## CRITICAL REMINDER (2025-12-12T10:51:42.483Z)
+This is a reimplementation project: the final system must be a pure Go implementation. Any shell scripts present are examples/templates of a prior hacky solution and must not be used as runtime dependencies.
+
 ## Overview
 - The app fluxid is a thin CLI wrapper around coding agents (claude, codex, opencode)
 - The app is a workflow controller that enables coding agents to break the context window with a IMPLEMENT - REVIEW loop

@@ -7,7 +7,7 @@ milestones:
     epics:
       - id: m01-e01
         artifact: "m01-e01-user-runs-workflow-to-completion"
-        status: done
+        status: implement
       - id: m01-e02
         artifact: "m01-e02-user-configures-loop-counts-and-runs-workflow"
         status: pending
