@@ -52,7 +52,7 @@ case "$FLAG" in
       exit 1
     fi
 
-    TEST_DIR="${E2E_TEST_ROOT:-"$PROJECT_ROOT/e2e-test/tests"}"
+    TEST_DIR="${E2E_TEST_ROOT:-"$PROJECT_ROOT/e2e-tests/tests"}"
     mkdir -p "$TEST_DIR"
 
     TEST_BASENAME="${EPIC_BASENAME%.md}.spec.ts"

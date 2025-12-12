@@ -4,11 +4,12 @@ set -euo pipefail
 GLOBAL_THRESHOLD="90"
 
 echo "Running Go tests with coverage..."
-go test -failfast -timeout=10m -covermode=atomic -coverprofile=coverage.out ./src/... ./e2e-test/... 
+COV_FILE="${TMPDIR:-/tmp}/fluxid-coverage.out"
+go test -failfast -timeout=10m -covermode=atomic -coverprofile="${COV_FILE}" ./... 
 
-[[ -f coverage.out ]] || { echo "coverage.out not found" >&2; exit 1; }
+[[ -f "${COV_FILE}" ]] || { echo "coverage.out not found" >&2; exit 1; }
 
-total_line=$(go tool cover -func=coverage.out | awk '/^total:/ {print $0}')
+total_line=$(go tool cover -func="${COV_FILE}" | awk '/^total:/ {print $0}')
 coverage=$(awk '/^total:/ {gsub(/%/,"",$3); print $3}' <<< "${total_line}")
 
 awk -v cov="${coverage}" -v thresh="${GLOBAL_THRESHOLD}" 'BEGIN { if (cov < thresh) exit 1 }' || {

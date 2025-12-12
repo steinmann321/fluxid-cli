@@ -1,3 +1,4 @@
+// Package main implements the fluxid CLI workflow controller for coding agents.
 package main
 
 import (
@@ -5,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"time"
 
 	"fluxid-loop/internal/config"
 
@@ -18,6 +18,7 @@ const (
 	implementPrompt            = "Implement the required changes based on the epic requirements."
 	commitPrompt               = "Create a git commit with all changes."
 	reviewPrompt               = "Review the implementation and report status."
+	flagHelp                   = "--help"
 )
 
 type Config struct {
@@ -26,6 +27,14 @@ type Config struct {
 	SessionID           string
 	MaxReviewCycles     int
 	MaxImplementRetries int
+	CommitEnabled       bool
+}
+
+// osEnv implements config.EnvGetter using os.Getenv.
+type osEnv struct{}
+
+func (osEnv) Getenv(key string) string {
+	return os.Getenv(key)
 }
 
 func main() {
@@ -34,6 +43,19 @@ func main() {
 }
 
 func run() int {
+	// Check for IPC command first (before loading config)
+	if len(os.Args) > 1 && os.Args[1] == "ipc" {
+		return handleIPCCommand(os.Args[2:])
+	}
+
+	// Check for --help flag
+	for _, arg := range os.Args[1:] {
+		if arg == flagHelp || arg == "-h" {
+			printUsage()
+			return 0
+		}
+	}
+
 	// Load home configuration
 	homeConfig, err := config.LoadHomeConfig()
 	if err != nil {
@@ -41,65 +63,41 @@ func run() int {
 		return 1
 	}
 
-	// Parse command-line arguments manually to support arbitrary Claude args
-	var claudeFlag bool
-	var claudeArgs []string
-	var cliIterations *int
-	var cliImplementRetries *int
-
-	// Manual argument parsing to allow passthrough of unknown flags
-	for i := 1; i < len(os.Args); i++ {
-		arg := os.Args[i]
-
-		if arg == "--claude" {
-			claudeFlag = true
-			// Continue parsing to find fluxid-specific flags after --claude
-			continue
-		}
-
-		if arg == "--fluxid-iterations" {
-			if i+1 >= len(os.Args) {
-				fmt.Fprintf(os.Stderr, "Error: --fluxid-iterations requires a value\n")
-				return 1
-			}
-			val, err := parsePositiveInt(os.Args[i+1], "--fluxid-iterations")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-				return 1
-			}
-			cliIterations = &val
-			i++ // skip the value
-			continue
-		}
-
-		if arg == "--fluxid-implement-retries" {
-			if i+1 >= len(os.Args) {
-				fmt.Fprintf(os.Stderr, "Error: --fluxid-implement-retries requires a value\n")
-				return 1
-			}
-			val, err := parsePositiveInt(os.Args[i+1], "--fluxid-implement-retries")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-				return 1
-			}
-			cliImplementRetries = &val
-			i++ // skip the value
-			continue
-		}
-
-		// After --claude, collect remaining args for passthrough
-		if claudeFlag {
-			claudeArgs = append(claudeArgs, arg)
-		}
-	}
-
-	if !claudeFlag {
-		fmt.Fprintf(os.Stderr, "Usage: fluxid --claude [--fluxid-iterations N] [--fluxid-implement-retries R] [claude-args]\n")
+	// Load project configuration
+	projectConfig, err := config.LoadProjectConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading project configuration: %v\n", err)
 		return 1
 	}
 
-	// Resolve configuration from home config, CLI args, and defaults
-	resolved := config.Resolve(homeConfig, cliIterations, cliImplementRetries)
+	// Load environment configuration
+	envConfig, err := config.LoadEnvConfig(osEnv{})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading environment configuration: %v\n", err)
+		return 1
+	}
+
+	// Parse command-line arguments
+	args, err := parseArgs()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		printUsage()
+		return 1
+	}
+
+	// Resolve configuration with precedence: CLI > env > project > home > defaults
+	resolved := config.Resolve(
+		projectConfig, homeConfig, envConfig,
+		args.cliIterations, args.cliImplementRetries, args.cliCommitEnabled,
+	)
+
+	// Resolve and validate command files if configured
+	commandFiles, err := config.ResolveCommandFiles(projectConfig, homeConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error resolving command files: %v\n", err)
+		return 1
+	}
+	resolved.CommandFiles = commandFiles
 
 	// Validate Claude CLI is available
 	if _, err := exec.LookPath("claude"); err != nil {
@@ -113,24 +111,35 @@ func run() int {
 
 	cfg := Config{
 		Agent:               resolved.Agent,
-		ClaudeArgs:          claudeArgs,
+		ClaudeArgs:          args.claudeArgs,
 		SessionID:           sessionID,
 		MaxReviewCycles:     resolved.Iterations,
 		MaxImplementRetries: resolved.ImplementRetries,
+		CommitEnabled:       resolved.CommitEnabled,
 	}
 
 	// Display initialization status with source information
-	fmt.Println("=== fluxid Workflow Initialization ===")
-	fmt.Printf("Agent: %s (source: %s)\n", cfg.Agent, resolved.Sources["agent"])
-	fmt.Printf("Session ID: %s\n", cfg.SessionID)
-	fmt.Printf("Max Review Cycles: %d (source: %s)\n", cfg.MaxReviewCycles, resolved.Sources["iterations"])
-	fmt.Printf("Max Implement Retries: %d (source: %s)\n", cfg.MaxImplementRetries, resolved.Sources["implement_retries"])
-	fmt.Printf("Commit Enabled: %v (source: %s)\n", resolved.CommitEnabled, resolved.Sources["commit_enabled"])
-	if len(cfg.ClaudeArgs) > 0 {
-		fmt.Printf("Claude Args: %v\n", cfg.ClaudeArgs)
+	log.Println("=== fluxid Workflow Initialization ===")
+	log.Printf("Agent: %s (source: %s)", cfg.Agent, resolved.Sources["agent"])
+	log.Printf("Session ID: %s", cfg.SessionID)
+	log.Printf("Max Review Cycles: %d (source: %s)", cfg.MaxReviewCycles, resolved.Sources["iterations"])
+	log.Printf("Max Implement Retries: %d (source: %s)", cfg.MaxImplementRetries, resolved.Sources["implement_retries"])
+	log.Printf("Commit Enabled: %v (source: %s)", resolved.CommitEnabled, resolved.Sources["commit_enabled"])
+
+	// Display command file paths if resolved
+	if resolved.CommandFiles != nil {
+		log.Println()
+		log.Println("Command Files:")
+		log.Printf("  Implement: %s", resolved.CommandFiles.ImplementPath)
+		log.Printf("  Review: %s", resolved.CommandFiles.ReviewPath)
+		log.Printf("  Commit: %s", resolved.CommandFiles.CommitPath)
 	}
-	fmt.Println("======================================")
-	fmt.Println()
+
+	if len(cfg.ClaudeArgs) > 0 {
+		log.Printf("Claude Args: %v", cfg.ClaudeArgs)
+	}
+	log.Println("======================================")
+	log.Println()
 
 	// Run nested loops: review cycles -> implement retries
 	exitCode, err := runWorkflow(cfg)
@@ -147,135 +156,11 @@ func run() int {
 	}
 
 	// Display completion summary
-	fmt.Println()
-	fmt.Println("=== Workflow Completion Summary ===")
-	fmt.Printf("Session ID: %s\n", cfg.SessionID)
-	fmt.Println("Status: SUCCESS")
-	fmt.Println("All workflow loops completed.")
-	fmt.Println("===================================")
+	log.Println()
+	log.Println("=== Workflow Completion Summary ===")
+	log.Printf("Session ID: %s", cfg.SessionID)
+	log.Println("Status: SUCCESS")
+	log.Println("All workflow loops completed.")
+	log.Println("===================================")
 	return 0
-}
-
-func runWorkflow(config Config) (int, error) {
-	// Outer loop: Review cycles (1-N)
-	for reviewCycle := 1; reviewCycle <= config.MaxReviewCycles; reviewCycle++ {
-		fmt.Printf("--- Review Cycle %d/%d ---\n", reviewCycle, config.MaxReviewCycles)
-
-		// Inner loop: Implement retries (1-R)
-		var implementSuccess bool
-		for retry := 1; retry <= config.MaxImplementRetries; retry++ {
-			fmt.Printf("Implement attempt %d/%d...\n", retry, config.MaxImplementRetries)
-
-			// Phase 1: Implement
-			if exitCode, err := runPhase(config, "implement", implementPrompt); err != nil {
-				if exitCode != 0 {
-					// Non-zero exit code from Claude: abort immediately
-					return exitCode, fmt.Errorf("implement phase failed with exit code %d", exitCode)
-				}
-				log.Printf("Implement phase failed (retry %d/%d): %v", retry, config.MaxImplementRetries, err)
-				continue
-			}
-
-			// Phase 2: Commit
-			fmt.Println("Running commit phase...")
-			if exitCode, err := runPhase(config, "commit", commitPrompt); err != nil {
-				if exitCode != 0 {
-					// Non-zero exit code from Claude: abort immediately
-					return exitCode, fmt.Errorf("commit phase failed with exit code %d", exitCode)
-				}
-				return 1, fmt.Errorf("commit phase failed: %w", err)
-			}
-
-			implementSuccess = true
-			break
-		}
-
-		if !implementSuccess {
-			return 1, fmt.Errorf("implement phase failed after %d retries", config.MaxImplementRetries)
-		}
-
-		// Phase 3: Review
-		fmt.Println("Running review phase...")
-		if exitCode, err := runPhase(config, "review", reviewPrompt); err != nil {
-			if exitCode != 0 {
-				// Non-zero exit code from Claude: abort immediately
-				return exitCode, fmt.Errorf("review phase failed with exit code %d", exitCode)
-			}
-			return 1, fmt.Errorf("review phase failed: %w", err)
-		}
-
-		// TODO: Parse review report to determine if workflow should complete early
-		// For now, complete after first successful cycle
-		fmt.Println("Workflow completed successfully.")
-		break
-	}
-
-	return 0, nil
-}
-
-func runPhase(config Config, phase string, prompt string) (int, error) {
-	timestamp := time.Now().Format("15:04:05")
-	fmt.Printf("[%s] Starting phase: %s\n", timestamp, phase)
-
-	// Build Claude command with correct API
-	cmd := buildClaudeCommand(config, prompt)
-
-	// Set environment variable for session tracking
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", config.SessionID))
-
-	// Pipe stdout/stderr/stdin for real-time streaming
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	// Execute Claude CLI
-	if err := cmd.Run(); err != nil {
-		// Extract exit code from error
-		exitCode := 1 // Default to 1 if we can't determine the actual code
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		}
-		return exitCode, fmt.Errorf("phase %s failed: %w", phase, err)
-	}
-
-	timestamp = time.Now().Format("15:04:05")
-	fmt.Printf("[%s] Phase %s completed successfully\n", timestamp, phase)
-
-	return 0, nil
-}
-
-func buildClaudeCommand(config Config, prompt string) *exec.Cmd {
-	// Build args: --print flag first, then user args, then prompt as positional arg
-	args := []string{
-		"--print", // Non-interactive mode for automation
-	}
-	args = append(args, config.ClaudeArgs...)
-	args = append(args, prompt)
-
-	return exec.Command("claude", args...)
-}
-
-func getDefaultPrompt(phase string) string {
-	switch phase {
-	case "implement":
-		return implementPrompt
-	case "commit":
-		return commitPrompt
-	case "review":
-		return reviewPrompt
-	default:
-		return ""
-	}
-}
-
-func parsePositiveInt(value string, flagName string) (int, error) {
-	var n int
-	_, err := fmt.Sscanf(value, "%d", &n)
-	if err != nil {
-		return 0, fmt.Errorf("Error: %s requires a valid integer, got: %s", flagName, value)
-	}
-	if n < 1 {
-		return 0, fmt.Errorf("Error: %s must be a positive integer (≥1), got: %d", flagName, n)
-	}
-	return n, nil
 }

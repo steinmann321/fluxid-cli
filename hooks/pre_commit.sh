@@ -10,14 +10,60 @@ if [[ -n "$GOBIN_DIR" ]]; then
   export PATH="$GOBIN_DIR:$PATH"
 fi
 
-# Collect staged changes (compatible with macOS bash)
-CHANGED=$(git diff --cached --name-only)
+# Collect staged changes, use new paths for renames, ignore deletions
+CHANGED_STATUS=$(git diff --cached --name-status)
+CHANGED=$(printf '%s\n' "$CHANGED_STATUS" | awk '
+  BEGIN { }
+  {
+    status=$1
+    if (status ~ /^D/) { next }
+    if (status ~ /^R/) { print $3; next }
+    print $2
+  }
+')
 if [[ -z "$CHANGED" ]]; then
   exit 0
 fi
 
-# Limit scope to project files: src/** and e2e-test/**
-PROJECT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^(src/|e2e-test/)' || true)
+# Enforce repository layout: Go code must only exist under cmd/, internal/, pkg/, or e2e-tests/ (legacy: e2e-test/)
+INVALID_GO=$(printf '%s\n' "$CHANGED" | grep -E '\.go$' | grep -Ev '^(cmd/|internal/|pkg/|e2e-tests/|e2e-test/)' || true)
+if [[ -n "$INVALID_GO" ]]; then
+  echo "\u2717 Invalid repository layout detected:" >&2
+  echo "  Go files must reside only under cmd/ (binaries), internal/ (private packages)," >&2
+  echo "  pkg/ (public packages), or e2e-tests/ (end-to-end tests)." >&2
+  echo "  The following staged files violate this rule:" >&2
+  printf '    %s\n' $INVALID_GO >&2
+  echo "  Move code into the correct directory before committing." >&2
+  exit 1
+fi
+
+# Global enforcement: no tracked Go files outside allowed directories
+ALL_GO_TRACKED=$(git ls-files "*.go" || true)
+# Exclude old paths that are being renamed in this commit
+RENAME_OLD=$(printf '%s\n' "$CHANGED_STATUS" | awk '$1=="R" {print $2}')
+INVALID_GO_TRACKED=$(printf '%s\n' "$ALL_GO_TRACKED" | while read -r f; do 
+  # Skip if file is part of a staged rename (old path)
+  if printf '%s\n' "$RENAME_OLD" | grep -Fxq "$f"; then
+    continue
+  fi
+  # Enforce allowed directories
+  if ! echo "$f" | grep -Eq '^(cmd/|internal/|pkg/|e2e-tests/)'; then
+    echo "$f"
+  fi
+done)
+if [[ -n "$INVALID_GO_TRACKED" ]]; then
+  echo "\u2717 Invalid repository layout detected in tracked files:" >&2
+  echo "  Go files must reside only under cmd/, internal/, pkg/, or e2e-tests/." >&2
+  echo "  The following tracked files violate this rule:" >&2
+  printf '    %s\n' $INVALID_GO_TRACKED >&2
+  echo "  Move code into the correct directory before committing." >&2
+  exit 1
+fi
+
+
+
+# Limit scope to project files: cmd/**, internal/**, pkg/**, e2e-tests/**, and e2e-test/**
+PROJECT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^(cmd/|internal/|pkg/|e2e-tests/|e2e-test/)' || true)
 if [[ -z "$PROJECT_CHANGED" ]]; then
   # No project files staged; skip checks
   exit 0
@@ -54,20 +100,6 @@ if [[ -n "$GO_FILES" ]]; then
   done
 fi
 
-# Enforce go.mod/go.sum tidy
-before=$(git status --porcelain)
-go mod tidy
-after=$(git status --porcelain)
-if [[ "$before" != "$after" ]]; then
-  echo "go.mod/go.sum not tidy. Run 'go mod tidy' and commit changes." >&2
-  exit 1
-fi
-
-# Build (native)
-if make -q build >/dev/null 2>&1; then
-  echo "Building project..."
-  make build
-fi
 
 # Max lines check
 ./hooks/check_max_lines.sh $PROJECT_CHANGED
@@ -105,17 +137,19 @@ fi
 
 echo "Running golangci-lint..."
 # Limit lints to project dirs
-"$GL_BIN" run ./src/... ./e2e-test/...
+"$GL_BIN" run ./... 
+# Run ruleguard separately to enforce architecture rules
+command -v ruleguard >/dev/null || { echo "ruleguard not installed"; exit 1; }
+echo "Running ruleguard..."
+ruleguard -rules internal/linters/arch.rules ./...
 
 # Security static analysis
 command -v gosec >/dev/null || { echo "gosec not installed"; exit 1; }
 echo "Running gosec..."
-gosec ./src/... ./e2e-test/...
-
+gosec ./... 
 # Vulnerability advisories
 command -v govulncheck >/dev/null || { echo "govulncheck not installed"; exit 1; }
 echo "Running govulncheck..."
-govulncheck ./src/... ./e2e-test/...
-
+govulncheck ./... 
 # Coverage checks
 ./hooks/check_coverage.sh

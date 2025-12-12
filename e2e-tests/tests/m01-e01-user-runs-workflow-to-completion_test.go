@@ -220,11 +220,8 @@ func buildFluxid(t *testing.T, root string) {
 func createStubClaude(t *testing.T, root string) {
 	t.Helper()
 
-	// Create stub Claude binary for testing
-	stubPath := filepath.Join(root, "bin", "claude")
-
 	stubScript := `#!/bin/bash
-# Stub Claude CLI for testing
+# Stub agent CLI for testing
 
 # Echo all arguments to demonstrate passthrough
 echo "Claude stub invoked with args: $@"
@@ -236,8 +233,13 @@ echo "FLUXID_SESSION_ID=$FLUXID_SESSION_ID"
 exit 0
 `
 
-	if err := os.WriteFile(stubPath, []byte(stubScript), 0o755); err != nil {
-		t.Fatalf("failed to create stub claude: %v", err)
+	// Create stubs for all agents used in tests
+	agents := []string{"claude", "opencode", "codex", "project-agent"}
+	for _, agent := range agents {
+		agentPath := filepath.Join(root, "bin", agent)
+		if err := os.WriteFile(agentPath, []byte(stubScript), 0o755); err != nil {
+			t.Fatalf("failed to create stub %s: %v", agent, err)
+		}
 	}
 }
 
@@ -302,10 +304,6 @@ func verifyPhaseExecution(t *testing.T, output string) {
 
 	if !strings.Contains(output, "Starting phase: implement") {
 		t.Errorf("Missing implement phase")
-	}
-
-	if !strings.Contains(output, "Starting phase: commit") {
-		t.Errorf("Missing commit phase")
 	}
 
 	if !strings.Contains(output, "Starting phase: review") {

@@ -1,0 +1,133 @@
+# Pure YAML Report Schema
+# Focused on status + categorized issues only
+
+$schema: "http://json-schema.org/draft-07/schema#"
+$id: "https://example.com/schemas/yaml-report.schema.yaml"
+title: "YAML Status Report Schema"
+description: "Pure YAML schema guaranteeing status and categorized issues with required metadata"
+type: "object"
+
+required:
+  - command
+  - artifact
+  - timestamp
+  - status
+  - issues
+
+additionalProperties: true  # Allow optional fields like history, next_steps, summary
+
+properties:
+  # ===========================================================================
+  # METADATA (Required)
+  # ===========================================================================
+  command:
+    type: "string"
+    description: "Command that generated this report (e.g., 'fluxid.review-e2e')"
+
+  artifact:
+    type: "string"
+    description: "Artifact being validated (file path, component name, etc.)"
+
+  timestamp:
+    type: "string"
+    format: "date-time"
+    description: "When this report was generated (ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ)"
+
+  # ===========================================================================
+  # STATUS (Required)
+  # ===========================================================================
+  status:
+    type: "string"
+    enum:
+      - PASS
+      - FAIL
+    description: "Binary status: PASS if no blockers or defects, FAIL otherwise"
+
+  # ===========================================================================
+  # ISSUES (Required - always present, empty arrays if none)
+  # ===========================================================================
+  issues:
+    type: "object"
+    description: "Categorized issues - arrays are ALWAYS present, empty if no issues"
+    required:
+      - blockers
+      - defects
+      - concerns
+      - observations
+      - enhancements
+    additionalProperties: false
+    properties:
+      blockers:
+        type: "array"
+        description: "Must fix immediately - blocks success (empty array if none)"
+        items:
+          $ref: "#/definitions/issue"
+
+      defects:
+        type: "array"
+        description: "Must fix - prevents correct operation (empty array if none)"
+        items:
+          $ref: "#/definitions/issue"
+
+      concerns:
+        type: "array"
+        description: "Should fix - potential problems (empty array if none)"
+        items:
+          $ref: "#/definitions/issue"
+
+      observations:
+        type: "array"
+        description: "FYI - no action needed (empty array if none)"
+        items:
+          $ref: "#/definitions/issue"
+
+      enhancements:
+        type: "array"
+        description: "Nice to have - optional improvements (empty array if none)"
+        items:
+          $ref: "#/definitions/issue"
+
+  # ===========================================================================
+  # NEXT_STEPS (Optional - what to do next)
+  # ===========================================================================
+  next_steps:
+    type: "array"
+    description: "Simple list of actions to take in next iteration"
+    items:
+      type: "string"
+
+  # ===========================================================================
+  # SUMMARY (Optional)
+  # ===========================================================================
+  summary:
+    type: "string"
+    description: "Brief human-readable summary of results"
+
+# =============================================================================
+# DEFINITIONS
+# =============================================================================
+definitions:
+  issue:
+    type: "object"
+    required:
+      - message
+    properties:
+      message:
+        type: "string"
+        description: "Human-readable description of the issue"
+
+      location:
+        type: "string"
+        description: "Where the issue is (file:line, component name, etc.)"
+
+      code:
+        type: "string"
+        description: "Machine-readable error code (e.g., 'SQL-001', 'SEC-042')"
+
+      suggestion:
+        type: "string"
+        description: "How to fix this issue"
+
+      reference:
+        type: "string"
+        description: "Link to documentation or more info"

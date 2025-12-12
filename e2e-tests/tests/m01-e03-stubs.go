@@ -1,9 +1,17 @@
 package tests
 
 import (
+	"bufio"
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 // writeExecutableStub writes a bash script with executable permissions.
@@ -129,4 +137,77 @@ exit 0
 `
 
 	_ = writeExecutableStub(stubPath, []byte(stubScript)) // Ignore error - test will fail if stub missing
+}
+
+// readCombinedOutput reads from stdout and stderr pipes concurrently
+// and combines them into a single buffer. Optionally handles stdin interaction
+// when a specific prompt is detected.
+func readCombinedOutput(
+	stdout, stderr io.Reader,
+	stdin io.WriteCloser,
+	promptMarker, stdinResponse string,
+	timeout time.Duration,
+) (string, error) {
+	var output bytes.Buffer
+	done := make(chan error, 1)
+	promptSeen := false
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Read stdout
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			output.WriteString(line + "\n")
+
+			// Handle interactive prompt if configured
+			if promptMarker != "" && strings.Contains(line, promptMarker) && !promptSeen {
+				promptSeen = true
+				time.Sleep(50 * time.Millisecond)
+				if stdin != nil && stdinResponse != "" {
+					if _, err := stdin.Write([]byte(stdinResponse + "\n")); err != nil {
+						done <- err
+						return
+					}
+				}
+			}
+		}
+		if scanner.Err() != nil {
+			done <- scanner.Err()
+		}
+	}()
+
+	// Read stderr
+	go func() {
+		defer wg.Done()
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			output.WriteString(line + "\n")
+		}
+		if scanner.Err() != nil {
+			done <- scanner.Err()
+		}
+	}()
+
+	// Wait for both readers to finish
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	// Wait for completion or timeout
+	select {
+	case err := <-done:
+		if err != nil && !errors.Is(err, io.EOF) {
+			return output.String(), fmt.Errorf("error reading output: %w", err)
+		}
+	case <-time.After(timeout):
+		return output.String(), fmt.Errorf("timeout after %v", timeout)
+	}
+
+	return output.String(), nil
 }

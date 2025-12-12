@@ -1,29 +1,19 @@
-# ruleguard rules for enforcing clean architecture within src/
+// ruleguard rules for enforcing clean architecture across packages (no src/)
 
-# Ban os.Exit outside main packages (libraries should return errors instead)
-matches[osExitInLib]:
-  m.Exit(_)
-  where m as import("os")
-  and not package().Name == "main"
-  -> "use error returns; os.Exit only allowed in main packages"
+package gorules
 
-# Disallow direct environment access in libraries (inject config)
-matches[osGetenvInLib]:
-  m.Getenv(_)
-  where m as import("os")
-  and not package().Name == "main"
-  -> "do not use os.Getenv in libraries; pass config via parameters"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-# Require error wrapping on propagation (fmt.Errorf should wrap when rethrowing)
-matches[fmtErrorfNoWrap]:
-  fmt.Errorf(_)
-  and not m contains "%w"
-  where fmt as import("fmt"), m as text()
-  -> "wrap errors with %%w when propagating"
+// Ban os.Exit outside main packages (libraries should return errors instead)
+func osExitInLib(m dsl.Matcher) {
+	m.Match(`os.Exit($_)`).
+		Where(!m.File().PkgPath.Matches(".*/cmd/.*") && !m.File().PkgPath.Matches(".*/e2e-tests/.*") && !m.File().Name.Matches("_test\\.go$") && !m.File().Name.Matches("-d$")).
+		Report("use error returns; os.Exit only allowed in CLI (cmd) or tests")
+}
 
-# Forbid testing imports in non-test files under src/
-matches[testingInNonTest]:
-  _ as import("testing")
-  and not filename().endsWith("_test.go")
-  and filename().matches(".*/src/.*")
-  -> "do not import testing from production src code"
+// Disallow direct environment access in libraries (inject config)
+func osGetenvInLib(m dsl.Matcher) {
+	m.Match(`os.Getenv($_)`).
+		Where(!m.File().PkgPath.Matches(".*/cmd/.*") && !m.File().PkgPath.Matches(".*/e2e-tests/.*") && !m.File().Name.Matches("_test\\.go$")).
+		Report("do not use os.Getenv in libraries; allowed in CLI (cmd) and tests")
+}

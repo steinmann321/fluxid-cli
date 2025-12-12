@@ -1,3 +1,4 @@
+// Package tests contains E2E tests for the fluxid workflow system.
 package tests
 
 import (

@@ -2,8 +2,7 @@
 set -euo pipefail
 
 # Installs required tooling for strict pre-commit gate
-# Tools: gofumpt, goimports, golangci-lint, gosec, govulncheck, gitleaks
-
+# Tools: gofumpt, goimports, golangci-lint, gosec, govulncheck, gitleaks, ruleguard
 need() { command -v "$1" >/dev/null 2>&1 || return 0; return 1; }
 
 GO_BIN_DIR="$(go env GOPATH 2>/dev/null)/bin"
@@ -56,17 +55,32 @@ else
   echo "gitleaks already installed"
 fi
 
-# golangci-lint
+# golangci-lint (install latest official binary with ruleguard bundled)
+GCL_BIN="$(go env GOPATH 2>/dev/null)/bin/golangci-lint"
+install_golangci_official() {
+  local dest_bin
+  dest_bin="$(go env GOPATH 2>/dev/null)/bin"
+  echo "Installing golangci-lint (latest) via official installer..."
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$dest_bin"
+}
+
 if ! command -v golangci-lint >/dev/null 2>&1; then
-  if command -v brew >/dev/null 2>&1; then
-    echo "Installing golangci-lint via Homebrew..."
-    brew install golangci-lint
-  else
-    echo "golangci-lint not found; please install it manually: https://golangci-lint.run/usage/install/"
-    exit 1
-  fi
+  install_golangci_official
 else
-  echo "golangci-lint already installed"
+  # Verify ruleguard is available in the current binary; reinstall if missing
+  if ! golangci-lint help linters 2>/dev/null | grep -q "ruleguard"; then
+    install_golangci_official
+  else
+    echo "golangci-lint already installed with ruleguard"
+  fi
+fi
+
+# ruleguard
+if ! command -v ruleguard >/dev/null 2>&1; then
+  echo "Installing ruleguard via 'go install'..."
+  GO111MODULE=on go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
+else
+  echo "ruleguard already installed"
 fi
 
 # PATH hint

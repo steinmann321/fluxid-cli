@@ -21,7 +21,10 @@ func TestM01E02ConfigureLoopCounts(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "5", "--fluxid-implement-retries", "2")
+	output := runFluxidWithClaude(t, root,
+		"--fluxid-iterations", "5",
+		"--fluxid-implement-retries", "2",
+		"--fluxid-no-commit")
 
 	// Verify initialization displays overrides
 	if !strings.Contains(output, "Max Review Cycles: 5") {
@@ -184,7 +187,7 @@ func TestM01E02DefaultsAppliedWhenFlagsOmitted(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root)
+	output := runFluxidWithClaude(t, root, "--fluxid-no-commit")
 
 	// Verify defaults are shown
 	if !strings.Contains(output, "Max Review Cycles: 20") {
@@ -205,7 +208,7 @@ func TestM01E02PartialOverride(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "7")
+	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "7", "--fluxid-no-commit")
 
 	// Verify custom iteration count
 	if !strings.Contains(output, "Max Review Cycles: 7") {
@@ -227,7 +230,10 @@ func TestM01E02SuccessfulCompletion(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "5", "--fluxid-implement-retries", "2")
+	output := runFluxidWithClaude(t, root,
+		"--fluxid-iterations", "5",
+		"--fluxid-implement-retries", "2",
+		"--fluxid-no-commit")
 
 	// Verify completion summary
 	if !strings.Contains(output, "=== Workflow Completion Summary ===") {

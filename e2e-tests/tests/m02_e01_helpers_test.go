@@ -10,6 +10,18 @@ import (
 	"testing"
 )
 
+// Common test configuration constants.
+const (
+	basicHomeConfig = `iterations: 10
+implement_retries: 5
+`
+	fullHomeConfig = `agent: claude
+implement_retries: 5
+iterations: 10
+commit_enabled: false
+`
+)
+
 // createHomeConfigDir creates a ~/.fluxid directory in the given home directory.
 func createHomeConfigDir(t *testing.T, homeDir string) string {
 	t.Helper()
@@ -133,4 +145,95 @@ func runFluxidInDir(t *testing.T, root, homeDir, workDir string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
 	}
+}
+
+// runFluxidInDirWithOutput runs fluxid in a specific working directory and returns output.
+func runFluxidInDirWithOutput(t *testing.T, root, homeDir, workDir string) string {
+	t.Helper()
+
+	binPath := filepath.Join(root, "bin", "fluxid")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd.Dir = workDir
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("HOME=%s", homeDir),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+	)
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
+	}
+
+	return stdout.String()
+}
+
+// createProjectWithConfig creates a temporary project dir with .fluxid/config.yaml content.
+func createProjectWithConfig(t *testing.T, content string) string {
+	t.Helper()
+	dir := t.TempDir()
+	fluxidDir := filepath.Join(dir, ".fluxid")
+	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create project .fluxid dir: %v", err)
+	}
+	cfgPath := filepath.Join(fluxidDir, "config.yaml")
+	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("Failed to write project config: %v", err)
+	}
+	return dir
+}
+
+// runFluxidInDirWithArgs runs fluxid in a specific working directory with additional arguments.
+func runFluxidInDirWithArgs(t *testing.T, root, homeDir, workDir string, args ...string) string {
+	t.Helper()
+
+	binPath := filepath.Join(root, "bin", "fluxid")
+	cmdArgs := append([]string{"--claude"}, args...)
+	cmd := exec.CommandContext(t.Context(), binPath, cmdArgs...)
+	cmd.Dir = workDir
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("HOME=%s", homeDir),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+	)
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
+	}
+
+	return stdout.String()
+}
+
+// runFluxidInDirExpectError runs fluxid in a directory expecting it to fail.
+func runFluxidInDirExpectError(t *testing.T, root, homeDir, workDir string) (string, int) {
+	t.Helper()
+
+	binPath := filepath.Join(root, "bin", "fluxid")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd.Dir = workDir
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("HOME=%s", homeDir),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+	)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err == nil {
+		t.Fatal("Expected fluxid to fail, but it succeeded")
+	}
+
+	var exitCode int
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		exitCode = exitErr.ExitCode()
+	}
+
+	return stderr.String(), exitCode
 }

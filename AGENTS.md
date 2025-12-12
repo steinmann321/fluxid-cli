@@ -39,3 +39,9 @@ This is a reimplementation project: the final system must be a pure Go implement
 - Command-line first, scriptable always
 - Fail fast with clear diagnostics
 - Stateless commands, stateful sessions
+
+## Hooks Policy
+- The pre-commit hook configuration is strictly read-only regarding repository contents. It must never write, modify, or stage files outside of formatting already present in staged files.
+- It is never permitted under any circumstances to loosen, weaken, bypass, or disable the pre-commit checks. NEVER EVER.
+- Any change that reduces the strictness of validation gates (formatting, linting, security, coverage) is forbidden.
+- Agents working in this repository must uphold this policy and refuse changes that relax pre-commit enforcement.

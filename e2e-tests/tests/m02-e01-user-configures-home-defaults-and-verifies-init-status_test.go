@@ -69,8 +69,8 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 		t.Errorf("Expected Max Implement Retries: 3 (source: default), got:\n%s", output)
 	}
 
-	if !strings.Contains(output, "Commit Enabled: true (source: default)") {
-		t.Errorf("Expected Commit Enabled: true (source: default), got:\n%s", output)
+	if !strings.Contains(output, "Commit Enabled: false (source: default)") {
+		t.Errorf("Expected Commit Enabled: false (source: default), got:\n%s", output)
 	}
 }
 
@@ -101,8 +101,8 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 		t.Errorf("Expected Max Implement Retries: 3 (source: default), got:\n%s", output)
 	}
 
-	if !strings.Contains(output, "Commit Enabled: true (source: default)") {
-		t.Errorf("Expected Commit Enabled: true (source: default), got:\n%s", output)
+	if !strings.Contains(output, "Commit Enabled: false (source: default)") {
+		t.Errorf("Expected Commit Enabled: false (source: default), got:\n%s", output)
 	}
 }
 
@@ -163,10 +163,7 @@ func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	configContent := `iterations: 10
-implement_retries: 5
-`
-	tmpHome := setupHomeWithConfig(t, configContent)
+	tmpHome := setupHomeWithConfig(t, basicHomeConfig)
 	output := runFluxidWithHomeAndArgs(t, root, tmpHome,
 		"--fluxid-iterations", "25",
 		"--fluxid-implement-retries", "7")

@@ -142,13 +142,8 @@ func TestM01E04FailureInDifferentPhases(t *testing.T) {
 			expectedExitCode: 5,
 		},
 		{
-			name:             "FailInCommitPhase",
-			failOnInvoke:     2, // Second invocation (commit)
-			expectedExitCode: 7,
-		},
-		{
 			name:             "FailInReviewPhase",
-			failOnInvoke:     3, // Third invocation (review)
+			failOnInvoke:     2, // Second invocation (review)
 			expectedExitCode: 9,
 		},
 	}

@@ -1,5 +1,5 @@
 project: fluxid-loop
-last_updated: "2025-12-10"
+last_updated: "2025-12-12"
 milestones:
   - id: m01
     artifact: "m01-basic-wrapper-loop"
@@ -19,39 +19,39 @@ milestones:
         status: done
   - id: m02
     artifact: "m02-hierarchical-configuration"
-    status: in_progress
+    status: done
     epics:
       - id: m02-e01
         artifact: "m02-e01-user-configures-home-defaults-and-verifies-init-status"
-        status: implement
+        status: done
       - id: m02-e02
         artifact: "m02-e02-user-applies-project-overrides-and-sees-precedence-in-status"
-        status: pending
+        status: done
       - id: m02-e03
         artifact: "m02-e03-user-provides-command-files-and-system-resolves-paths"
-        status: pending
+        status: done
       - id: m02-e04
         artifact: "m02-e04-user-overrides-via-env-and-cli-flags"
-        status: pending
+        status: done
       - id: m02-e05
         artifact: "m02-e05-user-sees-initialization-status-with-resolved-sources"
-        status: pending
+        status: done
       - id: m02-e06
         artifact: "m02-e06-user-disables-commit-phase-with-cli-flag"
-        status: pending
+        status: done
   - id: m03
     artifact: "m03-ipc-reports-loop-control"
-    status: pending
+    status: in_progress
     epics:
       - id: m03-e01
         artifact: "m03-e01-user-retrieves-report-schema"
-        status: pending
+        status: done
       - id: m03-e02
         artifact: "m03-e02-user-writes-valid-report-and-verifies"
-        status: pending
+        status: done
       - id: m03-e03
         artifact: "m03-e03-user-submits-invalid-report-and-receives-diagnostics"
-        status: pending
+        status: implement
       - id: m03-e04
         artifact: "m03-e04-user-controls-loop-progression-via-pass-fail"
         status: pending
