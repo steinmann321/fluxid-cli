@@ -183,15 +183,18 @@ func runPhase(phase string, config Config) error {
 
 func buildClaudeCommand(phase string, config Config) *exec.Cmd {
 	// Build Claude command with default prompts
-	// For now, this is a placeholder - real implementation would use actual Claude binary
+	// Claude CLI expects positional argument for prompt, not --prompt flag
 
 	args := []string{
-		// Add phase-specific prompt
-		"--prompt", getDefaultPrompt(phase),
+		// Use --print flag for non-interactive execution
+		"--print",
 	}
 
-	// Append user-provided Claude args
+	// Append user-provided Claude args (before prompt)
 	args = append(args, config.ClaudeArgs...)
+
+	// Add phase-specific prompt as positional argument (must be last)
+	args = append(args, getDefaultPrompt(phase))
 
 	return exec.Command("claude", args...)
 }

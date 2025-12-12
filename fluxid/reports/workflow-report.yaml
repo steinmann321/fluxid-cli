@@ -1,6 +1,6 @@
 command: fluxid.implement-cli
 artifact: m01-e01-user-runs-workflow-to-completion
-timestamp: 2025-12-12T12:15:00Z
+timestamp: 2025-12-12T12:30:00Z
 status: PASS
 
 issues:
@@ -15,39 +15,33 @@ issues:
       suggestion: "Future enhancement: Parse review reports to determine intelligent early completion based on PASS/FAIL status"
 
     - message: "Limited error handling for Claude process failures beyond basic error propagation"
-      location: "main.go:169-171"
+      location: "main.go:175-177"
       code: "ERROR-HANDLING-002"
-      suggestion: "Add specific error messages for different failure modes (timeout, permission denied, binary format errors)"
-
-    - message: "No timeout configuration for long-running Claude phases"
-      code: "CONFIG-001"
-      suggestion: "Add --timeout flag or config option to prevent infinite hangs if Claude process stalls"
+      suggestion: "Add specific error messages for different failure modes (timeout, permission denied, binary format errors, invalid arguments)"
 
   observations:
     - message: "Build completed successfully with no errors or warnings"
-    - message: "All 5 tests PASS with real execution path: TestM01E01UserRunsWorkflowToCompletion (8.10s), TestM01E01SessionIDUniqueness (36.27s), TestM01E01ClaudeArgsPassthrough (7.27s), TestM01E01WithoutClaudeFlag (0.01s), TestM01E01NestedLoopCounts (7.29s)"
-    - message: "Total test runtime increased from ~3s to ~60s due to real process execution (20 cycles × 3 phases × 0.1s delay)"
-    - message: "Claude CLI execution now real - removed stub at main.go:174-176, enabled exec.Command().Run() at main.go:169-171"
-    - message: "Claude binary validation added - exec.LookPath check at main.go:54 prevents workflow start if Claude not on PATH"
-    - message: "Early completion logic fixed - removed hardcoded 'exit after 1 cycle' stub, workflow now runs until max cycles (20) reached"
-    - message: "Test stub Claude binary created at bin/claude for automated testing - simulates real Claude behavior (echoes session ID and args, exits 0)"
-    - message: "Session ID propagation verified - FLUXID_SESSION_ID env var correctly passed to child Claude processes"
-    - message: "Argument passthrough still working correctly from previous session fix (ARGS-001)"
-    - message: "All epic M01-E01 success criteria met and validated by tests"
+    - message: "All tests pass (5/5 PASS) with stub Claude using correct CLI syntax"
+    - message: "Fixed buildClaudeCommand to use positional argument for prompt instead of --prompt flag"
+    - message: "Added --print flag for non-interactive Claude CLI execution"
+    - message: "Test execution time: ~58 seconds for full test suite"
+    - message: "Session ID generation and propagation logic working correctly (UUID v4 format, FLUXID_SESSION_ID env var)"
+    - message: "Nested loop orchestration validated: 20 review cycles max, 3 implement retries max"
+    - message: "Claude arguments passthrough working correctly with updated stub"
 
   enhancements:
-    - message: "Consider adding progress indicator for long-running workflows"
-      suggestion: "Add visual feedback showing current cycle/phase progress (e.g., spinner, progress bar, or percentage complete)"
-    - message: "Consider adding verbose/debug mode for troubleshooting"
-      suggestion: "Add --verbose flag to show Claude command construction, env vars, and detailed phase execution logs"
-    - message: "Consider adding dry-run mode to preview workflow without executing"
-      suggestion: "Add --dry-run flag to display what would be executed without invoking Claude"
+    - message: "Consider adding timeout configuration for Claude invocations"
+      suggestion: "Add --max-budget-usd or timeout configuration to prevent runaway processes"
+    - message: "Consider adding --system-prompt for phase-specific instructions"
+      suggestion: "Explore using --system-prompt flag to provide richer context about implement/commit/review phases"
+    - message: "Add integration test that captures and validates Claude CLI invocation structure"
+      suggestion: "Mock exec.Command or use command capture to verify args without execution for faster tests"
 
 next_steps:
-  - "Implement report-based early completion logic (parse review reports to determine workflow continuation)"
-  - "Add timeout configuration for Claude phases (--timeout flag or config option)"
-  - "Enhance error handling with specific messages for different failure modes"
-  - "Add integration tests with mocked Claude responses to validate error handling paths"
-  - "Consider adding verbose/debug mode for production troubleshooting"
+  - "Test with real Claude CLI binary on PATH to validate production readiness"
+  - "Implement report-based early completion logic (parse review reports for PASS/FAIL)"
+  - "Add enhanced error handling for different Claude CLI failure modes"
+  - "Consider adding configuration layer for timeouts and retry limits"
+  - "Add integration tests that validate exact command structure without execution"
 
-summary: "Implementation PASSED. All 3 critical blockers from previous review resolved: (1) STUB-001: Real Claude CLI execution enabled via exec.Command().Run() at main.go:169-171, (2) VALIDATION-001: Claude binary validation added with exec.LookPath check at main.go:54, (3) LOGIC-001: Fixed early completion logic that was exiting after 1 cycle. Build succeeds, all 5 tests pass with real execution path validating full 20-cycle workflow. Manual verification confirms correct behavior: workflow executes all review cycles, each cycle runs implement→commit→review phases, session ID propagates correctly, arguments pass through. Epic M01-E01 success criteria fully met and production-ready. Remaining items are enhancements for future milestones (report-based completion, timeout config, enhanced error handling)."
+summary: "Implementation PASSES all success criteria. All 5 tests pass (57.8s). Fixed critical blocker: replaced invalid --prompt flag with correct positional argument syntax per Claude CLI API. Added --print flag for non-interactive execution. Workflow now correctly invokes Claude CLI with: 'claude --print [user-args] <prompt>'. Build succeeds cleanly. Session ID generation, propagation, and nested loop orchestration all working correctly. Ready for production validation with real Claude CLI."
