@@ -1,9 +1,10 @@
 .PHONY: build clean run test tools
 
-# Build hello-world binary into bin/
+# Build hello-world binary and fluxid CLI into bin/
 build:
 	mkdir -p bin
 	go build -o bin/hello ./src
+	go build -o bin/fluxid ./cmd/fluxid
 
 # Install required developer tools for hooks
 tools:
