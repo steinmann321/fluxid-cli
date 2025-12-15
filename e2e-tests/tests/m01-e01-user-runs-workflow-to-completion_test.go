@@ -120,9 +120,9 @@ func TestM01E01WithoutClaudeFlag(t *testing.T) {
 		t.Errorf("Expected default agent 'claude' to be used, got: %s", output)
 	}
 
-	// Verify source is default
-	if !strings.Contains(output, "source: default") {
-		t.Errorf("Expected source to be 'default', got: %s", output)
+	// Verify source is default or home (depending on whether ~/.fluxid/config.yaml exists)
+	if !strings.Contains(output, "source: default") && !strings.Contains(output, "source: home") {
+		t.Errorf("Expected source to be 'default' or 'home', got: %s", output)
 	}
 
 	// Verify workflow completes successfully
