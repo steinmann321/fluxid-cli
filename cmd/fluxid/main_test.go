@@ -82,9 +82,9 @@ func TestBuildClaudeCommand(t *testing.T) {
 		{
 			name: "basic claude command",
 			config: Config{
-				Agent:      "claude",
-				ClaudeArgs: []string{},
-				SessionID:  "test-session-123",
+				Agent:     "claude",
+				AgentArgs: []string{},
+				SessionID: "test-session-123",
 			},
 			prompt:   "Test prompt",
 			wantArgs: []string{"--print", "Test prompt"},
@@ -92,9 +92,9 @@ func TestBuildClaudeCommand(t *testing.T) {
 		{
 			name: "claude with custom args",
 			config: Config{
-				Agent:      "claude",
-				ClaudeArgs: []string{"--model", "gpt-4", "--temp", "0.7"},
-				SessionID:  "session-456",
+				Agent:     "claude",
+				AgentArgs: []string{"--model", "gpt-4", "--temp", "0.7"},
+				SessionID: "session-456",
 			},
 			prompt:   "Another prompt",
 			wantArgs: []string{"--print", "--model", "gpt-4", "--temp", "0.7", "Another prompt"},
@@ -178,18 +178,10 @@ func TestRunWithMissingRetriesValue(t *testing.T) {
 }
 
 func TestRunWithValidArguments(t *testing.T) {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--fluxid-iterations", "10", "--fluxid-implement-retries", "5"}
-	// This will fail because there's no workflow file, but it tests argument parsing
-	exitCode := run()
-	// We expect this to fail since there's no workflow file in test environment
-	// but the fact that it gets past argument parsing is what we're testing
-	if exitCode == 0 {
-		t.Log("Unexpectedly succeeded - test environment may have workflow files")
-	}
-	// Any non-zero exit is acceptable here since we're just testing arg parsing
+	// This test has been replaced by more focused E2E tests.
+	// The original test would run the full workflow which takes too long for unit tests.
+	// Argument validation is now tested in TestParseArgs* functions in args_test.go
+	t.Skip("Replaced by E2E tests and args_test.go unit tests")
 }
 
 func TestRunWithClaudeFlag(t *testing.T) {
@@ -237,7 +229,7 @@ func TestRunWithInvalidRetriesNotANumber(t *testing.T) {
 	}
 }
 
-func TestRunWithMultipleClaudeArgs(t *testing.T) {
+func TestRunWithMultipleAgentArgs(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
@@ -295,10 +287,17 @@ func TestRunWithNoCommitFlag(t *testing.T) {
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"fluxid", "--claude", "--fluxid-no-commit"}
-	exitCode := run()
-	// Will fail due to no workflow
-	if exitCode == 0 {
-		t.Log("Unexpectedly succeeded")
+
+	// Parse args to verify --fluxid-no-commit is accepted
+	args, err := parseArgs()
+	if err != nil {
+		t.Fatalf("parseArgs failed: %v", err)
+	}
+
+	if args.cliCommitEnabled == nil {
+		t.Error("Expected cliCommitEnabled to be set")
+	} else if *args.cliCommitEnabled != false {
+		t.Error("Expected cliCommitEnabled to be false when --fluxid-no-commit is set")
 	}
 }
 
@@ -316,85 +315,77 @@ func TestRunWithClaudeNotFound(t *testing.T) {
 	}
 }
 
-func TestParseArgsWithNoClaudeFlag(t *testing.T) {
+func TestRunWithHelpFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-iterations", "20"}
-	_, err := parseArgs()
-
-	if err == nil {
-		t.Error("Expected error for missing --claude flag")
+	// Test --help flag
+	os.Args = []string{"fluxid", "--help"}
+	exitCode := run()
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 for --help, got %d", exitCode)
 	}
 
-	if err.Error() != "missing required --claude flag" {
-		t.Errorf("Unexpected error message: %v", err)
+	// Test -h flag
+	os.Args = []string{"fluxid", "-h"}
+	exitCode = run()
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 for -h, got %d", exitCode)
 	}
 }
 
-func TestParseArgsWithClaudeOnly(t *testing.T) {
+func TestSetupSignalHandler(t *testing.T) {
+	// Test that setupSignalHandler sets up the signal handler
+	// We can't easily test the full signal flow, but we can verify it doesn't panic
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", tmpDir)
+
+	sessionID := "test-signal-session"
+
+	// Reset signal count for this test
+	signalCount.Store(0)
+
+	// This should not panic
+	setupSignalHandler(sessionID)
+
+	// The handler is running in a goroutine, so we can't easily test it
+	// without sending actual signals. This test primarily checks for setup issues.
+}
+
+func TestRunWithInvalidConfigDir(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
+
+	// Set HOME to a path that will cause config loading issues
+	t.Setenv("HOME", "/dev/null/invalid/path/that/does/not/exist")
+	t.Setenv("XDG_CONFIG_HOME", "/dev/null/invalid/config")
 
 	os.Args = []string{"fluxid", "--claude"}
-	args, err := parseArgs()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
+	exitCode := run()
 
-	if args.cliIterations != nil {
-		t.Errorf("Expected cliIterations=nil, got %v", args.cliIterations)
-	}
-
-	if args.cliImplementRetries != nil {
-		t.Errorf("Expected cliImplementRetries=nil, got %v", args.cliImplementRetries)
-	}
-
-	if args.cliCommitEnabled != nil {
-		t.Errorf("Expected cliCommitEnabled=nil, got %v", args.cliCommitEnabled)
-	}
-
-	if len(args.claudeArgs) != 0 {
-		t.Errorf("Expected empty claudeArgs, got %v", args.claudeArgs)
+	// Should handle config error gracefully
+	if exitCode == 0 {
+		t.Error("Expected non-zero exit code when config loading fails")
 	}
 }
 
-func TestParseArgsWithAllFlags(t *testing.T) {
+func TestRunWithNonExecutableAgent(t *testing.T) {
 	oldArgs := os.Args
+	tmpDir := t.TempDir()
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{
-		"fluxid", "--claude", "--model", "gpt-4",
-		"--fluxid-iterations", "25",
-		"--fluxid-implement-retries", "8",
-		"--fluxid-no-commit",
-	}
-	args, err := parseArgs()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+	// Create a non-executable file
+	nonExecPath := tmpDir + "/nonexec"
+	if err := os.WriteFile(nonExecPath, []byte("#!/bin/sh\necho test"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	if args.cliIterations == nil || *args.cliIterations != 25 {
-		t.Errorf("Expected cliIterations=25, got %v", args.cliIterations)
-	}
+	// Add to PATH
+	t.Setenv("PATH", tmpDir)
+	os.Args = []string{"fluxid", "--agent", "nonexec"}
 
-	if args.cliImplementRetries == nil || *args.cliImplementRetries != 8 {
-		t.Errorf("Expected cliImplementRetries=8, got %v", args.cliImplementRetries)
-	}
-
-	if args.cliCommitEnabled == nil || *args.cliCommitEnabled != false {
-		t.Errorf("Expected cliCommitEnabled=false, got %v", args.cliCommitEnabled)
-	}
-
-	if len(args.claudeArgs) != 2 || args.claudeArgs[0] != "--model" || args.claudeArgs[1] != "gpt-4" {
-		t.Errorf("Expected claudeArgs=[--model, gpt-4], got %v", args.claudeArgs)
-	}
-}
-
-func TestOsEnvGetenvNonexistent(t *testing.T) {
-	env := osEnv{}
-	got := env.Getenv("NONEXISTENT_FLUXID_TEST_VAR_12345")
-	if got != "" {
-		t.Errorf("Expected empty string for nonexistent var, got %v", got)
+	exitCode := run()
+	if exitCode != 1 {
+		t.Errorf("Expected exit code 1 for non-executable agent, got %d", exitCode)
 	}
 }

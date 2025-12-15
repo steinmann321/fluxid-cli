@@ -35,21 +35,13 @@ commit_enabled: false
 	})
 
 	// Verify environment variables override project and home
-	if !strings.Contains(output, "Agent: codex (source: env)") {
-		t.Errorf("Expected Agent: codex (source: env), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: codex", "source: env")
 
-	if !strings.Contains(output, "Max Review Cycles: 25 (source: env)") {
-		t.Errorf("Expected Max Review Cycles: 25 (source: env), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 25", "source: env")
 
-	if !strings.Contains(output, "Max Implement Retries: 9 (source: env)") {
-		t.Errorf("Expected Max Implement Retries: 9 (source: env), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Implement Retries: 9", "source: env")
 
-	if !strings.Contains(output, "Commit Enabled: false (source: env)") {
-		t.Errorf("Expected Commit Enabled: false (source: env), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: env")
 }
 
 // TestM02E04CLIOverridesEnvProjectAndHome validates that CLI flags override
@@ -81,13 +73,9 @@ implement_retries: 7
 	)
 
 	// Verify CLI flags override everything
-	if !strings.Contains(output, "Max Review Cycles: 30 (source: cli)") {
-		t.Errorf("Expected Max Review Cycles: 30 (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 30", "source: cli")
 
-	if !strings.Contains(output, "Max Implement Retries: 12 (source: cli)") {
-		t.Errorf("Expected Max Implement Retries: 12 (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Implement Retries: 12", "source: cli")
 }
 
 // TestM02E04NoCommitFlag validates that --fluxid-no-commit sets commit_enabled=false.
@@ -110,9 +98,7 @@ func TestM02E04NoCommitFlag(t *testing.T) {
 	)
 
 	// Verify --fluxid-no-commit sets commit_enabled=false
-	if !strings.Contains(output, "Commit Enabled: false (source: cli)") {
-		t.Errorf("Expected Commit Enabled: false (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: cli")
 }
 
 // TestM02E04NoCommitFlagOverridesEnvAndConfig validates --fluxid-no-commit
@@ -139,9 +125,7 @@ func TestM02E04NoCommitFlagOverridesEnvAndConfig(t *testing.T) {
 	)
 
 	// Verify CLI flag overrides env var
-	if !strings.Contains(output, "Commit Enabled: false (source: cli)") {
-		t.Errorf("Expected Commit Enabled: false (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: cli")
 }
 
 // TestM02E04InvalidEnvIterations validates that invalid FLUXID_ITERATIONS
@@ -269,7 +253,7 @@ func TestM02E04FullPrecedenceChain(t *testing.T) {
 	createStubClaude(t, root)
 
 	// Create home config
-	homeConfigContent := `agent: home-agent
+	homeConfigContent := `agent: codex
 iterations: 10
 implement_retries: 3
 commit_enabled: false
@@ -277,7 +261,7 @@ commit_enabled: false
 	tmpHome := setupHomeWithConfig(t, homeConfigContent)
 
 	// Create project config that overrides some home values
-	projectConfigContent := `agent: project-agent
+	projectConfigContent := `agent: opencode
 iterations: 20
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
@@ -291,24 +275,16 @@ iterations: 20
 	)
 
 	// Verify precedence chain:
-	// - Agent: project overrides home
+	// - Agent: project (opencode) overrides home (codex)
 	// - Iterations: CLI overrides env, which would override project
 	// - ImplementRetries: home (not overridden)
 	// - CommitEnabled: home (not overridden)
 
-	if !strings.Contains(output, "Agent: project-agent (source: project)") {
-		t.Errorf("Expected Agent from project, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: opencode", "source: project")
 
-	if !strings.Contains(output, "Max Review Cycles: 40 (source: cli)") {
-		t.Errorf("Expected iterations from CLI, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 40", "source: cli")
 
-	if !strings.Contains(output, "Max Implement Retries: 3 (source: home)") {
-		t.Errorf("Expected implement_retries from home, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Implement Retries: 3", "source: home")
 
-	if !strings.Contains(output, "Commit Enabled: false (source: home)") {
-		t.Errorf("Expected commit_enabled from home, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: home")
 }

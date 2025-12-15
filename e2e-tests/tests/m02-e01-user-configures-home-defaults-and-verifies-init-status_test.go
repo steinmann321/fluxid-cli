@@ -24,21 +24,10 @@ commit_enabled: false
 	output := runFluxidWithHome(t, root, tmpHome)
 
 	// Verify home config values are applied
-	if !strings.Contains(output, "Agent: claude (source: home)") {
-		t.Errorf("Expected Agent: claude (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Review Cycles: 10 (source: home)") {
-		t.Errorf("Expected Max Review Cycles: 10 (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 5 (source: home)") {
-		t.Errorf("Expected Max Implement Retries: 5 (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Commit Enabled: false (source: home)") {
-		t.Errorf("Expected Commit Enabled: false (source: home), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: claude", "source: home")
+	verifyConfigLine(t, output, "Max Review Cycles: 10", "source: home")
+	verifyConfigLine(t, output, "Max Implement Retries: 5", "source: home")
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: home")
 }
 
 // TestM02E01DefaultsWhenNoHomeConfig validates that defaults are used when
@@ -57,21 +46,10 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 	output := runFluxidWithHome(t, root, tmpHome)
 
 	// Verify defaults are applied with correct sources
-	if !strings.Contains(output, "Agent: claude (source: default)") {
-		t.Errorf("Expected Agent: claude (source: default), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Review Cycles: 20 (source: default)") {
-		t.Errorf("Expected Max Review Cycles: 20 (source: default), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 3 (source: default)") {
-		t.Errorf("Expected Max Implement Retries: 3 (source: default), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Commit Enabled: false (source: default)") {
-		t.Errorf("Expected Commit Enabled: false (source: default), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: claude", "source: default")
+	verifyConfigLine(t, output, "Max Review Cycles: 20", "source: default")
+	verifyConfigLine(t, output, "Max Implement Retries: 3", "source: default")
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: default")
 }
 
 // TestM02E01PartialHomeConfig validates that partial config files work correctly,
@@ -89,21 +67,10 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 	output := runFluxidWithHome(t, root, tmpHome)
 
 	// Verify partial override: iterations from home, others from defaults
-	if !strings.Contains(output, "Max Review Cycles: 15 (source: home)") {
-		t.Errorf("Expected Max Review Cycles: 15 (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Agent: claude (source: default)") {
-		t.Errorf("Expected Agent: claude (source: default), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 3 (source: default)") {
-		t.Errorf("Expected Max Implement Retries: 3 (source: default), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Commit Enabled: false (source: default)") {
-		t.Errorf("Expected Commit Enabled: false (source: default), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 15", "source: home")
+	verifyConfigLine(t, output, "Agent: claude", "source: default")
+	verifyConfigLine(t, output, "Max Implement Retries: 3", "source: default")
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: default")
 }
 
 // TestM02E01InvalidTypeInConfig validates that invalid types are rejected with
@@ -169,13 +136,8 @@ func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
 		"--fluxid-implement-retries", "7")
 
 	// Verify CLI overrides home config
-	if !strings.Contains(output, "Max Review Cycles: 25 (source: cli)") {
-		t.Errorf("Expected Max Review Cycles: 25 (source: cli), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 7 (source: cli)") {
-		t.Errorf("Expected Max Implement Retries: 7 (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 25", "source: cli")
+	verifyConfigLine(t, output, "Max Implement Retries: 7", "source: cli")
 }
 
 // TestM02E01InitializationStatusFormat validates that the initialization status

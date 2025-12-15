@@ -43,21 +43,13 @@ func TestM02E05AllConfigKeysDisplayed(t *testing.T) {
 	}
 
 	// Verify correct sources are displayed
-	if !strings.Contains(output, "Agent: claude (source: home)") {
-		t.Errorf("Agent source incorrect, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: claude", "source: home")
 
-	if !strings.Contains(output, "Max Review Cycles: 15 (source: project)") {
-		t.Errorf("Max Review Cycles source incorrect, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 15", "source: project")
 
-	if !strings.Contains(output, "Max Implement Retries: 7 (source: cli)") {
-		t.Errorf("Max Implement Retries source incorrect, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Implement Retries: 7", "source: cli")
 
-	if !strings.Contains(output, "Commit Enabled: false (source: home)") {
-		t.Errorf("Commit Enabled source incorrect, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: home")
 }
 
 // TestM02E05CommandFilePathsDisplayed validates that command file paths
@@ -99,11 +91,7 @@ func TestM02E05CommandFilePathsDisplayed(t *testing.T) {
 	}
 
 	// Create config pointing to command files
-	projectConfigContent := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	projectConfigContent := standardCommandFilesConfig
 	configPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(projectConfigContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
@@ -287,21 +275,13 @@ iterations: 10
 		"--fluxid-implement-retries", "8")
 
 	// Verify each source is correctly attributed
-	if !strings.Contains(output, "Agent: claude (source: home)") {
-		t.Errorf("Agent source should be home, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: claude", "source: home")
 
-	if !strings.Contains(output, "Max Review Cycles: 25 (source: project)") {
-		t.Errorf("Max Review Cycles source should be project, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 25", "source: project")
 
-	if !strings.Contains(output, "Max Implement Retries: 8 (source: cli)") {
-		t.Errorf("Max Implement Retries source should be cli, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Implement Retries: 8", "source: cli")
 
-	if !strings.Contains(output, "Commit Enabled: false (source: default)") {
-		t.Errorf("Commit Enabled source should be default, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: default")
 }
 
 // TestM02E05EnvOverridesInStatus validates that environment variable
@@ -324,18 +304,12 @@ func TestM02E05EnvOverridesInStatus(t *testing.T) {
 	output := runFluxidInDirWithEnv(t, root, tmpHome, tmpProjectDir, envVars)
 
 	// Verify env overrides are shown
-	if !strings.Contains(output, "Max Review Cycles: 30 (source: env)") {
-		t.Errorf("Expected iterations from env, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 30", "source: env")
 
-	if !strings.Contains(output, "Commit Enabled: false (source: env)") {
-		t.Errorf("Expected commit_enabled from env, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: env")
 
 	// Verify home value for non-overridden key
-	if !strings.Contains(output, "Max Implement Retries: 5 (source: home)") {
-		t.Errorf("Expected implement_retries from home, got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Implement Retries: 5", "source: home")
 }
 
 // TestM02E05SessionIDFormat validates that Session ID is displayed

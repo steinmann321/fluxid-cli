@@ -28,22 +28,12 @@ iterations: 15
 	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
 
 	// Verify project values override home values
-	if !strings.Contains(output, "Agent: opencode (source: project)") {
-		t.Errorf("Expected Agent: opencode (source: project), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 7 (source: project)") {
-		t.Errorf("Expected Max Implement Retries: 7 (source: project), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Review Cycles: 15 (source: project)") {
-		t.Errorf("Expected Max Review Cycles: 15 (source: project), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: opencode", "source: project")
+	verifyConfigLine(t, output, "Max Implement Retries: 7", "source: project")
+	verifyConfigLine(t, output, "Max Review Cycles: 15", "source: project")
 
 	// Verify commit_enabled uses home value (not overridden in project)
-	if !strings.Contains(output, "Commit Enabled: false (source: home)") {
-		t.Errorf("Expected Commit Enabled: false (source: home), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: home")
 }
 
 // TestM02E02ProjectOnlyConfig validates that project config works when home config
@@ -78,22 +68,12 @@ commit_enabled: false
 	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
 
 	// Verify project values are used
-	if !strings.Contains(output, "Max Review Cycles: 12 (source: project)") {
-		t.Errorf("Expected Max Review Cycles: 12 (source: project), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Commit Enabled: false (source: project)") {
-		t.Errorf("Expected Commit Enabled: false (source: project), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 12", "source: project")
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: project")
 
 	// Verify defaults are used for non-overridden fields
-	if !strings.Contains(output, "Agent: claude (source: default)") {
-		t.Errorf("Expected Agent: claude (source: default), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 3 (source: default)") {
-		t.Errorf("Expected Max Implement Retries: 3 (source: default), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: claude", "source: default")
+	verifyConfigLine(t, output, "Max Implement Retries: 3", "source: default")
 }
 
 // TestM02E02NoProjectConfigOutsideProject validates that running fluxid outside
@@ -118,13 +98,8 @@ implement_retries: 4
 	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpWorkDir)
 
 	// Verify home values are used (no project overrides)
-	if !strings.Contains(output, "Max Review Cycles: 8 (source: home)") {
-		t.Errorf("Expected Max Review Cycles: 8 (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 4 (source: home)") {
-		t.Errorf("Expected Max Implement Retries: 4 (source: home), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 8", "source: home")
+	verifyConfigLine(t, output, "Max Implement Retries: 4", "source: home")
 
 	// No project source should appear
 	if strings.Contains(output, "source: project") {
@@ -151,22 +126,12 @@ func TestM02E02PartialProjectOverride(t *testing.T) {
 	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
 
 	// Verify project overrides iterations
-	if !strings.Contains(output, "Max Review Cycles: 25 (source: project)") {
-		t.Errorf("Expected Max Review Cycles: 25 (source: project), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 25", "source: project")
 
 	// Verify other fields use home config
-	if !strings.Contains(output, "Agent: claude (source: home)") {
-		t.Errorf("Expected Agent: claude (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 5 (source: home)") {
-		t.Errorf("Expected Max Implement Retries: 5 (source: home), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Commit Enabled: false (source: home)") {
-		t.Errorf("Expected Commit Enabled: false (source: home), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Agent: claude", "source: home")
+	verifyConfigLine(t, output, "Max Implement Retries: 5", "source: home")
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: home")
 }
 
 // TestM02E02CLIOverridesProjectAndHome validates that CLI flags take precedence
@@ -202,13 +167,8 @@ implement_retries: 7
 		"--fluxid-implement-retries", "9")
 
 	// Verify CLI overrides both project and home
-	if !strings.Contains(output, "Max Review Cycles: 30 (source: cli)") {
-		t.Errorf("Expected Max Review Cycles: 30 (source: cli), got:\n%s", output)
-	}
-
-	if !strings.Contains(output, "Max Implement Retries: 9 (source: cli)") {
-		t.Errorf("Expected Max Implement Retries: 9 (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Max Review Cycles: 30", "source: cli")
+	verifyConfigLine(t, output, "Max Implement Retries: 9", "source: cli")
 }
 
 // TestM02E02InvalidProjectConfig validates that invalid project config

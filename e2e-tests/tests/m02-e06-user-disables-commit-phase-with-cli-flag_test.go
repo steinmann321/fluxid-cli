@@ -29,9 +29,7 @@ func TestM02E06NoCommitFlagDisablesCommitPhase(t *testing.T) {
 	)
 
 	// Verify initialization shows commit disabled
-	if !strings.Contains(output, "Commit Enabled: false (source: cli)") {
-		t.Errorf("Expected Commit Enabled: false (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: cli")
 
 	// Verify commit phase never executed
 	if strings.Contains(output, "Running commit phase...") {
@@ -66,9 +64,7 @@ func TestM02E06CommitPhaseRunsWithoutFlag(t *testing.T) {
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir)
 
 	// Verify initialization shows commit enabled
-	if !strings.Contains(output, "Commit Enabled: true (source: home)") {
-		t.Errorf("Expected Commit Enabled: true (source: home), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: true", "source: home")
 
 	// Verify commit phase executes
 	if !strings.Contains(output, "Running commit phase...") {
@@ -100,9 +96,7 @@ func TestM02E06NoCommitFlagOverridesConfig(t *testing.T) {
 	)
 
 	// Verify CLI flag overrides config
-	if !strings.Contains(output, "Commit Enabled: false (source: cli)") {
-		t.Errorf("Expected Commit Enabled: false (source: cli), got:\n%s", output)
-	}
+	verifyConfigLine(t, output, "Commit Enabled: false", "source: cli")
 
 	// Verify commit phase skipped
 	if strings.Contains(output, "Running commit phase...") {

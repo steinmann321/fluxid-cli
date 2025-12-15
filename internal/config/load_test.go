@@ -33,7 +33,7 @@ func TestLoadHomeConfig(t *testing.T) {
 				}
 
 				config := HomeConfig{
-					Agent:            strPtr("test-agent"),
+					Agent:            strPtr("claude"),
 					Iterations:       intPtr(10),
 					ImplementRetries: intPtr(5),
 					CommitEnabled:    boolPtr(false),
@@ -45,7 +45,7 @@ func TestLoadHomeConfig(t *testing.T) {
 				}
 			},
 			wantConfig: &HomeConfig{
-				Agent:            strPtr("test-agent"),
+				Agent:            strPtr("claude"),
 				Iterations:       intPtr(10),
 				ImplementRetries: intPtr(5),
 				CommitEnabled:    boolPtr(false),
@@ -162,7 +162,7 @@ func TestLoadProjectConfig(t *testing.T) {
 				}
 
 				config := ProjectConfig{
-					Agent:            strPtr("project-agent"),
+					Agent:            strPtr("codex"),
 					Iterations:       intPtr(15),
 					ImplementRetries: intPtr(7),
 					CommitEnabled:    boolPtr(true),
@@ -174,7 +174,7 @@ func TestLoadProjectConfig(t *testing.T) {
 				}
 			},
 			wantConfig: &ProjectConfig{
-				Agent:            strPtr("project-agent"),
+				Agent:            strPtr("codex"),
 				Iterations:       intPtr(15),
 				ImplementRetries: intPtr(7),
 				CommitEnabled:    boolPtr(true),

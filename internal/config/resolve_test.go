@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -11,7 +12,7 @@ func TestResolveWithAllCLIOverrides(t *testing.T) {
 	retries := 10
 	commitEnabled := false
 
-	resolved := Resolve(nil, nil, nil, &iterations, &retries, &commitEnabled)
+	resolved := Resolve(nil, nil, nil, nil, &iterations, &retries, &commitEnabled)
 
 	if resolved.Iterations != 30 {
 		t.Errorf("Expected Iterations=30, got %d", resolved.Iterations)
@@ -66,7 +67,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 
 	cliIterations := 30
 
-	resolved := Resolve(project, home, env, &cliIterations, nil, nil)
+	resolved := Resolve(project, home, env, nil, &cliIterations, nil, nil)
 
 	if resolved.Agent != "home-agent" {
 		t.Errorf("Expected Agent=home-agent, got %s", resolved.Agent)
@@ -84,8 +85,8 @@ func TestResolveWithMixedSources(t *testing.T) {
 		t.Errorf("Expected CommitEnabled=false (from home), got false")
 	}
 
-	if resolved.Sources["agent"] != SourceHome {
-		t.Errorf("Expected agent source=home, got %s", resolved.Sources["agent"])
+	if !strings.HasPrefix(resolved.Sources["agent"], SourceHome) {
+		t.Errorf("Expected agent source=home (prefix), got %s", resolved.Sources["agent"])
 	}
 
 	if resolved.Sources["iterations"] != SourceCLI {
@@ -96,15 +97,15 @@ func TestResolveWithMixedSources(t *testing.T) {
 		t.Errorf("Expected implement_retries source=env, got %s", resolved.Sources["implement_retries"])
 	}
 
-	if resolved.Sources["commit_enabled"] != SourceHome {
-		t.Errorf("Expected commit_enabled source=home, got %s", resolved.Sources["commit_enabled"])
+	if !strings.HasPrefix(resolved.Sources["commit_enabled"], SourceHome) {
+		t.Errorf("Expected commit_enabled source=home (prefix), got %s", resolved.Sources["commit_enabled"])
 	}
 }
 
 func TestResolveDefaultValues(t *testing.T) {
 	t.Parallel()
 
-	resolved := Resolve(nil, nil, nil, nil, nil, nil)
+	resolved := Resolve(nil, nil, nil, nil, nil, nil, nil)
 
 	if resolved.Agent != "claude" {
 		t.Errorf("Expected Agent=claude (default), got %s", resolved.Agent)
@@ -151,17 +152,17 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 	}
 
 	project := &ProjectConfig{
-		Agent:            strPtr("project-agent"),
+		Agent:            strPtr("opencode"),
 		Iterations:       intPtr(15),
 		ImplementRetries: intPtr(7),
 		CommitEnabled:    boolPtr(false),
 		Commands:         nil,
 	}
 
-	resolved := Resolve(project, home, nil, nil, nil, nil)
+	resolved := Resolve(project, home, nil, nil, nil, nil, nil)
 
-	if resolved.Agent != "project-agent" {
-		t.Errorf("Expected Agent=project-agent, got %s", resolved.Agent)
+	if resolved.Agent != "opencode" {
+		t.Errorf("Expected Agent=opencode, got %s", resolved.Agent)
 	}
 
 	if resolved.Iterations != 15 {
@@ -183,8 +184,8 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 		"implement_retries": SourceProject,
 		"commit_enabled":    SourceProject,
 	} {
-		if resolved.Sources[key] != want {
-			t.Errorf("Expected %s source=%s, got %s", key, want, resolved.Sources[key])
+		if !strings.HasPrefix(resolved.Sources[key], want) {
+			t.Errorf("Expected %s source=%s (prefix), got %s", key, want, resolved.Sources[key])
 		}
 	}
 }
@@ -215,7 +216,7 @@ func TestResolveEnvOverridesProjectAndHome(t *testing.T) {
 		CommitEnabled:    boolPtr(false),
 	}
 
-	resolved := Resolve(project, home, env, nil, nil, nil)
+	resolved := Resolve(project, home, env, nil, nil, nil, nil)
 
 	if resolved.Iterations != 25 {
 		t.Errorf("Expected Iterations=25 (from env), got %d", resolved.Iterations)

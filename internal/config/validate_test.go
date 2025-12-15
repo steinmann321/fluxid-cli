@@ -2,6 +2,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -238,20 +239,20 @@ func TestResolve(t *testing.T) {
 		{
 			name: "CLI overrides all for iterations and retries",
 			projectConfig: &ProjectConfig{
-				Agent:            strPtr("project-agent"),
+				Agent:            strPtr("codex"),
 				Iterations:       intPtr(99),
 				ImplementRetries: intPtr(99),
 				CommitEnabled:    boolPtr(true),
 			},
 			homeConfig: &HomeConfig{
-				Agent:            strPtr("home-agent"),
+				Agent:            strPtr("claude"),
 				Iterations:       intPtr(88),
 				ImplementRetries: intPtr(88),
 				CommitEnabled:    boolPtr(false),
 			},
 			cliIterations:           intPtr(5),
 			cliImplementRetries:     intPtr(2),
-			wantAgent:               "project-agent", // CLI doesn't override agent yet
+			wantAgent:               "codex", // CLI doesn't override agent yet
 			wantIterations:          5,
 			wantImplementRetries:    2,
 			wantCommitEnabled:       true, // CLI doesn't override commit_enabled yet
@@ -288,7 +289,7 @@ func TestResolve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := Resolve(tt.projectConfig, tt.homeConfig, nil, tt.cliIterations, tt.cliImplementRetries, nil)
+			result := Resolve(tt.projectConfig, tt.homeConfig, nil, nil, tt.cliIterations, tt.cliImplementRetries, nil)
 
 			if result.Agent != tt.wantAgent {
 				t.Errorf("Agent = %v, want %v", result.Agent, tt.wantAgent)
@@ -303,18 +304,18 @@ func TestResolve(t *testing.T) {
 				t.Errorf("CommitEnabled = %v, want %v", result.CommitEnabled, tt.wantCommitEnabled)
 			}
 
-			// Check sources
-			if result.Sources["agent"] != tt.wantAgentSource {
-				t.Errorf("Agent source = %v, want %v", result.Sources["agent"], tt.wantAgentSource)
+			// Check sources (for home/project sources, check prefix since they include file paths)
+			if !strings.HasPrefix(result.Sources["agent"], tt.wantAgentSource) {
+				t.Errorf("Agent source = %v, want prefix %v", result.Sources["agent"], tt.wantAgentSource)
 			}
-			if result.Sources["iterations"] != tt.wantIterationsSource {
-				t.Errorf("Iterations source = %v, want %v", result.Sources["iterations"], tt.wantIterationsSource)
+			if !strings.HasPrefix(result.Sources["iterations"], tt.wantIterationsSource) {
+				t.Errorf("Iterations source = %v, want prefix %v", result.Sources["iterations"], tt.wantIterationsSource)
 			}
-			if result.Sources["implement_retries"] != tt.wantRetriesSource {
-				t.Errorf("ImplementRetries source = %v, want %v", result.Sources["implement_retries"], tt.wantRetriesSource)
+			if !strings.HasPrefix(result.Sources["implement_retries"], tt.wantRetriesSource) {
+				t.Errorf("ImplementRetries source = %v, want prefix %v", result.Sources["implement_retries"], tt.wantRetriesSource)
 			}
-			if result.Sources["commit_enabled"] != tt.wantCommitEnabledSource {
-				t.Errorf("CommitEnabled source = %v, want %v", result.Sources["commit_enabled"], tt.wantCommitEnabledSource)
+			if !strings.HasPrefix(result.Sources["commit_enabled"], tt.wantCommitEnabledSource) {
+				t.Errorf("CommitEnabled source = %v, want prefix %v", result.Sources["commit_enabled"], tt.wantCommitEnabledSource)
 			}
 		})
 	}

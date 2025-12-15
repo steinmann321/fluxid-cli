@@ -3,40 +3,16 @@ package tests
 
 import (
 	"bufio"
-	"errors"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func findProjectRoot(start string) (string, error) {
-	cur := start
-	for {
-		if _, err := os.Stat(filepath.Join(cur, "go.mod")); err == nil {
-			return cur, nil
-		}
-		parent := filepath.Dir(cur)
-		if parent == cur {
-			break
-		}
-		cur = parent
-	}
-	return "", errors.New("project root with go.mod not found")
-}
-
 // TestHelloWorldE2E builds and runs the hello binary and checks its output.
 func TestHelloWorldE2E(t *testing.T) {
 	t.Parallel()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd failed: %v", err)
-	}
-	root, err := findProjectRoot(wd)
-	if err != nil {
-		t.Fatalf("find project root failed: %v", err)
-	}
+	root := getProjectRoot(t)
 
 	// Ensure binary is built in project root
 	build := exec.CommandContext(t.Context(), "make", "build")

@@ -5,9 +5,9 @@ MAX_LINES=400
 status=0
 
 for file in "$@"; do
-  # Only enforce on cmd/**, internal/**, pkg/**, e2e-tests/**, and e2e-test/**
+  # Only enforce on cmd/**, internal/**, pkg/**, and e2e-tests/**
   case "$file" in
-    cmd/*|internal/*|pkg/*|e2e-tests/*|e2e-test/*) ;;
+    cmd/*|internal/*|pkg/*|e2e-tests/*) ;;
     *) continue ;;
   esac
 

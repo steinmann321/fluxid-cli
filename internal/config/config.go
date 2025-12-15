@@ -3,7 +3,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,6 +71,24 @@ const (
 	DefaultIterations       = 20
 	DefaultCommitEnabled    = false
 )
+
+// GetHomeConfigPath returns the path to the home config file.
+func GetHomeConfigPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+	return filepath.Join(homeDir, ".fluxid", "config.yaml"), nil
+}
+
+// GetProjectConfigPath returns the path to the project config file.
+func GetProjectConfigPath() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+	return filepath.Join(cwd, ".fluxid", "config.yaml"), nil
+}
 
 // LoadHomeConfig reads and parses ~/.fluxid/config.yaml if it exists.
 // Returns nil if the file doesn't exist (not an error).
@@ -142,76 +159,44 @@ func LoadProjectConfig() (*ProjectConfig, error) {
 	return &projectConfig, nil
 }
 
-// validateHomeConfig validates the home config values.
-func validateHomeConfig(cfg *HomeConfig) error {
-	if cfg.ImplementRetries != nil && *cfg.ImplementRetries < 1 {
-		return fmt.Errorf("implement_retries must be a positive integer (≥1), got: %d", *cfg.ImplementRetries)
-	}
-
-	if cfg.Iterations != nil && *cfg.Iterations < 1 {
-		return fmt.Errorf("iterations must be a positive integer (≥1), got: %d", *cfg.Iterations)
-	}
-
-	if cfg.Agent != nil && *cfg.Agent == "" {
-		return errors.New("agent cannot be empty")
-	}
-
-	// Validate commands structure if provided
-	if err := validateCommands(cfg.Commands); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateProjectConfig validates the project config values.
-func validateProjectConfig(cfg *ProjectConfig) error {
-	if cfg.ImplementRetries != nil && *cfg.ImplementRetries < 1 {
-		return fmt.Errorf("implement_retries must be a positive integer (≥1), got: %d", *cfg.ImplementRetries)
-	}
-
-	if cfg.Iterations != nil && *cfg.Iterations < 1 {
-		return fmt.Errorf("iterations must be a positive integer (≥1), got: %d", *cfg.Iterations)
-	}
-
-	if cfg.Agent != nil && *cfg.Agent == "" {
-		return errors.New("agent cannot be empty")
-	}
-
-	// Validate commands structure if provided
-	if err := validateCommands(cfg.Commands); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// validateCommands validates the commands configuration.
-// Either all three command files must be specified or none.
-func validateCommands(cmds *Commands) error {
-	if cmds == nil {
-		return nil
-	}
-
-	// Check if any command is specified
-	hasImplement := cmds.Implement != nil && *cmds.Implement != ""
-	hasReview := cmds.Review != nil && *cmds.Review != ""
-	hasCommit := cmds.Commit != nil && *cmds.Commit != ""
-
-	// If any command is specified, all must be specified
-	if hasImplement || hasReview || hasCommit {
-		if !hasImplement {
-			return errors.New("commands.implement is required when commands are specified")
+// resolveField resolves a configuration field with precedence: CLI > env > project > home > default.
+// For project and home sources, file paths are included in the source string.
+func resolveField[T any](
+	fieldName string,
+	cliValue *T,
+	envValue *T,
+	projectValue *T,
+	homeValue *T,
+	defaultValue T,
+	sources map[string]string,
+	projectConfigPath string,
+	homeConfigPath string,
+) T {
+	switch {
+	case cliValue != nil:
+		sources[fieldName] = SourceCLI
+		return *cliValue
+	case envValue != nil:
+		sources[fieldName] = SourceEnv
+		return *envValue
+	case projectValue != nil:
+		if projectConfigPath != "" {
+			sources[fieldName] = fmt.Sprintf("%s (%s)", SourceProject, projectConfigPath)
+		} else {
+			sources[fieldName] = SourceProject
 		}
-		if !hasReview {
-			return errors.New("commands.review is required when commands are specified")
+		return *projectValue
+	case homeValue != nil:
+		if homeConfigPath != "" {
+			sources[fieldName] = fmt.Sprintf("%s (%s)", SourceHome, homeConfigPath)
+		} else {
+			sources[fieldName] = SourceHome
 		}
-		if !hasCommit {
-			return errors.New("commands.commit is required when commands are specified")
-		}
+		return *homeValue
+	default:
+		sources[fieldName] = SourceDefault
+		return defaultValue
 	}
-
-	return nil
 }
 
 // Resolve merges project, home, env config with defaults and tracks sources.
@@ -221,6 +206,7 @@ func Resolve(
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
 	envConfig *EnvConfig,
+	cliAgent *string,
 	cliIterations, cliImplementRetries *int,
 	cliCommitEnabled *bool,
 ) *ResolvedConfig {
@@ -233,83 +219,84 @@ func Resolve(
 		Sources:          make(map[string]string),
 	}
 
-	// Agent
-	// Precedence: CLI > env > project > home > default
-	// Note: no CLI flag for agent yet
-	switch {
-	case envConfig != nil && envConfig.Agent != nil:
-		resolved.Agent = *envConfig.Agent
-		resolved.Sources["agent"] = SourceEnv
-	case projectConfig != nil && projectConfig.Agent != nil:
-		resolved.Agent = *projectConfig.Agent
-		resolved.Sources["agent"] = SourceProject
-	case homeConfig != nil && homeConfig.Agent != nil:
-		resolved.Agent = *homeConfig.Agent
-		resolved.Sources["agent"] = SourceHome
-	default:
-		resolved.Agent = DefaultAgent
-		resolved.Sources["agent"] = SourceDefault
+	// Get config file paths for display in source strings
+	var projectConfigPath, homeConfigPath string
+	if projectConfig != nil {
+		if path, err := GetProjectConfigPath(); err == nil {
+			projectConfigPath = path
+		}
+	}
+	if homeConfig != nil {
+		if path, err := GetHomeConfigPath(); err == nil {
+			homeConfigPath = path
+		}
 	}
 
-	// ImplementRetries
-	// Precedence: CLI > env > project > home > default
-	switch {
-	case cliImplementRetries != nil:
-		resolved.ImplementRetries = *cliImplementRetries
-		resolved.Sources["implement_retries"] = SourceCLI
-	case envConfig != nil && envConfig.ImplementRetries != nil:
-		resolved.ImplementRetries = *envConfig.ImplementRetries
-		resolved.Sources["implement_retries"] = SourceEnv
-	case projectConfig != nil && projectConfig.ImplementRetries != nil:
-		resolved.ImplementRetries = *projectConfig.ImplementRetries
-		resolved.Sources["implement_retries"] = SourceProject
-	case homeConfig != nil && homeConfig.ImplementRetries != nil:
-		resolved.ImplementRetries = *homeConfig.ImplementRetries
-		resolved.Sources["implement_retries"] = SourceHome
-	default:
-		resolved.ImplementRetries = DefaultImplementRetries
-		resolved.Sources["implement_retries"] = SourceDefault
+	// Extract config values or nil
+	var envAgent, projectAgent, homeAgent *string
+	if envConfig != nil {
+		envAgent = envConfig.Agent
+	}
+	if projectConfig != nil {
+		projectAgent = projectConfig.Agent
+	}
+	if homeConfig != nil {
+		homeAgent = homeConfig.Agent
 	}
 
-	// Iterations
-	// Precedence: CLI > env > project > home > default
-	switch {
-	case cliIterations != nil:
-		resolved.Iterations = *cliIterations
-		resolved.Sources["iterations"] = SourceCLI
-	case envConfig != nil && envConfig.Iterations != nil:
-		resolved.Iterations = *envConfig.Iterations
-		resolved.Sources["iterations"] = SourceEnv
-	case projectConfig != nil && projectConfig.Iterations != nil:
-		resolved.Iterations = *projectConfig.Iterations
-		resolved.Sources["iterations"] = SourceProject
-	case homeConfig != nil && homeConfig.Iterations != nil:
-		resolved.Iterations = *homeConfig.Iterations
-		resolved.Sources["iterations"] = SourceHome
-	default:
-		resolved.Iterations = DefaultIterations
-		resolved.Sources["iterations"] = SourceDefault
+	var envImplementRetries, projectImplementRetries, homeImplementRetries *int
+	if envConfig != nil {
+		envImplementRetries = envConfig.ImplementRetries
+	}
+	if projectConfig != nil {
+		projectImplementRetries = projectConfig.ImplementRetries
+	}
+	if homeConfig != nil {
+		homeImplementRetries = homeConfig.ImplementRetries
 	}
 
-	// CommitEnabled
-	// Precedence: CLI > env > project > home > default
-	switch {
-	case cliCommitEnabled != nil:
-		resolved.CommitEnabled = *cliCommitEnabled
-		resolved.Sources["commit_enabled"] = SourceCLI
-	case envConfig != nil && envConfig.CommitEnabled != nil:
-		resolved.CommitEnabled = *envConfig.CommitEnabled
-		resolved.Sources["commit_enabled"] = SourceEnv
-	case projectConfig != nil && projectConfig.CommitEnabled != nil:
-		resolved.CommitEnabled = *projectConfig.CommitEnabled
-		resolved.Sources["commit_enabled"] = SourceProject
-	case homeConfig != nil && homeConfig.CommitEnabled != nil:
-		resolved.CommitEnabled = *homeConfig.CommitEnabled
-		resolved.Sources["commit_enabled"] = SourceHome
-	default:
-		resolved.CommitEnabled = DefaultCommitEnabled
-		resolved.Sources["commit_enabled"] = SourceDefault
+	var envIterations, projectIterations, homeIterations *int
+	if envConfig != nil {
+		envIterations = envConfig.Iterations
 	}
+	if projectConfig != nil {
+		projectIterations = projectConfig.Iterations
+	}
+	if homeConfig != nil {
+		homeIterations = homeConfig.Iterations
+	}
+
+	var envCommitEnabled, projectCommitEnabled, homeCommitEnabled *bool
+	if envConfig != nil {
+		envCommitEnabled = envConfig.CommitEnabled
+	}
+	if projectConfig != nil {
+		projectCommitEnabled = projectConfig.CommitEnabled
+	}
+	if homeConfig != nil {
+		homeCommitEnabled = homeConfig.CommitEnabled
+	}
+
+	// Resolve each field using the helper
+	resolved.Agent = resolveField(
+		"agent", cliAgent, envAgent, projectAgent, homeAgent, DefaultAgent, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
+	resolved.ImplementRetries = resolveField(
+		"implement_retries", cliImplementRetries, envImplementRetries,
+		projectImplementRetries, homeImplementRetries, DefaultImplementRetries, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
+	resolved.Iterations = resolveField(
+		"iterations", cliIterations, envIterations, projectIterations,
+		homeIterations, DefaultIterations, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
+	resolved.CommitEnabled = resolveField(
+		"commit_enabled", cliCommitEnabled, envCommitEnabled,
+		projectCommitEnabled, homeCommitEnabled, DefaultCommitEnabled, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
 
 	return resolved
 }

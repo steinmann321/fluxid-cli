@@ -15,7 +15,7 @@ func runFluxidInDirWithEnv(t *testing.T, root, homeDir, workDir string, envVars 
 	t.Helper()
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Dir = workDir
 
 	// Build environment with custom vars
@@ -46,8 +46,7 @@ func runFluxidInDirWithEnvAndArgs(
 	t.Helper()
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmdArgs := append([]string{"--claude"}, args...)
-	cmd := exec.CommandContext(t.Context(), binPath, cmdArgs...)
+	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Dir = workDir
 
 	// Build environment with custom vars
@@ -78,7 +77,7 @@ func runFluxidInDirWithEnvExpectError(
 	t.Helper()
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Dir = workDir
 
 	// Build environment with custom vars

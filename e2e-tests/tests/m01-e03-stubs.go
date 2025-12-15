@@ -1,17 +1,9 @@
 package tests
 
 import (
-	"bufio"
-	"bytes"
-	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"strings"
-	"sync"
 	"testing"
-	"time"
 )
 
 // writeExecutableStub writes a bash script with executable permissions.
@@ -41,6 +33,23 @@ for i in {1..10}; do
 done
 
 echo "FLUXID_SESSION_ID=$FLUXID_SESSION_ID"
+
+# Write report so workflow can proceed
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
+
 exit 0
 `
 
@@ -64,6 +73,22 @@ if echo "$@" | grep -q "Implement the required"; then
   echo "RECEIVED: $response"
 fi
 
+# Write report so workflow can proceed
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
+
 exit 0
 `
 
@@ -84,6 +109,22 @@ echo "Claude stub: Large output test"
 for i in {1..1500}; do
   echo "LARGE_OUTPUT_LINE $i: Lorem ipsum dolor sit amet, consectetur adipiscing elit."
 done
+
+# Write report so workflow can proceed
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
 
 exit 0
 `
@@ -106,6 +147,22 @@ for i in {1..5}; do
   echo "STDERR: MSG_$i message on stderr" >&2
   sleep 0.02
 done
+
+# Write report so workflow can proceed
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
 
 exit 0
 `
@@ -133,81 +190,64 @@ elif echo "$@" | grep -q "Review the implementation"; then
   echo "Review phase executing..."
 fi
 
+# Write report so workflow can proceed
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
+
 exit 0
 `
 
 	_ = writeExecutableStub(stubPath, []byte(stubScript)) // Ignore error - test will fail if stub missing
 }
 
-// readCombinedOutput reads from stdout and stderr pipes concurrently
-// and combines them into a single buffer. Optionally handles stdin interaction
-// when a specific prompt is detected.
-func readCombinedOutput(
-	stdout, stderr io.Reader,
-	stdin io.WriteCloser,
-	promptMarker, stdinResponse string,
-	timeout time.Duration,
-) (string, error) {
-	var output bytes.Buffer
-	done := make(chan error, 1)
-	promptSeen := false
+// createLongRunningStub creates a Claude stub that adds delays to allow abort signals.
+// The stub sleeps briefly before writing report to give time for abort.
+func createLongRunningStub(t *testing.T, root string, _ int) {
+	t.Helper()
 
-	var wg sync.WaitGroup
-	wg.Add(2)
+	stubPath := filepath.Join(root, "bin", "claude")
+	stubScript := `#!/bin/bash
+# Stub that sleeps briefly to allow time for abort signals
 
-	// Read stdout
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			line := scanner.Text()
-			output.WriteString(line + "\n")
+echo "Claude stub: Starting phase..."
 
-			// Handle interactive prompt if configured
-			if promptMarker != "" && strings.Contains(line, promptMarker) && !promptSeen {
-				promptSeen = true
-				time.Sleep(50 * time.Millisecond)
-				if stdin != nil && stdinResponse != "" {
-					if _, err := stdin.Write([]byte(stdinResponse + "\n")); err != nil {
-						done <- err
-						return
-					}
-				}
-			}
-		}
-		if scanner.Err() != nil {
-			done <- scanner.Err()
-		}
-	}()
+# Sleep to give time for abort signal
+sleep 0.5
 
-	// Read stderr
-	go func() {
-		defer wg.Done()
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			line := scanner.Text()
-			output.WriteString(line + "\n")
-		}
-		if scanner.Err() != nil {
-			done <- scanner.Err()
-		}
-	}()
+# Write report so workflow can proceed to next phase
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: FAIL
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations:
+    - message: "Testing abort between phases"
+  enhancements: []
+REPORT_EOF
 
-	// Wait for both readers to finish
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
+echo "Phase completed"
+exit 0
+`
 
-	// Wait for completion or timeout
-	select {
-	case err := <-done:
-		if err != nil && !errors.Is(err, io.EOF) {
-			return output.String(), fmt.Errorf("error reading output: %w", err)
-		}
-	case <-time.After(timeout):
-		return output.String(), fmt.Errorf("timeout after %v", timeout)
+	if err := writeExecutableStub(stubPath, []byte(stubScript)); err != nil {
+		t.Fatalf("Failed to create long-running stub: %v", err)
 	}
-
-	return output.String(), nil
 }

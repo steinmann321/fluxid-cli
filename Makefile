@@ -16,6 +16,11 @@ run:
 # Run Go tests (including e2e)
 test:
 	go test ./...
-# Clean artifacts
+# Clean all build and test artifacts
 clean:
 	rm -rf bin/
+	find . -name "*.out" -type f -delete
+	find . -name "*.test" -type f -delete
+	rm -rf fluxid/tmp/*
+	rm -f fluxid/progress.yaml
+	rm -f fluxid/reports/workflow-report.yaml

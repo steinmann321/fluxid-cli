@@ -2,7 +2,6 @@ package tests
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -86,62 +85,49 @@ func TestM01E01ClaudeArgsPassthrough(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	testAgentArgsPassthrough(t, root, "--claude", "Agent Args:", []string{"--custom-arg", "value", "--another-flag"})
+}
+
+// TestM01E01WithoutClaudeFlag verifies that when no agent flag is provided,
+// the system uses the default agent (claude) and completes successfully.
+func TestM01E01WithoutClaudeFlag(t *testing.T) {
+	t.Parallel()
+
+	root := getProjectRoot(t)
+	buildFluxid(t, root)
+	createStubClaude(t, root) // Create stub claude since it's the default agent
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--custom-arg", "value", "--another-flag")
+	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stdout
 
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("fluxid with custom args failed: %v\nOutput:\n%s", err, stdout.String())
+	err := cmd.Run()
+	if err != nil {
+		t.Fatalf(
+			"Expected fluxid without flags to succeed with default agent, but it failed: %v\nOutput:\n%s",
+			err, stdout.String(),
+		)
 	}
 
 	output := stdout.String()
 
-	// Verify custom args are shown in initialization
-	if !strings.Contains(output, "Claude Args:") {
-		t.Errorf("Claude Args not displayed in output")
+	// Verify default agent is used
+	if !strings.Contains(output, "Agent: claude") {
+		t.Errorf("Expected default agent 'claude' to be used, got: %s", output)
 	}
 
-	// Verify custom args appear in output (from stub echo)
-	hasCustomArg := strings.Contains(output, "--custom-arg")
-	hasValue := strings.Contains(output, "value")
-	hasAnotherFlag := strings.Contains(output, "--another-flag")
-	if !hasCustomArg || !hasValue || !hasAnotherFlag {
-		t.Errorf("Custom arguments not passed through to Claude")
-	}
-}
-
-// TestM01E01WithoutClaudeFlag verifies that the CLI exits with error when
-// --claude flag is not provided.
-func TestM01E01WithoutClaudeFlag(t *testing.T) {
-	t.Parallel()
-
-	root := getProjectRoot(t)
-	buildFluxid(t, root)
-
-	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err == nil {
-		t.Fatal("Expected fluxid without --claude to fail, but it succeeded")
+	// Verify source is default
+	if !strings.Contains(output, "source: default") {
+		t.Errorf("Expected source to be 'default', got: %s", output)
 	}
 
-	// Verify exit code is 1
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
-		t.Errorf("Expected exit code 1, got: %v", err)
-	}
-
-	// Verify usage message
-	if !strings.Contains(stderr.String(), "Usage:") {
-		t.Errorf("Expected usage message in stderr, got: %s", stderr.String())
+	// Verify workflow completes successfully
+	if !strings.Contains(output, "Status: SUCCESS") {
+		t.Errorf("Expected successful completion with default agent, got: %s", output)
 	}
 }
 
@@ -186,37 +172,6 @@ func TestM01E01SessionIDPropagation(t *testing.T) {
 
 // Helper functions
 
-func getProjectRoot(t *testing.T) string {
-	t.Helper()
-
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd failed: %v", err)
-	}
-
-	root, err := findProjectRoot(wd)
-	if err != nil {
-		t.Fatalf("find project root failed: %v", err)
-	}
-
-	return root
-}
-
-func buildFluxid(t *testing.T, root string) {
-	t.Helper()
-
-	// Build fluxid binary
-	build := exec.CommandContext(t.Context(), "go", "build", "-o", "bin/fluxid", "./cmd/fluxid")
-	build.Dir = root
-
-	var stderr bytes.Buffer
-	build.Stderr = &stderr
-
-	if err := build.Run(); err != nil {
-		t.Fatalf("build failed: %v\nStderr: %s", err, stderr.String())
-	}
-}
-
 func createStubClaude(t *testing.T, root string) {
 	t.Helper()
 
@@ -228,6 +183,23 @@ echo "Claude stub invoked with args: $@"
 
 # Echo environment variables for validation
 echo "FLUXID_SESSION_ID=$FLUXID_SESSION_ID"
+
+# Write a valid PASS report so workflow can proceed
+# This allows tests to pass with the report-based workflow
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+command: test
+artifact: stub-test
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
 
 # Simulate successful execution
 exit 0

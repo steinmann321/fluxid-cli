@@ -25,8 +25,8 @@ if [[ -z "$CHANGED" ]]; then
   exit 0
 fi
 
-# Enforce repository layout: Go code must only exist under cmd/, internal/, pkg/, or e2e-tests/ (legacy: e2e-test/)
-INVALID_GO=$(printf '%s\n' "$CHANGED" | grep -E '\.go$' | grep -Ev '^(cmd/|internal/|pkg/|e2e-tests/|e2e-test/)' || true)
+# Enforce repository layout: Go code must only exist under cmd/, internal/, pkg/, or e2e-tests/
+INVALID_GO=$(printf '%s\n' "$CHANGED" | grep -E '\.go$' | grep -Ev '^(cmd/|internal/|pkg/|e2e-tests/)' || true)
 if [[ -n "$INVALID_GO" ]]; then
   echo "\u2717 Invalid repository layout detected:" >&2
   echo "  Go files must reside only under cmd/ (binaries), internal/ (private packages)," >&2
@@ -62,8 +62,8 @@ fi
 
 
 
-# Limit scope to project files: cmd/**, internal/**, pkg/**, e2e-tests/**, and e2e-test/**
-PROJECT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^(cmd/|internal/|pkg/|e2e-tests/|e2e-test/)' || true)
+# Limit scope to project files: cmd/**, internal/**, pkg/**, and e2e-tests/**
+PROJECT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^(cmd/|internal/|pkg/|e2e-tests/)' || true)
 if [[ -z "$PROJECT_CHANGED" ]]; then
   # No project files staged; skip checks
   exit 0
