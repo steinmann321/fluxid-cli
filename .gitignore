@@ -13,6 +13,12 @@ go.work
 *.bin
 bin/
 fluxid/fluxid
+/tmp/
+
+# fluxid runtime files
+fluxid/tmp/
+fluxid/reports/workflow-report.yaml
+fluxid/progress.yaml
 
 # Test binary, built with `go test -c`
 *.test
@@ -20,6 +26,7 @@ fluxid/fluxid
 # Output of the go coverage tool
 *.coverage
 *.coverprofile
+coverage.html
 
 # Go workspace file
 go.work.sum
