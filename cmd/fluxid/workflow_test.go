@@ -197,7 +197,7 @@ func TestRunWorkflow_FailThenPass(t *testing.T) {
 		SessionID:           sessionID,
 		Agent:               "true",
 		MaxReviewCycles:     3,
-		MaxImplementRetries: 1,
+		MaxImplementRetries: 2,
 		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
