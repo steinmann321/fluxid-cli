@@ -35,6 +35,7 @@ func readCombinedOutput(
 	timeout time.Duration,
 ) (string, error) {
 	var output bytes.Buffer
+	var outputMutex sync.Mutex
 	done := make(chan error, 1)
 	promptSeen := false
 
@@ -47,7 +48,9 @@ func readCombinedOutput(
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
+			outputMutex.Lock()
 			output.WriteString(line + "\n")
+			outputMutex.Unlock()
 
 			// Handle interactive prompt if configured
 			if promptMarker != "" && strings.Contains(line, promptMarker) && !promptSeen {
@@ -72,7 +75,9 @@ func readCombinedOutput(
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			line := scanner.Text()
+			outputMutex.Lock()
 			output.WriteString(line + "\n")
+			outputMutex.Unlock()
 		}
 		if scanner.Err() != nil {
 			done <- scanner.Err()
