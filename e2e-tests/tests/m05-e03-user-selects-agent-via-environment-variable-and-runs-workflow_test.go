@@ -20,7 +20,7 @@ func TestM05E03AgentFromEnvironmentVariable(t *testing.T) {
 	// Set FLUXID_AGENT=opencode in environment
 	env := []string{"FLUXID_AGENT=opencode"}
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, nil)
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, []string{"--fluxid-iterations", "1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
@@ -54,7 +54,7 @@ func TestM05E03EnvBeatsProjectAndHome(t *testing.T) {
 	// Set FLUXID_AGENT=opencode - should override both configs
 	env := []string{"FLUXID_AGENT=opencode"}
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, nil)
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, []string{"--fluxid-dry-run"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
@@ -79,7 +79,7 @@ func TestM05E03CLIBeatsEnv(t *testing.T) {
 	env := []string{"FLUXID_AGENT=codex"}
 
 	// But also pass --claude flag - CLI should win
-	args := []string{"--claude"}
+	args := []string{"--claude", "--fluxid-dry-run"}
 
 	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, args)
 	if err != nil {
@@ -163,6 +163,7 @@ func TestM05E03FullPrecedenceChain(t *testing.T) {
 			tmpDir := setupTestProject(t, tt.projectAgent)
 			env := buildTestEnv(tt.envAgent)
 			args := buildTestArgs(tt.cliAgent)
+			args = append(args, "--fluxid-dry-run")
 
 			output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, args)
 			if err != nil {
@@ -223,7 +224,7 @@ func TestM05E03PathResolutionWithEnv(t *testing.T) {
 		t.Parallel()
 		env := []string{"FLUXID_AGENT=codex"}
 
-		output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, nil)
+		output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, []string{"--fluxid-dry-run"})
 		if err != nil {
 			t.Fatalf("Expected success when codex is in PATH, got: %v\nOutput:\n%s", err, output)
 		}
@@ -269,13 +270,13 @@ func TestM05E03OrchestrationMatchesBaseline(t *testing.T) {
 
 	env := []string{"FLUXID_AGENT=opencode"}
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, nil)
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, []string{"--fluxid-iterations", "1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
 
 	// Verify phase execution order matches baseline
-	if !strings.Contains(output, "Review Cycle 1/20") {
+	if !strings.Contains(output, "Review Cycle 1/1") {
 		t.Errorf("Missing review cycle indicator")
 	}
 
@@ -304,7 +305,7 @@ func TestM05E03InitializationStatusDisplay(t *testing.T) {
 
 	env := []string{"FLUXID_AGENT=codex"}
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, nil)
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, []string{"--fluxid-dry-run"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}

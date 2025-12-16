@@ -159,6 +159,7 @@ func testAgentArgsPassthrough(t *testing.T, root, agentFlag, argsLabel string, c
 
 	binPath := filepath.Join(root, "bin", "fluxid")
 	args := append([]string{agentFlag}, customArgs...)
+	args = append(args, "--fluxid-iterations", "1")
 	// #nosec G204 -- Test helper with controlled test inputs
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))

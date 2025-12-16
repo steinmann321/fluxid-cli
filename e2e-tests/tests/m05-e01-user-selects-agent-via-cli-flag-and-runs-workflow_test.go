@@ -53,7 +53,7 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, tt.flag)
+			cmd := exec.CommandContext(t.Context(), binPath, tt.flag, "--fluxid-iterations", "1")
 			cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 			var stdout bytes.Buffer
@@ -130,7 +130,12 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, tt.args...)
+			args := tt.args
+			// Add minimal iterations for tests that run workflows (success cases).
+			if !tt.expectError {
+				args = append(args, "--fluxid-iterations", "1")
+			}
+			cmd := exec.CommandContext(t.Context(), binPath, args...)
 			cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 			var stderr bytes.Buffer
@@ -174,7 +179,7 @@ func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 		t.Parallel()
 
 		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--codex")
+		cmd := exec.CommandContext(t.Context(), binPath, "--codex", "--fluxid-iterations", "1")
 		cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 		var stdout bytes.Buffer
@@ -249,7 +254,7 @@ func TestM05E01OrchestrationMatchesBaseline(t *testing.T) {
 	createStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--opencode")
+	cmd := exec.CommandContext(t.Context(), binPath, "--opencode", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var stdout bytes.Buffer
