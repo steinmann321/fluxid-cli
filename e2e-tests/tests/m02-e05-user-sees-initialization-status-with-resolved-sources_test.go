@@ -23,9 +23,10 @@ func TestM02E05AllConfigKeysDisplayed(t *testing.T) {
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
-	// Run with CLI overrides
+	// Run with CLI overrides in dry-run mode (we only need initialization status)
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
-		"--fluxid-implement-retries", "7")
+		"--fluxid-implement-retries", "7",
+		"--fluxid-dry-run")
 
 	// Verify all configuration keys are present
 	requiredKeys := []string{
@@ -97,7 +98,8 @@ func TestM02E05CommandFilePathsDisplayed(t *testing.T) {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
+	// Use dry-run mode to only show initialization status without running workflow
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
 	// Verify "Command Files:" section exists
 	if !strings.Contains(output, "Command Files:") {
@@ -149,7 +151,8 @@ func TestM02E05NoCommandFilesWhenNotConfigured(t *testing.T) {
 	tmpHome := t.TempDir()
 	tmpProjectDir := t.TempDir()
 
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
+	// Use dry-run mode to only show initialization status without running workflow
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
 	// Verify Command Files section is NOT present
 	if strings.Contains(output, "Command Files:") {
@@ -167,7 +170,8 @@ func TestM02E05OutputStructuredAndScannable(t *testing.T) {
 	createStubClaude(t, root)
 
 	tmpHome := t.TempDir()
-	output := runFluxidWithHome(t, root, tmpHome)
+	// Use dry-run mode to only show initialization status without running workflow
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify header is present
 	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
@@ -270,9 +274,10 @@ iterations: 10
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
-	// Run with CLI override for implement_retries
+	// Run with CLI override for implement_retries in dry-run mode (we only need initialization status)
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
-		"--fluxid-implement-retries", "8")
+		"--fluxid-implement-retries", "8",
+		"--fluxid-dry-run")
 
 	// Verify each source is correctly attributed
 	verifyConfigLine(t, output, "Agent: claude", "source: home")
@@ -296,12 +301,12 @@ func TestM02E05EnvOverridesInStatus(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, basicHomeConfig)
 	tmpProjectDir := t.TempDir()
 
-	// Run with environment overrides
+	// Run with environment overrides in dry-run mode (we only need initialization status)
 	envVars := map[string]string{
 		"FLUXID_ITERATIONS":     "30",
 		"FLUXID_COMMIT_ENABLED": "false",
 	}
-	output := runFluxidInDirWithEnv(t, root, tmpHome, tmpProjectDir, envVars)
+	output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir, envVars, "--fluxid-dry-run")
 
 	// Verify env overrides are shown
 	verifyConfigLine(t, output, "Max Review Cycles: 30", "source: env")
@@ -322,7 +327,8 @@ func TestM02E05SessionIDFormat(t *testing.T) {
 	createStubClaude(t, root)
 
 	tmpHome := t.TempDir()
-	output := runFluxidWithHome(t, root, tmpHome)
+	// Use dry-run mode to only show initialization status without running workflow
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify Session ID is present
 	if !strings.Contains(output, "Session ID:") {
