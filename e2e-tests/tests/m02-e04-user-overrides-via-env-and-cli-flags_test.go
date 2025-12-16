@@ -26,13 +26,13 @@ commit_enabled: false
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
-	// Run with environment variables that override both
-	output := runFluxidInDirWithEnv(t, root, tmpHome, tmpProjectDir, map[string]string{
+	// Run with environment variables that override both in dry-run mode (only need init status)
+	output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir, map[string]string{
 		"FLUXID_AGENT":             "codex",
 		"FLUXID_ITERATIONS":        "25",
 		"FLUXID_IMPLEMENT_RETRIES": "9",
 		"FLUXID_COMMIT_ENABLED":    "false",
-	})
+	}, "--fluxid-dry-run")
 
 	// Verify environment variables override project and home
 	verifyConfigLine(t, output, "Agent: codex", "source: env")
@@ -62,7 +62,7 @@ implement_retries: 7
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
-	// Run with env vars and CLI flags - CLI should win
+	// Run with env vars and CLI flags - CLI should win in dry-run mode (only need init status)
 	output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir,
 		map[string]string{
 			"FLUXID_ITERATIONS":        "20",
@@ -70,6 +70,7 @@ implement_retries: 7
 		},
 		"--fluxid-iterations", "30",
 		"--fluxid-implement-retries", "12",
+		"--fluxid-dry-run",
 	)
 
 	// Verify CLI flags override everything
@@ -92,9 +93,10 @@ func TestM02E04NoCommitFlag(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, homeConfigContent)
 	tmpProjectDir := t.TempDir()
 
-	// Run with --fluxid-no-commit flag
+	// Run with --fluxid-no-commit flag in dry-run mode (only need init status)
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
 		"--fluxid-no-commit",
+		"--fluxid-dry-run",
 	)
 
 	// Verify --fluxid-no-commit sets commit_enabled=false
@@ -116,12 +118,13 @@ func TestM02E04NoCommitFlagOverridesEnvAndConfig(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, homeConfigContent)
 	tmpProjectDir := t.TempDir()
 
-	// Run with env var and --fluxid-no-commit - CLI should win
+	// Run with env var and --fluxid-no-commit - CLI should win in dry-run mode (only need init status)
 	output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir,
 		map[string]string{
 			"FLUXID_COMMIT_ENABLED": "true",
 		},
 		"--fluxid-no-commit",
+		"--fluxid-dry-run",
 	)
 
 	// Verify CLI flag overrides env var
@@ -231,9 +234,10 @@ func TestM02E04CommitEnabledTrueFalseVariations(t *testing.T) {
 			tmpHome := t.TempDir()
 			tmpProjectDir := t.TempDir()
 
-			output := runFluxidInDirWithEnv(t, root, tmpHome, tmpProjectDir, map[string]string{
+			// Run in dry-run mode (only need init status)
+			output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir, map[string]string{
 				"FLUXID_COMMIT_ENABLED": tc.envValue,
-			})
+			}, "--fluxid-dry-run")
 
 			expectedOutput := fmt.Sprintf("Commit Enabled: %v (source: env)", tc.expected)
 			if !strings.Contains(output, expectedOutput) {
@@ -266,12 +270,13 @@ iterations: 20
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
-	// Run with env vars that override some project values, and CLI that overrides env
+	// Run with env/CLI precedence in dry-run mode (only need init status)
 	output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir,
 		map[string]string{
 			"FLUXID_ITERATIONS": "30",
 		},
 		"--fluxid-iterations", "40",
+		"--fluxid-dry-run",
 	)
 
 	// Verify precedence chain:
