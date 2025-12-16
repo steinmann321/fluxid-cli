@@ -23,9 +23,10 @@ func TestM02E06NoCommitFlagDisablesCommitPhase(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, homeConfigCommitEnabled)
 	tmpProjectDir := createProjectWithConfig(t, "")
 
-	// Run with --fluxid-no-commit flag
+	// Run with --fluxid-no-commit flag and minimal iterations for fast test
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
 		"--fluxid-no-commit",
+		"--fluxid-iterations", "1",
 	)
 
 	// Verify initialization shows commit disabled
@@ -60,8 +61,9 @@ func TestM02E06CommitPhaseRunsWithoutFlag(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, homeConfigCommitEnabled)
 	tmpProjectDir := createProjectWithConfig(t, "")
 
-	// Run WITHOUT --fluxid-no-commit flag
-	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir)
+	// Run WITHOUT --fluxid-no-commit flag, with minimal iterations for fast test
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
+		"--fluxid-iterations", "1")
 
 	// Verify initialization shows commit enabled
 	verifyConfigLine(t, output, "Commit Enabled: true", "source: home")
@@ -90,9 +92,10 @@ func TestM02E06NoCommitFlagOverridesConfig(t *testing.T) {
 	tmpHome := t.TempDir()
 	tmpProjectDir := createProjectWithConfig(t, homeConfigCommitEnabled)
 
-	// Run with --fluxid-no-commit (should override project config)
+	// Run with --fluxid-no-commit (should override project config) and minimal iterations for fast test
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
 		"--fluxid-no-commit",
+		"--fluxid-iterations", "1",
 	)
 
 	// Verify CLI flag overrides config
@@ -143,7 +146,11 @@ func TestM02E06ReviewPhaseMandatory(t *testing.T) {
 			tmpHome := t.TempDir()
 			tmpProjectDir := t.TempDir()
 
-			output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, tc.args...)
+			// Add minimal iterations for fast test execution
+			args := make([]string, 0, len(tc.args)+2)
+			args = append(args, tc.args...)
+			args = append(args, "--fluxid-iterations", "1")
+			output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, args...)
 
 			// Verify commit enabled status
 			expectedStatus := "Commit Enabled: " + tc.commitEnabled
@@ -182,7 +189,9 @@ func TestM02E06PhaseExecutionOrder(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, homeConfigCommitEnabled)
 	tmpProjectDir := t.TempDir()
 
-	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir)
+	// Use minimal iterations for fast test execution
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
+		"--fluxid-iterations", "1")
 
 	// Find phase execution order by string positions
 	implementIdx := strings.Index(output, "Implement attempt 1/3...")
@@ -221,8 +230,10 @@ func TestM02E06PhaseExecutionOrderNoCommit(t *testing.T) {
 	tmpHome := t.TempDir()
 	tmpProjectDir := t.TempDir()
 
+	// Use minimal iterations for fast test execution
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
 		"--fluxid-no-commit",
+		"--fluxid-iterations", "1",
 	)
 
 	// Find phase execution order by string positions
