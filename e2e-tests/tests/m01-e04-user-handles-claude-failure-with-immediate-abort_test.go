@@ -21,7 +21,7 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	createFailingClaudeStub(t, root, 2)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var output bytes.Buffer
@@ -87,7 +87,7 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 	createFailingClaudeStub(t, root, 3)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var output bytes.Buffer
@@ -166,7 +166,7 @@ func runPhaseFailureTest(t *testing.T, failOnInvoke, expectedExitCode int) {
 	createConditionalFailingClaudeStub(t, root, failOnInvoke, expectedExitCode)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var output bytes.Buffer

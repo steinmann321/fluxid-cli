@@ -23,7 +23,7 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 	createStreamingStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	// Capture stdout with timestamps to measure latency
@@ -132,7 +132,7 @@ func TestM01E03InteractiveStdinDelivery(t *testing.T) {
 	createInteractiveStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	// Set up pipes
@@ -213,7 +213,7 @@ func TestM01E03NoOutputTruncation(t *testing.T) {
 	createLargeOutputStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var stdout bytes.Buffer
@@ -256,7 +256,7 @@ func TestM01E03StreamOrderingReadable(t *testing.T) {
 	createMixedStreamStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var stdout bytes.Buffer
@@ -297,7 +297,7 @@ func TestM01E03WorkflowContinuesAfterInteraction(t *testing.T) {
 	createWorkflowContinuationStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	stdin, err := cmd.StdinPipe()

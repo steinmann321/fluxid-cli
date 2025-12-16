@@ -20,7 +20,7 @@ func TestM01E01UserRunsWorkflowToCompletion(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root)
+	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "1")
 
 	verifyInitialization(t, output)
 	verifyPhaseExecution(t, output)
@@ -42,7 +42,7 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 	// Run fluxid 3 times and collect session IDs
 	for i := 0; i < 3; i++ {
 		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 		cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 		var stdout bytes.Buffer
@@ -98,7 +98,7 @@ func TestM01E01WithoutClaudeFlag(t *testing.T) {
 	createStubClaude(t, root) // Create stub claude since it's the default agent
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath)
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var stdout bytes.Buffer
@@ -141,7 +141,7 @@ func TestM01E01SessionIDPropagation(t *testing.T) {
 	createStubClaude(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	var stdout bytes.Buffer
@@ -258,7 +258,7 @@ func verifyInitialization(t *testing.T, output string) {
 		t.Errorf("Missing or invalid session ID (expected UUID v4 format)")
 	}
 
-	if !strings.Contains(output, "Max Review Cycles: 20") {
+	if !strings.Contains(output, "Max Review Cycles: 1") {
 		t.Errorf("Missing max review cycles in output")
 	}
 
@@ -270,7 +270,7 @@ func verifyInitialization(t *testing.T, output string) {
 func verifyPhaseExecution(t *testing.T, output string) {
 	t.Helper()
 
-	if !strings.Contains(output, "Review Cycle 1/20") {
+	if !strings.Contains(output, "Review Cycle 1/1") {
 		t.Errorf("Missing review cycle indicator")
 	}
 
