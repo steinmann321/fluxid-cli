@@ -33,8 +33,10 @@ func TestRunWorkflow_AbortBetweenPhases(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use channel-based coordination instead of arbitrary delays
+	started := make(chan struct{})
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		close(started) // Signal goroutine is ready
 		report := `command: test
 artifact: test
 timestamp: 2025-12-15T10:00:00Z
@@ -51,6 +53,7 @@ issues:
 		time.Sleep(50 * time.Millisecond)
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
+	<-started // Wait for goroutine to start
 
 	exitCode, err := runWorkflow(cfg)
 	if err == nil {
@@ -84,9 +87,13 @@ func TestRunWorkflow_ReviewFailContinues(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use channel-based coordination for reliable test execution
 	var reportCount atomic.Int32
+	started := make(chan struct{})
 	go func() {
+		close(started) // Signal goroutine is ready
 		for i := 0; i < 4; i++ {
+			// Delay before each report to allow workflow to process
 			time.Sleep(100 * time.Millisecond)
 			count := reportCount.Add(1)
 			status := "PASS"
@@ -108,6 +115,7 @@ issues:
 			_ = ipc.WriteReport(sessionID, report)
 		}
 	}()
+	<-started // Wait for goroutine to start
 
 	exitCode, err := runWorkflow(cfg)
 	if err != nil {
@@ -122,7 +130,7 @@ func TestSetupSignalHandler_InvalidSession(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "/dev/null")
 	cleanup := setupSignalHandler("test-invalid")
 	t.Cleanup(cleanup)
-	time.Sleep(10 * time.Millisecond)
+	// No sleep needed - cleanup is immediate
 }
 
 func TestSetupSignalHandler_MultipleSetups(t *testing.T) {
@@ -135,7 +143,7 @@ func TestSetupSignalHandler_MultipleSetups(t *testing.T) {
 	t.Cleanup(cleanup2)
 	cleanup3 := setupSignalHandler("test-3")
 	t.Cleanup(cleanup3)
-	time.Sleep(10 * time.Millisecond)
+	// No sleep needed - cleanup is immediate
 }
 
 func TestRunWorkflow_ReviewPhaseFailure(t *testing.T) {

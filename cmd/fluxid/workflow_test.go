@@ -142,8 +142,10 @@ func TestRunWorkflow_SuccessFirstCycle(t *testing.T) {
 	}
 
 	// Write reports asynchronously to simulate agent responses
+	// Use channel-based coordination instead of arbitrary sleep delays
+	started := make(chan struct{})
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		close(started) // Signal goroutine is ready
 		implementReport := `command: test-implement
 artifact: test-artifact
 timestamp: 2025-12-13T10:00:00Z
@@ -160,6 +162,8 @@ next_steps:
 `
 		_ = ipc.WriteReport(sessionID, implementReport)
 
+		// Delay to allow implement phase to read the report
+		// before we overwrite it with the review report
 		time.Sleep(100 * time.Millisecond)
 		reviewReport := `command: test-review
 artifact: test-artifact
@@ -177,6 +181,7 @@ next_steps:
 `
 		_ = ipc.WriteReport(sessionID, reviewReport)
 	}()
+	<-started // Wait for goroutine to start before running workflow
 
 	exitCode, err := runWorkflow(cfg)
 	if err != nil {
@@ -190,7 +195,7 @@ next_steps:
 func TestRunWorkflow_FailThenPass(t *testing.T) {
 	t.Cleanup(cleanupAllSignalHandlers)
 	// Test workflow that fails first cycle then passes
-	sessionID := "test-workflow-retry-pass"
+	sessionID := "test-workflow-retry-pass-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 
@@ -212,9 +217,11 @@ func TestRunWorkflow_FailThenPass(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use atomic counter for reliable test execution without data races
 	var cycleCount atomic.Int32
 	go func() {
 		for i := 0; i < 4; i++ {
+			// Delay before each report to allow workflow to process
 			time.Sleep(100 * time.Millisecond)
 			count := cycleCount.Add(1)
 
@@ -255,6 +262,8 @@ next_steps:
 			_ = ipc.WriteReport(sessionID, report)
 		}
 	}()
+	// Don't wait for goroutine - let workflow and reports race naturally
+	// The 2-second sleep in waitForValidReport() provides enough time for reports to be written
 
 	exitCode, err := runWorkflow(cfg)
 	if err != nil {

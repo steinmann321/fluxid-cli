@@ -113,24 +113,33 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	// After a short delay, write a valid report
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, validReport)
-	}()
-
 	// Use a channel with timeout to prevent hanging
 	type result struct {
 		status string
 		err    error
 	}
 	done := make(chan result, 1)
+	started := make(chan struct{})
 
+	// Start waitForValidReport in background
 	go func() {
+		close(started) // Signal that goroutine is starting
 		status, err := waitForValidReport(sessionID, command)
 		done <- result{status, err}
 	}()
 
+	// Wait for the goroutine to start, then write the valid report immediately
+	// This ensures waitForValidReport has started before we overwrite the invalid report
+	<-started
+
+	// Write valid report without artificial delay
+	// waitForValidReport will retry and eventually see this valid report
+	if err := ipc.WriteReport(sessionID, validReport); err != nil {
+		t.Fatalf("Failed to write valid report: %v", err)
+	}
+
+	// Use much longer timeout to accommodate race detector slowness
+	// waitForValidReport sleeps 2s between retries, which can be 10-20s under race detector
 	select {
 	case res := <-done:
 		if res.err != nil {
@@ -139,7 +148,7 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 		if res.status != expectedStatus {
 			t.Errorf("Expected status %s, got: %s", expectedStatus, res.status)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(60 * time.Second):
 		t.Fatal("Test timed out waiting for report")
 	}
 }

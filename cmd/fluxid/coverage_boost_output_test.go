@@ -103,8 +103,10 @@ func TestExecuteWorkflow_SignalHandlerSetup(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use channel-based coordination instead of arbitrary sleep delays
+	started := make(chan struct{})
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		close(started) // Signal goroutine is ready
 		implementReport := `command: test
 artifact: test
 timestamp: 2025-12-15T10:00:00Z
@@ -119,6 +121,7 @@ issues:
 `
 		_ = ipc.WriteReport(cfg.SessionID, implementReport)
 
+		// Delay between reports to allow workflow to process each phase
 		time.Sleep(100 * time.Millisecond)
 		reviewReport := `command: test
 artifact: test
@@ -134,6 +137,7 @@ issues:
 `
 		_ = ipc.WriteReport(cfg.SessionID, reviewReport)
 	}()
+	<-started // Wait for goroutine to start
 
 	exitCode := executeWorkflow(cfg)
 	if exitCode != 0 {

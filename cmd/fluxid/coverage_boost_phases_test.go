@@ -65,8 +65,12 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use channel-based coordination instead of arbitrary sleep delays
+	started := make(chan struct{})
 	go func() {
+		close(started) // Signal goroutine is ready
 		for i := 1; i <= 3; i++ {
+			// Delay before each report to allow workflow to process
 			time.Sleep(100 * time.Millisecond)
 			report := `command: test
 artifact: test
@@ -88,6 +92,7 @@ issues:
 			_ = ipc.WriteReport(sessionID, report)
 		}
 	}()
+	<-started // Wait for goroutine to start
 
 	exitCode, err := runImplementPhase(cfg)
 	if err != nil {
@@ -120,8 +125,12 @@ func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use channel-based coordination instead of arbitrary sleep delays
+	started := make(chan struct{})
 	go func() {
+		close(started) // Signal goroutine is ready
 		for i := 1; i <= 5; i++ {
+			// Delay before each report to allow workflow to process
 			time.Sleep(100 * time.Millisecond)
 			report := `command: test
 artifact: test
@@ -138,6 +147,7 @@ issues:
 			_ = ipc.WriteReport(sessionID, report)
 		}
 	}()
+	<-started // Wait for goroutine to start
 
 	exitCode, err := runImplementPhase(cfg)
 	if err == nil {

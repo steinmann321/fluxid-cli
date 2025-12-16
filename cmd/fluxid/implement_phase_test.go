@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestRunImplementPhase_WithAbort(t *testing.T) {
@@ -158,12 +157,12 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 	}
 
 	// Write report in background to simulate agent behavior
-	// Use a channel to ensure the goroutine doesn't leak
+	// Use channels for reliable coordination instead of arbitrary sleeps
 	done := make(chan struct{})
+	started := make(chan struct{})
 	go func() {
 		defer close(done)
-		// Agent "true" completes instantly, so wait a tiny bit to ensure phases start
-		time.Sleep(100 * time.Millisecond)
+		close(started) // Signal goroutine is ready
 		report := `command: test-implement
 artifact: test-artifact
 timestamp: 2025-12-13T10:00:00Z
@@ -180,6 +179,7 @@ next_steps:
 `
 		_ = ipc.WriteReport(sessionID, report)
 	}()
+	<-started // Wait for goroutine to start
 
 	exitCode, err := runImplementPhase(cfg)
 	<-done // Wait for goroutine to complete
@@ -306,8 +306,10 @@ func TestRunReviewPhase_Success(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
+	// Use channel-based coordination instead of arbitrary sleep
+	started := make(chan struct{})
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		close(started) // Signal goroutine is ready
 		report := `command: test-review
 artifact: test-artifact
 timestamp: 2025-12-13T10:00:00Z
@@ -324,6 +326,7 @@ next_steps:
 `
 		_ = ipc.WriteReport(sessionID, report)
 	}()
+	<-started // Wait for goroutine to start
 
 	status, exitCode, err := runReviewPhase(cfg)
 	if err != nil {
