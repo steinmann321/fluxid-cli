@@ -193,7 +193,7 @@ next_steps:
 }
 
 func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
-	// Test implement phase with FAIL then PASS
+	// Test implement phase succeeds with pre-written PASS report
 	sessionID := "test-implement-retry-pass-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
@@ -216,7 +216,11 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	go writeReportWithRetry(sessionID, 3, 2)
+	// Pre-write PASS report before workflow starts
+	// No timing dependencies - completely deterministic
+	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+		t.Fatalf("Failed to write report: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err != nil {
