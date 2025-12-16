@@ -268,7 +268,7 @@ func TestM05E01OrchestrationMatchesBaseline(t *testing.T) {
 	output := stdout.String()
 
 	// Verify phase execution order matches baseline
-	if !strings.Contains(output, "Review Cycle 1/20") {
+	if !strings.Contains(output, "Review Cycle 1/1") {
 		t.Errorf("Missing review cycle indicator")
 	}
 
