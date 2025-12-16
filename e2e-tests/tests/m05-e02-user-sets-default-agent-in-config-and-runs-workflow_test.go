@@ -20,7 +20,8 @@ func TestM05E02AgentFromHomeConfig(t *testing.T) {
 	homeConfigPath := filepath.Join(homeConfigDir, "config.yaml")
 	writeConfigFile(t, homeConfigPath, "codex")
 
-	output, err := runFluxidWithConfig(t, root, "", tmpHome, nil, nil)
+	// Use minimal iterations for fast test execution
+	output, err := runFluxidWithConfig(t, root, "", tmpHome, nil, []string{"--fluxid-iterations", "1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
@@ -42,7 +43,8 @@ func TestM05E02AgentFromProjectConfig(t *testing.T) {
 	projectConfigPath := filepath.Join(projectConfigDir, "config.yaml")
 	writeConfigFile(t, projectConfigPath, "opencode")
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, "", nil, nil)
+	// Use minimal iterations for fast test execution
+	output, err := runFluxidWithConfig(t, root, tmpDir, "", nil, []string{"--fluxid-iterations", "1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
@@ -68,7 +70,8 @@ func TestM05E02ProjectOverridesHome(t *testing.T) {
 	projectConfigPath := filepath.Join(projectConfigDir, "config.yaml")
 	writeConfigFile(t, projectConfigPath, "codex")
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, nil)
+	// Use dry-run mode (only need to verify agent selection, not workflow execution)
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, []string{"--fluxid-dry-run"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
@@ -140,6 +143,9 @@ func TestM05E02PrecedenceChain(t *testing.T) {
 			env := buildTestEnv(tt.envAgent)
 			args := buildTestArgs(tt.cliAgent)
 
+			// Add dry-run flag to args (only need to verify agent selection)
+			args = append(args, "--fluxid-dry-run")
+
 			output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, args)
 			if err != nil {
 				t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
@@ -184,7 +190,8 @@ func TestM05E02NoConfigUsesDefault(t *testing.T) {
 	tmpHome := t.TempDir()
 	tmpDir := t.TempDir()
 
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, nil)
+	// Use minimal iterations for fast test execution
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, []string{"--fluxid-iterations", "1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}

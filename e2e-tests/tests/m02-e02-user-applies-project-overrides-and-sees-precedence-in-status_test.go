@@ -25,7 +25,8 @@ implement_retries: 7
 iterations: 15
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
+	// Use dry-run mode (only need init status, not workflow execution)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
 	// Verify project values override home values
 	verifyConfigLine(t, output, "Agent: opencode", "source: project")
@@ -64,8 +65,8 @@ commit_enabled: false
 		t.Fatalf("Failed to write project config: %v", err)
 	}
 
-	// Run fluxid from the project directory
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
+	// Run fluxid from the project directory in dry-run mode (only need init status)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
 	// Verify project values are used
 	verifyConfigLine(t, output, "Max Review Cycles: 12", "source: project")
@@ -94,8 +95,8 @@ implement_retries: 4
 	// Create temporary directory WITHOUT .fluxid/config.yaml
 	tmpWorkDir := t.TempDir()
 
-	// Run fluxid from the directory without project config
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpWorkDir)
+	// Run fluxid from the directory without project config in dry-run mode (only need init status)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpWorkDir, "--fluxid-dry-run")
 
 	// Verify home values are used (no project overrides)
 	verifyConfigLine(t, output, "Max Review Cycles: 8", "source: home")
@@ -119,11 +120,11 @@ func TestM02E02PartialProjectOverride(t *testing.T) {
 	// Create home config
 	tmpHome := setupHomeWithConfig(t, fullHomeConfig)
 
-	// Create project with partial override (only iterations) and run fluxid
+	// Create project with partial override (only iterations) and run fluxid in dry-run mode
 	projectConfigContent := `iterations: 25
 `
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
 	// Verify project overrides iterations
 	verifyConfigLine(t, output, "Max Review Cycles: 25", "source: project")
@@ -161,10 +162,11 @@ implement_retries: 7
 		t.Fatalf("Failed to write project config: %v", err)
 	}
 
-	// Run fluxid with CLI overrides
+	// Run fluxid with CLI overrides in dry-run mode (only need init status)
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir,
 		"--fluxid-iterations", "30",
-		"--fluxid-implement-retries", "9")
+		"--fluxid-implement-retries", "9",
+		"--fluxid-dry-run")
 
 	// Verify CLI overrides both project and home
 	verifyConfigLine(t, output, "Max Review Cycles: 30", "source: cli")
