@@ -3,8 +3,6 @@ package main
 
 import (
 	"fluxid-loop/internal/ipc"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 )
@@ -55,14 +53,12 @@ summary: "Tests failed"
 func testWaitForValidReportHelper(t *testing.T, sessionID, reportYAML, expectedStatus string) {
 	t.Helper()
 
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", tmpDir)
+
 	if err := ipc.WriteReport(sessionID, reportYAML); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
-	defer func() {
-		// Clean up
-		reportPath := filepath.Join(os.TempDir(), "fluxid-reports", sessionID+".yaml")
-		_ = os.Remove(reportPath)
-	}()
 
 	resultChan := make(chan string, 1)
 	errorChan := make(chan error, 1)

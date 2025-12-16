@@ -5,11 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestRunWorkflow_ImmediateAbort(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	// Test that workflow respects abort flag before starting
 	sessionID := "test-workflow-abort-session"
 	tmpDir := t.TempDir()
@@ -54,6 +56,7 @@ func TestRunWorkflow_ImmediateAbort(t *testing.T) {
 }
 
 func TestRunWorkflow_MultipleReviewCycles(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	// Test workflow with multiple review cycles (all fail)
 	sessionID := "test-multi-cycle"
 	tmpDir := t.TempDir()
@@ -83,6 +86,7 @@ func TestRunWorkflow_MultipleReviewCycles(t *testing.T) {
 }
 
 func TestRunWorkflow_ChecksAbortBeforeReview(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	// This test can't easily verify the abort check without setting it mid-execution
 	// But it exercises the code path
 	sessionID := "test-workflow-abort-before-review"
@@ -113,6 +117,7 @@ func TestRunWorkflow_ChecksAbortBeforeReview(t *testing.T) {
 }
 
 func TestRunWorkflow_SuccessFirstCycle(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	// Test successful workflow completion in first cycle
 	sessionID := "test-workflow-success"
 	tmpDir := t.TempDir()
@@ -183,6 +188,7 @@ next_steps:
 }
 
 func TestRunWorkflow_FailThenPass(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	// Test workflow that fails first cycle then passes
 	sessionID := "test-workflow-retry-pass"
 	tmpDir := t.TempDir()
@@ -206,14 +212,14 @@ func TestRunWorkflow_FailThenPass(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	cycleCount := 0
+	var cycleCount atomic.Int32
 	go func() {
 		for i := 0; i < 4; i++ {
 			time.Sleep(100 * time.Millisecond)
-			cycleCount++
+			count := cycleCount.Add(1)
 
 			var report string
-			if cycleCount <= 2 {
+			if count <= 2 {
 				// First cycle: FAIL
 				report = `command: test-phase
 artifact: test-artifact

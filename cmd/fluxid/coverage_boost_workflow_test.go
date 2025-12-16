@@ -5,11 +5,13 @@ import (
 	"fluxid-loop/internal/ipc"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestRunWorkflow_AbortBetweenPhases(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	sessionID := "test-abort-between"
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
@@ -60,6 +62,7 @@ issues:
 }
 
 func TestRunWorkflow_ReviewFailContinues(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	sessionID := "test-review-fail-continue"
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
@@ -81,13 +84,13 @@ func TestRunWorkflow_ReviewFailContinues(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	reportCount := 0
+	var reportCount atomic.Int32
 	go func() {
 		for i := 0; i < 4; i++ {
 			time.Sleep(100 * time.Millisecond)
-			reportCount++
+			count := reportCount.Add(1)
 			status := "PASS"
-			if reportCount == 2 {
+			if count == 2 {
 				status = "FAIL" // First review fails
 			}
 			report := `command: test
@@ -136,6 +139,7 @@ func TestSetupSignalHandler_MultipleSetups(t *testing.T) {
 }
 
 func TestRunWorkflow_ReviewPhaseFailure(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	sessionID := "test-review-fail"
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
@@ -167,6 +171,7 @@ func TestRunWorkflow_ReviewPhaseFailure(t *testing.T) {
 }
 
 func TestRunWorkflow_AbortCheckError(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 

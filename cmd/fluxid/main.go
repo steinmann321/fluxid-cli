@@ -335,12 +335,16 @@ func setupSignalHandler(sessionID string) func() {
 	}()
 
 	// Return cleanup function to stop signal handling and close channel
+	// Use sync.Once to ensure cleanup only runs once even if called multiple times
+	var cleanupOnce sync.Once
 	cleanup := func() {
-		signal.Stop(sigChan)
-		close(sigChan)
+		cleanupOnce.Do(func() {
+			signal.Stop(sigChan)
+			close(sigChan)
+		})
 	}
 
-	// Track cleanup for tests
+	// Track cleanup for tests (store the idempotent cleanup function)
 	cleanupMutex.Lock()
 	signalCleanups = append(signalCleanups, cleanup)
 	cleanupMutex.Unlock()
@@ -349,12 +353,12 @@ func setupSignalHandler(sessionID string) func() {
 }
 
 // cleanupAllSignalHandlers cleans up all signal handlers. Used in tests to prevent goroutine leaks.
-//
-//nolint:unused // Used in tests via t.Cleanup()
+// Each cleanup function uses sync.Once internally, so it's safe to call multiple times.
 func cleanupAllSignalHandlers() {
 	cleanupMutex.Lock()
 	defer cleanupMutex.Unlock()
 
+	// Call all cleanup functions (they're idempotent thanks to sync.Once)
 	for _, cleanup := range signalCleanups {
 		cleanup()
 	}

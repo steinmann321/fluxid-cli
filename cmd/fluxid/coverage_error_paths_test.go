@@ -110,6 +110,7 @@ func TestHandleReadReport_ReadReportError(t *testing.T) {
 
 // TestRunWorkflow_AbortCheckErrorWarning tests abort check error warning path.
 func TestRunWorkflow_AbortCheckErrorWarning(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -138,6 +139,7 @@ func TestRunWorkflow_AbortCheckErrorWarning(t *testing.T) {
 
 // TestRunWorkflow_SecondAbortCheckErrorWarning tests second abort check error.
 func TestRunWorkflow_SecondAbortCheckErrorWarning(t *testing.T) {
+	t.Cleanup(cleanupAllSignalHandlers)
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fluxid-loop/internal/ipc"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 )
@@ -34,14 +32,10 @@ func TestWaitForValidReport_Timeout(t *testing.T) {
 }
 
 func TestWaitForValidReport_Success(t *testing.T) {
-	t.Parallel()
 	// Test waitForValidReport with a valid report
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", tmpDir)
 	sessionID := "test-wait-report-success"
-
-	// Clean up any existing report before test
-	reportPath := filepath.Join(os.TempDir(), "fluxid-reports", sessionID+".yaml")
-	_ = os.Remove(reportPath)
-	defer func() { _ = os.Remove(reportPath) }()
 
 	// Write a valid report
 	validReport := `command: test-implement
@@ -73,14 +67,10 @@ next_steps:
 }
 
 func TestWaitForValidReport_Fail(t *testing.T) {
-	t.Parallel()
 	// Test waitForValidReport with a FAIL status
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", tmpDir)
 	sessionID := "test-wait-report-fail"
-
-	// Clean up any existing report before test
-	reportPath := filepath.Join(os.TempDir(), "fluxid-reports", sessionID+".yaml")
-	_ = os.Remove(reportPath)
-	defer func() { _ = os.Remove(reportPath) }()
 
 	// Write a valid FAIL report
 	failReport := `command: test-implement
@@ -115,10 +105,8 @@ next_steps:
 func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expectedStatus, command string) {
 	t.Helper()
 
-	// Clean up any existing report before test
-	reportPath := filepath.Join(os.TempDir(), "fluxid-reports", sessionID+".yaml")
-	_ = os.Remove(reportPath)
-	defer func() { _ = os.Remove(reportPath) }()
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	// Write initial invalid/malformed report
 	if err := ipc.WriteReport(sessionID, initialReport); err != nil {
@@ -156,8 +144,8 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 	}
 }
 
+//nolint:paralleltest // Cannot use t.Parallel with t.Setenv
 func TestWaitForValidReport_InvalidThenValid(t *testing.T) {
-	t.Parallel()
 	// Test waitForValidReport retrying on invalid report
 	invalidReport := `invalid: yaml without status`
 	validReport := `command: test-implement
@@ -177,8 +165,8 @@ next_steps:
 	testRetryScenario(t, "test-wait-report-retry", invalidReport, validReport, statusPass, "test")
 }
 
+//nolint:paralleltest // Cannot use t.Parallel with t.Setenv
 func TestWaitForValidReport_MalformedYAML(t *testing.T) {
-	t.Parallel()
 	// Test waitForValidReport with malformed YAML that later becomes valid
 	malformedYAML := `command: test
 status: {{{invalid yaml`
