@@ -156,6 +156,11 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 
 //nolint:paralleltest // Cannot use t.Parallel with t.Setenv
 func TestWaitForValidReport_InvalidThenValid(t *testing.T) {
+	// Skip when race detector is enabled - this test verifies retry behavior
+	// which involves 2s sleeps that become 20-40s under race detector
+	if testing.Short() {
+		t.Skip("Skipping retry test in short mode (incompatible with race detector)")
+	}
 	// Test waitForValidReport retrying on invalid report
 	invalidReport := `invalid: yaml without status`
 	validReport := `command: test-implement
@@ -177,6 +182,11 @@ next_steps:
 
 //nolint:paralleltest // Cannot use t.Parallel with t.Setenv
 func TestWaitForValidReport_MalformedYAML(t *testing.T) {
+	// Skip when race detector is enabled - this test verifies retry behavior
+	// which involves 2s sleeps that become 20-40s under race detector
+	if testing.Short() {
+		t.Skip("Skipping retry test in short mode (incompatible with race detector)")
+	}
 	// Test waitForValidReport with malformed YAML that later becomes valid
 	malformedYAML := `command: test
 status: {{{invalid yaml`
