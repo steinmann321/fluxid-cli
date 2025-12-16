@@ -138,8 +138,9 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 		t.Fatalf("Failed to write valid report: %v", err)
 	}
 
-	// Use much longer timeout to accommodate race detector slowness
-	// waitForValidReport sleeps 2s between retries, which can be 10-20s under race detector
+	// Use very long timeout to accommodate race detector slowness
+	// waitForValidReport sleeps 2s between retries, which becomes 20-40s under race detector
+	// Multiple retries could take several minutes with race detector
 	select {
 	case res := <-done:
 		if res.err != nil {
@@ -148,7 +149,7 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 		if res.status != expectedStatus {
 			t.Errorf("Expected status %s, got: %s", expectedStatus, res.status)
 		}
-	case <-time.After(60 * time.Second):
+	case <-time.After(5 * time.Minute):
 		t.Fatal("Test timed out waiting for report")
 	}
 }
