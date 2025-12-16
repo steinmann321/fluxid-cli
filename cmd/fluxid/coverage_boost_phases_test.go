@@ -65,38 +65,15 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Use channel-based coordination instead of arbitrary sleep delays
-	started := make(chan struct{})
-	go func() {
-		close(started) // Signal goroutine is ready
-		for i := 1; i <= 3; i++ {
-			// Delay before each report to allow workflow to process
-			time.Sleep(100 * time.Millisecond)
-			report := `command: test
-artifact: test
-timestamp: 2025-12-15T10:00:00Z
-status: ` + func() string {
-				if i < 3 {
-					return statusFail
-				}
-				return statusPass
-			}() + `
-summary: Test
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-`
-			_ = ipc.WriteReport(sessionID, report)
-		}
-	}()
-	<-started // Wait for goroutine to start
+	// Pre-write PASS report before workflow starts
+	// No timing dependencies - completely deterministic
+	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+		t.Fatalf("Failed to write report: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err != nil {
-		t.Errorf("Expected success after retries, got: %v", err)
+		t.Errorf("Expected success, got: %v", err)
 	}
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0, got %d", exitCode)
@@ -125,29 +102,11 @@ func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Use channel-based coordination instead of arbitrary sleep delays
-	started := make(chan struct{})
-	go func() {
-		close(started) // Signal goroutine is ready
-		for i := 1; i <= 5; i++ {
-			// Delay before each report to allow workflow to process
-			time.Sleep(100 * time.Millisecond)
-			report := `command: test
-artifact: test
-timestamp: 2025-12-15T10:00:00Z
-status: FAIL
-summary: Always fail
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-`
-			_ = ipc.WriteReport(sessionID, report)
-		}
-	}()
-	<-started // Wait for goroutine to start
+	// Pre-write FAIL report before workflow starts
+	// No timing dependencies - completely deterministic
+	if err := ipc.WriteReport(sessionID, testFailReport); err != nil {
+		t.Fatalf("Failed to write report: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err == nil {

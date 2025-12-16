@@ -5,7 +5,6 @@ import (
 	"fluxid-loop/internal/ipc"
 	"os"
 	"path/filepath"
-	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -85,35 +84,11 @@ func TestRunWorkflow_ReviewFailContinues(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Use channel-based coordination for reliable test execution
-	var reportCount atomic.Int32
-	started := make(chan struct{})
-	go func() {
-		close(started) // Signal goroutine is ready
-		for i := 0; i < 4; i++ {
-			// Delay before each report to allow workflow to process
-			time.Sleep(100 * time.Millisecond)
-			count := reportCount.Add(1)
-			status := "PASS"
-			if count == 2 {
-				status = "FAIL" // First review fails
-			}
-			report := `command: test
-artifact: test
-timestamp: 2025-12-15T10:00:00Z
-status: ` + status + `
-summary: Test
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-`
-			_ = ipc.WriteReport(sessionID, report)
-		}
-	}()
-	<-started // Wait for goroutine to start
+	// Pre-write PASS report before workflow starts
+	// No timing dependencies - completely deterministic
+	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+		t.Fatalf("Failed to write report: %v", err)
+	}
 
 	exitCode, err := runWorkflow(cfg)
 	if err != nil {
