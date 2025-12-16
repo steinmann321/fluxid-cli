@@ -346,7 +346,8 @@ func TestSetupSignalHandler(t *testing.T) {
 	signalCount.Store(0)
 
 	// This should not panic
-	setupSignalHandler(sessionID)
+	cleanup := setupSignalHandler(sessionID)
+	t.Cleanup(cleanup)
 
 	// The handler is running in a goroutine, so we can't easily test it
 	// without sending actual signals. This test primarily checks for setup issues.

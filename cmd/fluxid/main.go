@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"sync/atomic"
 	"syscall"
 
@@ -22,6 +23,12 @@ const (
 	commitPrompt               = "Create a git commit with all changes."
 	reviewPrompt               = "Review the implementation and report status."
 	flagHelp                   = "--help"
+)
+
+//nolint:gochecknoglobals // Global state needed for signal handler cleanup in tests
+var (
+	signalCleanups []func()
+	cleanupMutex   sync.Mutex
 )
 
 type Config struct {
@@ -230,7 +237,7 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *cliArgs) (Config, e
 func executeWorkflow(cfg Config) int {
 	// Set up signal handler for graceful abort (skip in dry-run mode)
 	if !cfg.DryRun {
-		setupSignalHandler(cfg.SessionID)
+		_ = setupSignalHandler(cfg.SessionID) // Cleanup not needed in production since program exits
 	}
 
 	// Print dry-run header if in simulation mode and text format
@@ -302,7 +309,7 @@ var signalCount atomic.Int32
 // setupSignalHandler installs a signal handler that sets the abort flag on SIGINT/SIGTERM.
 // On the first signal, it sets the abort flag for graceful shutdown.
 // On the second signal, it forces immediate exit.
-func setupSignalHandler(sessionID string) {
+func setupSignalHandler(sessionID string) func() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -326,4 +333,30 @@ func setupSignalHandler(sessionID string) {
 			}
 		}
 	}()
+
+	// Return cleanup function to stop signal handling and close channel
+	cleanup := func() {
+		signal.Stop(sigChan)
+		close(sigChan)
+	}
+
+	// Track cleanup for tests
+	cleanupMutex.Lock()
+	signalCleanups = append(signalCleanups, cleanup)
+	cleanupMutex.Unlock()
+
+	return cleanup
+}
+
+// cleanupAllSignalHandlers cleans up all signal handlers. Used in tests to prevent goroutine leaks.
+//
+//nolint:unused // Used in tests via t.Cleanup()
+func cleanupAllSignalHandlers() {
+	cleanupMutex.Lock()
+	defer cleanupMutex.Unlock()
+
+	for _, cleanup := range signalCleanups {
+		cleanup()
+	}
+	signalCleanups = nil
 }

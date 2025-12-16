@@ -18,7 +18,8 @@ func TestSetupSignalHandler_Coverage(t *testing.T) {
 	// Just call setupSignalHandler to exercise the code path
 	// The goroutine will be started but we won't send actual signals
 	// to avoid interfering with the test process
-	setupSignalHandler(sessionID)
+	cleanup := setupSignalHandler(sessionID)
+	t.Cleanup(cleanup)
 
 	// Verify that the abort flag is not set initially
 	aborted, err := ipc.CheckAbortFlag(sessionID)
@@ -38,7 +39,8 @@ func TestSetupSignalHandler_InvalidSessionPath(t *testing.T) {
 	sessionID := "test-invalid-path"
 
 	// Should not panic even with invalid path
-	setupSignalHandler(sessionID)
+	cleanup := setupSignalHandler(sessionID)
+	t.Cleanup(cleanup)
 
 	// The function should complete without crashing
 	// The error path in SetAbortFlag will be logged but not cause failure

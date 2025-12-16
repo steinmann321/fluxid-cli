@@ -117,7 +117,8 @@ issues:
 
 func TestSetupSignalHandler_InvalidSession(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "/dev/null")
-	setupSignalHandler("test-invalid")
+	cleanup := setupSignalHandler("test-invalid")
+	t.Cleanup(cleanup)
 	time.Sleep(10 * time.Millisecond)
 }
 
@@ -125,9 +126,12 @@ func TestSetupSignalHandler_MultipleSetups(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
-	setupSignalHandler("test-1")
-	setupSignalHandler("test-2")
-	setupSignalHandler("test-3")
+	cleanup1 := setupSignalHandler("test-1")
+	t.Cleanup(cleanup1)
+	cleanup2 := setupSignalHandler("test-2")
+	t.Cleanup(cleanup2)
+	cleanup3 := setupSignalHandler("test-3")
+	t.Cleanup(cleanup3)
 	time.Sleep(10 * time.Millisecond)
 }
 
