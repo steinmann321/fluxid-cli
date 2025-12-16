@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunImplementPhase_WithAbort(t *testing.T) {
 	// Test that implement phase checks abort flag
-	sessionID := "test-implement-abort-session"
+	sessionID := "test-implement-abort-session-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 
@@ -105,7 +106,7 @@ func TestRunImplementPhase_NonZeroExitCode(t *testing.T) {
 
 func TestRunImplementPhase_WithCommit(t *testing.T) {
 	// Test implement phase with commit enabled
-	sessionID := "test-implement-with-commit"
+	sessionID := "test-implement-with-commit-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -134,7 +135,7 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 
 func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 	// Test successful implement phase with commit
-	sessionID := "test-implement-success-commit"
+	sessionID := "test-implement-success-commit-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 
@@ -193,7 +194,7 @@ next_steps:
 
 func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 	// Test implement phase with FAIL then PASS
-	sessionID := "test-implement-retry-pass"
+	sessionID := "test-implement-retry-pass-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 
@@ -228,7 +229,7 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 
 func TestRunCommitPhase_Failure(t *testing.T) {
 	// Test commit phase failure
-	sessionID := "test-commit-failure"
+	sessionID := "test-commit-failure-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -256,7 +257,7 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 
 func TestRunReviewPhase_Failure(t *testing.T) {
 	// Test review phase failure
-	sessionID := "test-review-failure"
+	sessionID := "test-review-failure-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -284,7 +285,7 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 
 func TestRunReviewPhase_Success(t *testing.T) {
 	// Test successful review phase
-	sessionID := "test-review-success"
+	sessionID := "test-review-success-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 

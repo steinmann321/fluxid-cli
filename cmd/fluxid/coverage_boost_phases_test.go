@@ -9,7 +9,7 @@ import (
 )
 
 func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
-	sessionID := "test-abort-implement"
+	sessionID := "test-abort-implement-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -44,7 +44,7 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 }
 
 func TestRunImplementPhase_MultipleRetries(t *testing.T) {
-	sessionID := "test-retries"
+	sessionID := "test-retries-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -104,7 +104,7 @@ issues:
 }
 
 func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
-	sessionID := "test-all-fail"
+	sessionID := "test-all-fail-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -159,7 +159,7 @@ issues:
 }
 
 func TestRunImplementPhase_AgentFailure(t *testing.T) {
-	sessionID := "test-agent-fail"
+	sessionID := "test-agent-fail-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -190,7 +190,7 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 }
 
 func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
-	sessionID := "test-nonexistent"
+	sessionID := "test-nonexistent-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 

@@ -12,7 +12,7 @@ import (
 
 func TestRunWorkflow_AbortBetweenPhases(t *testing.T) {
 	t.Cleanup(cleanupAllSignalHandlers)
-	sessionID := "test-abort-between"
+	sessionID := "test-abort-between-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -33,10 +33,9 @@ func TestRunWorkflow_AbortBetweenPhases(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Use channel-based coordination instead of arbitrary delays
-	started := make(chan struct{})
+	// Set abort flag very quickly to catch workflow between phases
+	// Write report first so implement phase completes, then immediately set abort
 	go func() {
-		close(started) // Signal goroutine is ready
 		report := `command: test
 artifact: test
 timestamp: 2025-12-15T10:00:00Z
@@ -50,10 +49,9 @@ issues:
   enhancements: []
 `
 		_ = ipc.WriteReport(sessionID, report)
-		time.Sleep(50 * time.Millisecond)
+		// Set abort flag immediately after writing report
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
-	<-started // Wait for goroutine to start
 
 	exitCode, err := runWorkflow(cfg)
 	if err == nil {
@@ -66,7 +64,7 @@ issues:
 
 func TestRunWorkflow_ReviewFailContinues(t *testing.T) {
 	t.Cleanup(cleanupAllSignalHandlers)
-	sessionID := "test-review-fail-continue"
+	sessionID := "test-review-fail-continue-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -148,7 +146,7 @@ func TestSetupSignalHandler_MultipleSetups(t *testing.T) {
 
 func TestRunWorkflow_ReviewPhaseFailure(t *testing.T) {
 	t.Cleanup(cleanupAllSignalHandlers)
-	sessionID := "test-review-fail"
+	sessionID := "test-review-fail-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -183,7 +181,7 @@ func TestRunWorkflow_AbortCheckError(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
-	sessionID := "test-abort-check-warn"
+	sessionID := "test-abort-check-warn-" + time.Now().Format("20060102150405.000000")
 	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
