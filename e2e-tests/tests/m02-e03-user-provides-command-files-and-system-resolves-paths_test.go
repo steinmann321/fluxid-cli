@@ -51,8 +51,8 @@ commands:
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	// Run fluxid with custom HOME
-	output := runFluxidWithHome(t, root, tmpHome)
+	// Run fluxid with custom HOME in dry-run mode (only need init status)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify command files section appears in output
 	if !strings.Contains(output, "Command Files:") {
@@ -149,8 +149,8 @@ commands:
 		t.Fatalf("Failed to write project config: %v", err)
 	}
 
-	// Run fluxid from project directory
-	output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
+	// Run fluxid from project directory in dry-run mode (only need init status)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
 	// Verify project command files are used (not home)
 	if !strings.Contains(output, projectImplementFile) {
@@ -263,8 +263,8 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 	// Create temporary home directory without command files
 	tmpHome := t.TempDir()
 
-	// Run fluxid without any command files
-	output := runFluxidWithHome(t, root, tmpHome)
+	// Run fluxid without any command files in dry-run mode (only need init status)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify fluxid runs successfully
 	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
@@ -315,8 +315,8 @@ func TestM02E03AbsolutePathsDisplayed(t *testing.T) {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 
-	// Run fluxid
-	output := runFluxidWithHome(t, root, tmpHome)
+	// Run fluxid in dry-run mode (only need init status)
+	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify absolute paths are displayed (should contain tmpHome path)
 	expectedPath := filepath.Join(commandsDir, "impl.md")
