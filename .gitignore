@@ -21,6 +21,11 @@ fluxid/tmp/
 fluxid/reports/workflow-report.yaml
 fluxid/progress.yaml
 
+# Local agent directories
+.claude/
+.opencode/
+.fluxid/
+
 # Test binary, built with `go test -c`
 *.test
 
