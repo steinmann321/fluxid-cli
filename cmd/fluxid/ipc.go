@@ -34,12 +34,15 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  ipc write-history        Append timestamped history entry via IPC\n")
 	fmt.Fprintf(os.Stderr, "  ipc view-history         Display session history in chronological order\n")
 	fmt.Fprintf(os.Stderr, "\nOptions:\n")
-	fmt.Fprintf(os.Stderr, "  --claude                 Enable workflow mode (required for workflow)\n")
-	fmt.Fprintf(os.Stderr, "  --fluxid-iterations N    Set max review cycles (default: 20)\n")
+	fmt.Fprintf(os.Stderr, "  --claude                      Enable workflow mode (required for workflow)\n")
+	fmt.Fprintf(os.Stderr, "  --fluxid-iterations N         Set max review cycles (default: 20)\n")
 	fmt.Fprintf(os.Stderr, "  --fluxid-implement-retries R  Set max implement retries (default: 3)\n")
-	fmt.Fprintf(os.Stderr, "  --fluxid-no-commit       Disable commit phase\n")
-	fmt.Fprintf(os.Stderr, "  --session ID             Specify session ID (overrides FLUXID_SESSION_ID)\n")
-	fmt.Fprintf(os.Stderr, "  --help                   Show help information\n")
+	fmt.Fprintf(os.Stderr, "  --fluxid-commit-enabled       Enable commit phase\n")
+	fmt.Fprintf(os.Stderr, "  --fluxid-no-commit            Disable commit phase\n")
+	fmt.Fprintf(os.Stderr, "  --fluxid-dry-run              Run simulation without executing agent\n")
+	fmt.Fprintf(os.Stderr, "  --fluxid-output {text|json|yaml}  Set initialization output format\n")
+	fmt.Fprintf(os.Stderr, "  --session ID                  Specify session ID (overrides FLUXID_SESSION_ID)\n")
+	fmt.Fprintf(os.Stderr, "  --help                        Show help information\n")
 }
 
 // handleIPCCommand processes IPC subcommands.
