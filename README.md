@@ -93,3 +93,46 @@ commands:
 - Iterations: `20`
 - Implement retries: `3`
 - Commit enabled: `false`
+
+## Application Layout
+
+```
+fluxid-loop/
+├── cmd/
+│   └── fluxid/
+│       └── main.go             # Thin entrypoint; calls internal/command.Execute()
+├── internal/
+│   ├── command/                # CLI parsing, flags, IPC subcommands, signal handling
+│   ├── config/                 # Load, resolve, validate config (home, project, env)
+│   ├── ipc/                    # In-memory report/history storage and schema validation
+│   ├── output/                 # Text/JSON/YAML initialization status formatting
+│   └── workflow/               # Core implement→review loop and dry-run simulation
+├── e2e-tests/                  # End-to-end CLI tests
+├── hooks/                      # Dev hooks (read-only policy)
+└── Makefile, go.mod, README.md
+```
+
+Notes:
+- Runtime is pure Go; shell scripts in `hooks/` are development helpers only.
+- The default `cmd/fluxid/main.go` is intentionally minimal.
+
+## Key Flags & Formats
+
+- `--claude | --codex | --opencode` select the agent; subsequent args are passed through to the agent.
+- `--fluxid-iterations N` set max review cycles (default 20).
+- `--fluxid-implement-retries R` set max implement retries (default 3).
+- `--fluxid-commit-enabled` enable commit phase; `--fluxid-no-commit` disables it.
+- `--fluxid-dry-run` run a non-executing simulation and print the plan.
+- `--fluxid-output text|json|yaml` choose initialization status format.
+- `--session ID` override `FLUXID_SESSION_ID` for IPC commands.
+
+Examples:
+- Text simulation plan:
+  - `fluxid --claude --fluxid-dry-run`
+- JSON init status for scripting:
+  - `fluxid --claude --fluxid-output json | jq -r '.session_id'`
+- YAML init status:
+  - `fluxid --claude --fluxid-output yaml`
+
+Top-level helper:
+- `fluxid --write-history <message>` appends to history for the active session (requires `FLUXID_SESSION_ID`).
