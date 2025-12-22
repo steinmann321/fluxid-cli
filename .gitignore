@@ -16,6 +16,7 @@ fluxid/fluxid
 /tmp/
 
 # fluxid runtime files
+.tmp/
 fluxid/tmp/
 fluxid/reports/workflow-report.yaml
 fluxid/progress.yaml

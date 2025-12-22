@@ -4,7 +4,9 @@ set -euo pipefail
 GLOBAL_THRESHOLD="90"
 
 echo "Running Go tests with coverage..."
-COV_FILE="${TMPDIR:-/tmp}/fluxid-coverage.out"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+mkdir -p "$REPO_ROOT/.tmp/coverage"
+COV_FILE="$REPO_ROOT/.tmp/coverage/coverage.out"
 # Exclude e2e-tests from coverage calculation
 PKGS=$(go list ./... | grep -v '/e2e-tests/')
 go test -failfast -timeout=10m -covermode=atomic -coverprofile="${COV_FILE}" $PKGS 
