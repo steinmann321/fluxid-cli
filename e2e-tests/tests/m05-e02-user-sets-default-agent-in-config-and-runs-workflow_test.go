@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -80,6 +79,8 @@ func TestM05E02ProjectOverridesHome(t *testing.T) {
 }
 
 // TestM05E02PrecedenceChain validates full precedence: CLI > env > project > home > default.
+//
+//nolint:funlen // E2E test with config precedence validation
 func TestM05E02PrecedenceChain(t *testing.T) {
 	t.Parallel()
 
@@ -134,14 +135,14 @@ func TestM05E02PrecedenceChain(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpHome := setupTestHome(t, tt.homeAgent)
-			tmpDir := setupTestProject(t, tt.projectAgent)
-			env := buildTestEnv(tt.envAgent)
-			args := buildTestArgs(tt.cliAgent)
+			tmpHome := setupTestHome(t, testCase.homeAgent)
+			tmpDir := setupTestProject(t, testCase.projectAgent)
+			env := buildTestEnv(testCase.envAgent)
+			args := buildTestArgs(testCase.cliAgent)
 
 			// Add dry-run flag to args (only need to verify agent selection)
 			args = append(args, "--fluxid-dry-run")
@@ -151,8 +152,8 @@ func TestM05E02PrecedenceChain(t *testing.T) {
 				t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 			}
 
-			verifyAgent(t, output, tt.expectedAgent)
-			verifySource(t, output, tt.expectedSource)
+			verifyAgent(t, output, testCase.expectedAgent)
+			verifySource(t, output, testCase.expectedSource)
 		})
 	}
 }
@@ -225,7 +226,7 @@ func setupTestProject(t *testing.T, agent string) string {
 
 func buildTestEnv(envAgent string) []string {
 	if envAgent != "" {
-		return []string{fmt.Sprintf("FLUXID_AGENT=%s", envAgent)}
+		return []string{"FLUXID_AGENT=" + envAgent}
 	}
 	return nil
 }
@@ -239,7 +240,7 @@ func buildTestArgs(cliAgent string) []string {
 
 func verifyAgent(t *testing.T, output, expectedAgent string) {
 	t.Helper()
-	expectedLine := fmt.Sprintf("Agent: %s", expectedAgent)
+	expectedLine := "Agent: " + expectedAgent
 	if !strings.Contains(output, expectedLine) {
 		t.Errorf("Expected %s, got:\n%s", expectedLine, output)
 	}

@@ -8,6 +8,8 @@ import (
 
 // TestM03E03InvalidReportMissingIssueCategories verifies that a report
 // with incomplete issue categories is rejected with specific diagnostics.
+//
+//nolint:funlen // E2E test with comprehensive validation checks
 func TestM03E03InvalidReportMissingIssueCategories(t *testing.T) {
 	t.Parallel()
 
@@ -88,16 +90,16 @@ issues:
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			sessionID := "test-invalid-category-" + tc.missingCategory
+			sessionID := "test-invalid-category-" + testCase.missingCategory
 
-			errOutput := runInvalidReportTest(t, sessionID, tc.report)
+			errOutput := runInvalidReportTest(t, sessionID, testCase.report)
 
 			// Verify error mentions the missing category
-			if !strings.Contains(errOutput, tc.missingCategory) {
-				t.Errorf("Expected error to mention missing category %q, got:\n%s", tc.missingCategory, errOutput)
+			if !strings.Contains(errOutput, testCase.missingCategory) {
+				t.Errorf("Expected error to mention missing category %q, got:\n%s", testCase.missingCategory, errOutput)
 			}
 		})
 	}

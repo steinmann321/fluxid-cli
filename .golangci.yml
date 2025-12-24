@@ -53,6 +53,26 @@ linters:
     - thelper
     - tparallel
     - wrapcheck
+    - mnd
+    - contextcheck
+    - reassign
+    - nilnil
+    - forcetypeassert
+    - err113
+    - errname
+    - funlen
+    - ireturn
+    - wastedassign
+    - perfsprint
+    - usestdlibvars
+    - mirror
+    - fatcontext
+    - cyclop
+    - maintidx
+    - varnamelen
+    - interfacebloat
+    - nonamedreturns
+    - testifylint
 
   settings:
     tagliatelle:
@@ -74,8 +94,49 @@ linters-settings:
       - name: exported
       - name: error-return
       - name: argument-limit
-
-
+  mnd:
+    checks:
+      - argument
+      - case
+      - condition
+      - operation
+      - return
+      - assign
+    ignored-numbers:
+      - '0'
+      - '1'
+      - '-1'
+  contextcheck:
+    check-error-free-funcs:
+      - (*github.com/DATA-DOG/go-sqlmock.Sqlmock).ExpectExec
+      - (*github.com/DATA-DOG/go-sqlmock.Sqlmock).ExpectQuery
+  funlen:
+    lines: 50
+    statements: 30
+  cyclop:
+    max-complexity: 12
+  varnamelen:
+    min-name-length: 2
+    ignore-names:
+      - err
+      - i
+      - j
+      - ok
+      - id
+      - db
+      - tx
+  interfacebloat:
+    max: 5
+  reassign:
+    patterns:
+      - '.*'
+  nilnil:
+    checked-types:
+      - ptr
+      - func
+      - iface
+      - map
+      - chan
   tagliatelle:
     case:
       rules:

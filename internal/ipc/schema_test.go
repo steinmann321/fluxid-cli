@@ -83,6 +83,6 @@ func TestWriteReportSchemaErrorHandling(t *testing.T) {
 // failingWriter is a writer that always returns an error.
 type failingWriter struct{}
 
-func (f *failingWriter) Write(_ []byte) (n int, err error) {
+func (f *failingWriter) Write(_ []byte) (int, error) {
 	return 0, bytes.ErrTooLarge
 }

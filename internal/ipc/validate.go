@@ -2,10 +2,16 @@
 package ipc
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	errReportEmpty      = errors.New("report is empty")
+	errValidationFailed = errors.New("validation failed")
 )
 
 // Report represents the structure of a workflow report.
@@ -60,7 +66,7 @@ func validateIssuesStructure(reportYAML string) []string {
 	requiredCategories := []string{"blockers", "defects", "concerns", "observations", "enhancements"}
 	for _, category := range requiredCategories {
 		if _, exists := issues[category]; !exists {
-			errors = append(errors, fmt.Sprintf("issues missing required category: %s", category))
+			errors = append(errors, "issues missing required category: "+category)
 		}
 	}
 
@@ -71,7 +77,7 @@ func validateIssuesStructure(reportYAML string) []string {
 // Returns detailed validation errors if the report is invalid.
 func ValidateReport(reportYAML string) error {
 	if strings.TrimSpace(reportYAML) == "" {
-		return fmt.Errorf("report is empty")
+		return errReportEmpty
 	}
 
 	var report Report
@@ -79,7 +85,20 @@ func ValidateReport(reportYAML string) error {
 		return fmt.Errorf("invalid YAML: %w", err)
 	}
 
-	// Validate required fields
+	// Collect all validation errors
+	var errors []string
+	errors = append(errors, validateReportRequiredFields(report)...)
+	errors = append(errors, validateIssuesStructure(reportYAML)...)
+	errors = append(errors, validateIssuesMessages(report)...)
+
+	if len(errors) > 0 {
+		return fmt.Errorf("%w:\n  - %s", errValidationFailed, strings.Join(errors, "\n  - "))
+	}
+
+	return nil
+}
+
+func validateReportRequiredFields(report Report) []string {
 	var errors []string
 
 	if report.Command == "" {
@@ -101,11 +120,11 @@ func ValidateReport(reportYAML string) error {
 		errors = append(errors, fmt.Sprintf("invalid status value: %q (must be PASS or FAIL)", report.Status))
 	}
 
-	// Validate issues structure exists
-	// Note: The YAML unmarshaler will create zero-value slices for missing arrays,
-	// but we need to ensure the issues field itself is present in the YAML
-	issuesErrors := validateIssuesStructure(reportYAML)
-	errors = append(errors, issuesErrors...)
+	return errors
+}
+
+func validateIssuesMessages(report Report) []string {
+	var errors []string
 
 	// Validate each issue has required message field
 	allIssues := []struct {
@@ -127,9 +146,5 @@ func ValidateReport(reportYAML string) error {
 		}
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf("validation failed:\n  - %s", strings.Join(errors, "\n  - "))
-	}
-
-	return nil
+	return errors
 }

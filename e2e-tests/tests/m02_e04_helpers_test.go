@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,11 +19,11 @@ func runFluxidInDirWithEnv(t *testing.T, root, homeDir, workDir string, envVars 
 
 	// Build environment with custom vars
 	env := append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 	for key, val := range envVars {
-		env = append(env, fmt.Sprintf("%s=%s", key, val))
+		env = append(env, key+"="+val)
 	}
 	cmd.Env = env
 
@@ -51,11 +50,11 @@ func runFluxidInDirWithEnvAndArgs(
 
 	// Build environment with custom vars
 	env := append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 	for key, val := range envVars {
-		env = append(env, fmt.Sprintf("%s=%s", key, val))
+		env = append(env, key+"="+val)
 	}
 	cmd.Env = env
 
@@ -82,11 +81,11 @@ func runFluxidInDirWithEnvExpectError(
 
 	// Build environment with custom vars
 	env := append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 	for key, val := range envVars {
-		env = append(env, fmt.Sprintf("%s=%s", key, val))
+		env = append(env, key+"="+val)
 	}
 	cmd.Env = env
 

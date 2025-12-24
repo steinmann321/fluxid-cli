@@ -13,6 +13,8 @@ import (
 )
 
 // TestIPCWriteHistoryConcurrentWrites tests concurrent writes to verify no corruption.
+//
+//nolint:cyclop // E2E test with concurrent operations and race condition checks
 func TestIPCWriteHistoryConcurrentWrites(t *testing.T) {
 	sessionID := "test-session-ipc-concurrent-writes"
 	setupReportDir(t)
@@ -22,27 +24,27 @@ func TestIPCWriteHistoryConcurrentWrites(t *testing.T) {
 
 	// Number of concurrent writes
 	numWrites := 10
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
 
 	// Spawn multiple parallel writes
-	for i := 0; i < numWrites; i++ {
-		wg.Add(1)
+	for writeIndex := 0; writeIndex < numWrites; writeIndex++ {
+		waitGroup.Add(1)
 		go func(index int) {
-			defer wg.Done()
+			defer waitGroup.Done()
 
 			message := fmt.Sprintf("Concurrent write %d", index)
 			cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-			cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+			cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				t.Errorf("Concurrent write %d failed: %v\nOutput: %s", index, err, output)
 			}
-		}(i)
+		}(writeIndex)
 	}
 
 	// Wait for all writes to complete
-	wg.Wait()
+	waitGroup.Wait()
 
 	// Read history and verify completeness
 	history, err := ipc.ReadHistory(sessionID)
@@ -95,7 +97,7 @@ func TestIPCWriteHistorySessionIsolation(t *testing.T) {
 	// Write to first session
 	message1 := "Message for session 1"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message1)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID1))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID1)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -105,7 +107,7 @@ func TestIPCWriteHistorySessionIsolation(t *testing.T) {
 	// Write to second session
 	message2 := "Message for session 2"
 	cmd = exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message2)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID2))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID2)
 
 	output, err = cmd.CombinedOutput()
 	if err != nil {
@@ -151,7 +153,7 @@ func TestIPCWriteHistoryZeroExitCode(t *testing.T) {
 
 	// Write history entry
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "test message")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	err := cmd.Run()
 	if err != nil {
@@ -182,7 +184,7 @@ func TestIPCWriteHistoryUTF8Support(t *testing.T) {
 
 	for _, message := range messages {
 		cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-		cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
 		if err != nil {

@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +11,8 @@ import (
 )
 
 // TestM05E05AgentNotInPathError validates clear error when agent binary is missing from PATH.
+//
+//nolint:funlen // E2E test with runtime error handling
 func TestM05E05AgentNotInPathError(t *testing.T) {
 	t.Parallel()
 
@@ -32,7 +33,7 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 				homeDir, _ := os.UserHomeDir()
 				return []string{
 					"PATH=/usr/bin:/bin",
-					fmt.Sprintf("HOME=%s", homeDir),
+					"HOME=" + homeDir,
 				}
 			},
 			wantError: "not found in PATH",
@@ -52,7 +53,7 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 				homeDir, _ := os.UserHomeDir()
 				return []string{
 					"PATH=/usr/bin:/bin",
-					fmt.Sprintf("HOME=%s", homeDir),
+					"HOME=" + homeDir,
 				}
 			},
 			wantError: "not found in PATH",
@@ -64,13 +65,13 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, fmt.Sprintf("--%s", tt.agent))
-			cmd.Env = tt.setupEnv()
+			cmd := exec.CommandContext(t.Context(), binPath, "--"+testCase.agent)
+			cmd.Env = testCase.setupEnv()
 
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr
@@ -79,7 +80,7 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 
 			// Error is expected
 			if err == nil {
-				t.Fatalf("Expected error when %s not in PATH, but succeeded", tt.agent)
+				t.Fatalf("Expected error when %s not in PATH, but succeeded", testCase.agent)
 			}
 
 			var exitErr *exec.ExitError
@@ -88,19 +89,21 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 			}
 
 			stderrStr := stderr.String()
-			if !strings.Contains(stderrStr, tt.wantError) {
-				t.Errorf("Expected error text %q, got:\n%s", tt.wantError, stderrStr)
+			if !strings.Contains(stderrStr, testCase.wantError) {
+				t.Errorf("Expected error text %q, got:\n%s", testCase.wantError, stderrStr)
 			}
 
 			// Run additional error checks
-			if tt.errorCheck != nil {
-				tt.errorCheck(t, stderrStr)
+			if testCase.errorCheck != nil {
+				testCase.errorCheck(t, stderrStr)
 			}
 		})
 	}
 }
 
 // TestM05E05NoChildProcessSpawnedOnError validates that no agent process is spawned on error conditions.
+//
+//nolint:funlen // E2E test with process spawning validation
 func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 	t.Parallel()
 
@@ -116,7 +119,7 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 			name: "multiple agent flags",
 			args: []string{"--claude", "--codex"},
 			setupEnv: func() []string {
-				return append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+				return append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
 			},
 		},
 		{
@@ -126,7 +129,7 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 				return append(
 					os.Environ(),
 					"FLUXID_AGENT=invalid",
-					fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+					"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 				)
 			},
 		},
@@ -137,19 +140,19 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 				homeDir, _ := os.UserHomeDir()
 				return []string{
 					"PATH=/usr/bin:/bin",
-					fmt.Sprintf("HOME=%s", homeDir),
+					"HOME=" + homeDir,
 				}
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, tt.args...)
-			cmd.Env = tt.setupEnv()
+			cmd := exec.CommandContext(t.Context(), binPath, testCase.args...)
+			cmd.Env = testCase.setupEnv()
 
 			var stderr bytes.Buffer
 			var stdout bytes.Buffer
@@ -185,6 +188,8 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 }
 
 // TestM05E05ErrorMessagesAreConciseAndActionable validates that all error messages include helpful guidance.
+//
+//nolint:funlen // E2E test with error message validation
 func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 	t.Parallel()
 
@@ -201,7 +206,7 @@ func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 			name: "multiple flags error message quality",
 			args: []string{"--claude", "--codex"},
 			setupEnv: func() []string {
-				return append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+				return append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
 			},
 			wantInError: []string{"multiple", "agent", "--claude", "--codex", "--opencode"},
 		},
@@ -212,7 +217,7 @@ func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 				homeDir, _ := os.UserHomeDir()
 				return []string{
 					"PATH=/usr/bin:/bin",
-					fmt.Sprintf("HOME=%s", homeDir),
+					"HOME=" + homeDir,
 				}
 			},
 			wantInError: []string{"not found", "PATH", "which", "codex"},
@@ -224,20 +229,20 @@ func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 				return append(
 					os.Environ(),
 					"FLUXID_AGENT=foobar",
-					fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+					"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 				)
 			},
 			wantInError: []string{"unsupported", "foobar", "claude", "codex", "opencode"},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, tt.args...)
-			cmd.Env = tt.setupEnv()
+			cmd := exec.CommandContext(t.Context(), binPath, testCase.args...)
+			cmd.Env = testCase.setupEnv()
 
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr
@@ -252,7 +257,7 @@ func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 			stderrStr := stderr.String()
 
 			// Verify all expected phrases are present
-			for _, want := range tt.wantInError {
+			for _, want := range testCase.wantInError {
 				if !strings.Contains(stderrStr, want) {
 					t.Errorf("Expected error to contain %q, got:\n%s", want, stderrStr)
 				}

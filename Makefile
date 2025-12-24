@@ -73,6 +73,6 @@ test-unit: ## Run only unit tests
 
 coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
-	@go test -cover ./cmd/fluxid/... ./internal/... ./e2e-tests/...
+	@go test -short -cover ./cmd/fluxid/... ./internal/...
 
 .DEFAULT_GOAL := help

@@ -135,8 +135,8 @@ func TestM02E06ReviewPhaseMandatory(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			root := getProjectRoot(t)
@@ -147,21 +147,21 @@ func TestM02E06ReviewPhaseMandatory(t *testing.T) {
 			tmpProjectDir := t.TempDir()
 
 			// Add minimal iterations for fast test execution
-			args := make([]string, 0, len(tc.args)+2)
-			args = append(args, tc.args...)
+			args := make([]string, 0, len(testCase.args)+2)
+			args = append(args, testCase.args...)
 			args = append(args, "--fluxid-iterations", "1")
 			output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, args...)
 
 			// Verify commit enabled status
-			expectedStatus := "Commit Enabled: " + tc.commitEnabled
+			expectedStatus := "Commit Enabled: " + testCase.commitEnabled
 			if !strings.Contains(output, expectedStatus) {
 				t.Errorf("Expected '%s', got:\n%s", expectedStatus, output)
 			}
 
 			// Verify commit phase execution
 			hasCommitPhase := strings.Contains(output, "Running commit phase...")
-			if hasCommitPhase != tc.expectCommit {
-				if tc.expectCommit {
+			if hasCommitPhase != testCase.expectCommit {
+				if testCase.expectCommit {
 					t.Errorf("Expected commit phase to run, but it didn't. Output:\n%s", output)
 				} else {
 					t.Errorf("Expected commit phase to be skipped, but it ran. Output:\n%s", output)

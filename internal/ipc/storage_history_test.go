@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,8 +60,8 @@ func TestWriteHistoryEntryEmptySessionID(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 
@@ -73,8 +74,8 @@ func TestWriteHistoryEntryEmptyMessage(t *testing.T) {
 		t.Error("Expected error for empty message, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "message cannot be empty") {
-		t.Errorf("Expected 'message cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errMessageEmpty) {
+		t.Errorf("Expected errMessageEmpty error, got: %v", err)
 	}
 }
 
@@ -86,8 +87,8 @@ func TestReadHistoryEmptySessionID(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 
@@ -150,8 +151,8 @@ func TestClearHistoryEmptySession(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 

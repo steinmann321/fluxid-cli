@@ -102,7 +102,8 @@ func LoadHomeConfig() (*HomeConfig, error) {
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, nil // Not an error - file simply doesn't exist
+		//nolint:nilnil // Valid: no config file found is not an error, return nil to indicate "no home config"
+		return nil, nil
 	}
 
 	// #nosec G304 -- configPath is constructed from user's home directory, not user input
@@ -137,7 +138,8 @@ func LoadProjectConfig() (*ProjectConfig, error) {
 
 	// Check if file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, nil // Not an error - file simply doesn't exist
+		//nolint:nilnil // Valid: no config file found is not an error, return nil to indicate "no project config"
+		return nil, nil
 	}
 
 	// #nosec G304 -- configPath is constructed from current working directory, not user input
@@ -161,6 +163,8 @@ func LoadProjectConfig() (*ProjectConfig, error) {
 
 // resolveField resolves a configuration field with precedence: CLI > env > project > home > default.
 // For project and home sources, file paths are included in the source string.
+//
+//nolint:ireturn // Generic function returns generic type
 func resolveField[T any](
 	fieldName string,
 	cliValue *T,
@@ -220,6 +224,39 @@ func Resolve(
 	}
 
 	// Get config file paths for display in source strings
+	projectConfigPath, homeConfigPath := getConfigPaths(projectConfig, homeConfig)
+
+	// Extract all config values
+	agentValues := extractAgentValues(envConfig, projectConfig, homeConfig)
+	retriesValues := extractRetriesValues(envConfig, projectConfig, homeConfig)
+	iterationsValues := extractIterationsValues(envConfig, projectConfig, homeConfig)
+	commitValues := extractCommitValues(envConfig, projectConfig, homeConfig)
+
+	// Resolve each field using the helper
+	resolved.Agent = resolveField(
+		"agent", cliAgent, agentValues.env, agentValues.project, agentValues.home,
+		DefaultAgent, resolved.Sources, projectConfigPath, homeConfigPath,
+	)
+	resolved.ImplementRetries = resolveField(
+		"implement_retries", cliImplementRetries, retriesValues.env,
+		retriesValues.project, retriesValues.home, DefaultImplementRetries, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
+	resolved.Iterations = resolveField(
+		"iterations", cliIterations, iterationsValues.env, iterationsValues.project,
+		iterationsValues.home, DefaultIterations, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
+	resolved.CommitEnabled = resolveField(
+		"commit_enabled", cliCommitEnabled, commitValues.env,
+		commitValues.project, commitValues.home, DefaultCommitEnabled, resolved.Sources,
+		projectConfigPath, homeConfigPath,
+	)
+
+	return resolved
+}
+
+func getConfigPaths(projectConfig *ProjectConfig, homeConfig *HomeConfig) (string, string) {
 	var projectConfigPath, homeConfigPath string
 	if projectConfig != nil {
 		if path, err := GetProjectConfigPath(); err == nil {
@@ -231,72 +268,83 @@ func Resolve(
 			homeConfigPath = path
 		}
 	}
+	return projectConfigPath, homeConfigPath
+}
 
-	// Extract config values or nil
-	var envAgent, projectAgent, homeAgent *string
+type configValues[T any] struct {
+	env     *T
+	project *T
+	home    *T
+}
+
+func extractAgentValues(
+	envConfig *EnvConfig,
+	projectConfig *ProjectConfig,
+	homeConfig *HomeConfig,
+) configValues[string] {
+	var values configValues[string]
 	if envConfig != nil {
-		envAgent = envConfig.Agent
+		values.env = envConfig.Agent
 	}
 	if projectConfig != nil {
-		projectAgent = projectConfig.Agent
+		values.project = projectConfig.Agent
 	}
 	if homeConfig != nil {
-		homeAgent = homeConfig.Agent
+		values.home = homeConfig.Agent
 	}
+	return values
+}
 
-	var envImplementRetries, projectImplementRetries, homeImplementRetries *int
+func extractRetriesValues(
+	envConfig *EnvConfig,
+	projectConfig *ProjectConfig,
+	homeConfig *HomeConfig,
+) configValues[int] {
+	var values configValues[int]
 	if envConfig != nil {
-		envImplementRetries = envConfig.ImplementRetries
+		values.env = envConfig.ImplementRetries
 	}
 	if projectConfig != nil {
-		projectImplementRetries = projectConfig.ImplementRetries
+		values.project = projectConfig.ImplementRetries
 	}
 	if homeConfig != nil {
-		homeImplementRetries = homeConfig.ImplementRetries
+		values.home = homeConfig.ImplementRetries
 	}
+	return values
+}
 
-	var envIterations, projectIterations, homeIterations *int
+func extractIterationsValues(
+	envConfig *EnvConfig,
+	projectConfig *ProjectConfig,
+	homeConfig *HomeConfig,
+) configValues[int] {
+	var values configValues[int]
 	if envConfig != nil {
-		envIterations = envConfig.Iterations
+		values.env = envConfig.Iterations
 	}
 	if projectConfig != nil {
-		projectIterations = projectConfig.Iterations
+		values.project = projectConfig.Iterations
 	}
 	if homeConfig != nil {
-		homeIterations = homeConfig.Iterations
+		values.home = homeConfig.Iterations
 	}
+	return values
+}
 
-	var envCommitEnabled, projectCommitEnabled, homeCommitEnabled *bool
+func extractCommitValues(
+	envConfig *EnvConfig,
+	projectConfig *ProjectConfig,
+	homeConfig *HomeConfig,
+) configValues[bool] {
+	var values configValues[bool]
 	if envConfig != nil {
-		envCommitEnabled = envConfig.CommitEnabled
+		values.env = envConfig.CommitEnabled
 	}
 	if projectConfig != nil {
-		projectCommitEnabled = projectConfig.CommitEnabled
+		values.project = projectConfig.CommitEnabled
 	}
 	if homeConfig != nil {
-		homeCommitEnabled = homeConfig.CommitEnabled
+		values.home = homeConfig.CommitEnabled
 	}
-
-	// Resolve each field using the helper
-	resolved.Agent = resolveField(
-		"agent", cliAgent, envAgent, projectAgent, homeAgent, DefaultAgent, resolved.Sources,
-		projectConfigPath, homeConfigPath,
-	)
-	resolved.ImplementRetries = resolveField(
-		"implement_retries", cliImplementRetries, envImplementRetries,
-		projectImplementRetries, homeImplementRetries, DefaultImplementRetries, resolved.Sources,
-		projectConfigPath, homeConfigPath,
-	)
-	resolved.Iterations = resolveField(
-		"iterations", cliIterations, envIterations, projectIterations,
-		homeIterations, DefaultIterations, resolved.Sources,
-		projectConfigPath, homeConfigPath,
-	)
-	resolved.CommitEnabled = resolveField(
-		"commit_enabled", cliCommitEnabled, envCommitEnabled,
-		projectCommitEnabled, homeCommitEnabled, DefaultCommitEnabled, resolved.Sources,
-		projectConfigPath, homeConfigPath,
-	)
-
-	return resolved
+	return values
 }

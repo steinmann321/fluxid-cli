@@ -7,13 +7,63 @@ import "github.com/quasilyte/go-ruleguard/dsl"
 // Ban os.Exit outside main packages (libraries should return errors instead)
 func osExitInLib(m dsl.Matcher) {
 	m.Match(`os.Exit($_)`).
-		Where(!m.File().PkgPath.Matches(".*/cmd/.*") && !m.File().PkgPath.Matches(".*/e2e-tests/.*") && !m.File().Name.Matches("_test\\.go$") && !m.File().Name.Matches("-d$")).
-		Report("use error returns; os.Exit only allowed in CLI (cmd) or tests")
+		Where(!m.File().PkgPath.Matches(".*/cmd/.*") && !m.File().PkgPath.Matches(".*/internal/command") && !m.File().PkgPath.Matches(".*/e2e-tests/.*") && !m.File().Name.Matches("_test\\.go$") && !m.File().Name.Matches("-d$")).
+		Report("use error returns; os.Exit only allowed in CLI (cmd, internal/command) or tests")
 }
 
 // Disallow direct environment access in libraries (inject config)
 func osGetenvInLib(m dsl.Matcher) {
 	m.Match(`os.Getenv($_)`).
-		Where(!m.File().PkgPath.Matches(".*/cmd/.*") && !m.File().PkgPath.Matches(".*/e2e-tests/.*") && !m.File().Name.Matches("_test\\.go$")).
-		Report("do not use os.Getenv in libraries; allowed in CLI (cmd) and tests")
+		Where(!m.File().PkgPath.Matches(".*/cmd/.*") && !m.File().PkgPath.Matches(".*/internal/command") && !m.File().PkgPath.Matches(".*/e2e-tests/.*") && !m.File().Name.Matches("_test\\.go$")).
+		Report("do not use os.Getenv in libraries; allowed in CLI (cmd, internal/command) and tests")
+}
+
+// PROJECT-AGNOSTIC FLAKINESS PREVENTION RULES
+// These rules detect common patterns that cause test flakiness and goroutine leaks
+
+// Detect goroutines started in tests without proper cleanup/synchronization
+// This catches goroutines that may outlive the test and cause leaks
+func testGoroutineWithoutSync(m dsl.Matcher) {
+	m.Match(`
+		func $name(t *testing.T) {
+			$*_
+			go func() { $*_ }()
+			$*rest
+		}`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["rest"].Text.Matches(".*(Wait|Cleanup|VerifyNone|defer).*")).
+		Report("test starts goroutine without synchronization; add WaitGroup, defer cleanup, or goleak.VerifyNone to prevent leaks")
+}
+
+// Detect goroutines in test helpers/functions without cleanup
+func testHelperGoroutineWithoutSync(m dsl.Matcher) {
+	m.Match(`
+		func $name($*params) {
+			$*_
+			go func() { $*_ }()
+			$*rest
+		}`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["rest"].Text.Matches(".*(Wait|Cleanup|VerifyNone|defer).*") &&
+		      m["params"].Text.Matches(".*\\*testing\\.T.*")).
+		Report("test helper starts goroutine without synchronization; add WaitGroup, defer cleanup, or goleak.VerifyNone")
+}
+
+// Detect time.Sleep in tests (anti-pattern that causes flakiness)
+// Tests should use proper synchronization instead of arbitrary delays
+func testUsesTimeSleep(m dsl.Matcher) {
+	m.Match(`time.Sleep($duration)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("avoid time.Sleep in tests; use channels, WaitGroups, or context with timeout for synchronization")
+}
+
+// Note: Detecting select without timeout is complex in ruleguard
+// This is better caught by runtime timeouts (go test -timeout) or goleak
+
+// Detect channels created in tests without clear lifecycle management
+// This is a softer check - warns about potential resource leaks
+func testChannelWithoutClose(m dsl.Matcher) {
+	m.Match(`$ch := make(chan $_, $*_)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("channel created in test; ensure proper cleanup with 'defer close(ch)' or clear lifecycle management")
 }

@@ -7,11 +7,11 @@ import (
 )
 
 // setupM05TestEnv creates a test environment with optional home and project configs.
-func setupM05TestEnv(t *testing.T, _ string, homeAgent, projectAgent string) (tmpHome, tmpProjectDir string) {
+func setupM05TestEnv(t *testing.T, _ string, homeAgent, projectAgent string) (string, string) {
 	t.Helper()
 
-	tmpHome = t.TempDir()
-	tmpProjectDir = t.TempDir()
+	tmpHome := t.TempDir()
+	tmpProjectDir := t.TempDir()
 
 	// Create home config if specified
 	if homeAgent != "" {

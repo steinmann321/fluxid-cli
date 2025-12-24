@@ -1,13 +1,12 @@
 package ipc
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
-
-const errSessionIDEmpty = "session ID cannot be empty"
 
 func TestWriteAndReadReport(t *testing.T) {
 	t.Parallel()
@@ -54,8 +53,8 @@ func TestWriteReportEmptySessionID(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 
@@ -67,8 +66,8 @@ func TestReadReportEmptySessionID(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 
@@ -117,7 +116,7 @@ func TestWriteReportConcurrent(t *testing.T) {
 
 	// Write from multiple goroutines to test file locking
 	done := make(chan bool)
-	for i := 0; i < 5; i++ {
+	for index := 0; index < 5; index++ {
 		go func(n int) {
 			report := "command: test\nartifact: test.txt\ntimestamp: 2025-12-12T10:00:00Z\nstatus: PASS\n"
 			err := WriteReport(sessionID, report)
@@ -125,11 +124,11 @@ func TestWriteReportConcurrent(t *testing.T) {
 				t.Errorf("Concurrent write %d failed: %v", n, err)
 			}
 			done <- true
-		}(i)
+		}(index)
 	}
 
 	// Wait for all writes to complete
-	for i := 0; i < 5; i++ {
+	for index := 0; index < 5; index++ {
 		<-done
 	}
 

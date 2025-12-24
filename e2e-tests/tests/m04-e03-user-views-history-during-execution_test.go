@@ -4,7 +4,6 @@ package tests
 import (
 	"context"
 	"fluxid-loop/internal/ipc"
-	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -14,6 +13,8 @@ import (
 
 // TestViewHistoryBasic tests the basic flow:
 // set FLUXID_SESSION_ID → write two entries → run fluxid ipc view-history → verify output.
+//
+//nolint:cyclop // E2E test with history setup and output validation
 func TestViewHistoryBasic(t *testing.T) {
 	sessionID := "test-session-view-history-basic"
 	setupReportDir(t)
@@ -25,7 +26,7 @@ func TestViewHistoryBasic(t *testing.T) {
 	// Entry 1: via --write-history flag
 	message1 := "First decision: use FIFO eviction"
 	cmd1 := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message1)
-	cmd1.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd1.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output1, err := cmd1.CombinedOutput()
 	if err != nil {
@@ -35,7 +36,7 @@ func TestViewHistoryBasic(t *testing.T) {
 	// Entry 2: via ipc write-history
 	message2 := "Second decision: implement buffer cap"
 	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message2)
-	cmd2.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output2, err := cmd2.CombinedOutput()
 	if err != nil {
@@ -44,7 +45,7 @@ func TestViewHistoryBasic(t *testing.T) {
 
 	// View history
 	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
 	if err != nil {
@@ -145,7 +146,7 @@ func TestViewHistoryEmpty(t *testing.T) {
 
 	// View history (no entries written)
 	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
 	if err != nil {
@@ -231,7 +232,7 @@ func TestViewHistoryMultipleInvocations(t *testing.T) {
 
 	for _, message := range messages {
 		cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-		cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -240,13 +241,13 @@ func TestViewHistoryMultipleInvocations(t *testing.T) {
 	}
 
 	// View history multiple times
-	for i := 0; i < 3; i++ {
+	for viewIndex := 0; viewIndex < 3; viewIndex++ {
 		viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-		viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+		viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		viewOutput, err := viewCmd.CombinedOutput()
 		if err != nil {
-			t.Fatalf("ipc view-history invocation %d failed: %v\nOutput: %s", i+1, err, viewOutput)
+			t.Fatalf("ipc view-history invocation %d failed: %v\nOutput: %s", viewIndex+1, err, viewOutput)
 		}
 
 		outputStr := string(viewOutput)
@@ -254,14 +255,14 @@ func TestViewHistoryMultipleInvocations(t *testing.T) {
 		// Verify all messages are present
 		for _, message := range messages {
 			if !strings.Contains(outputStr, message) {
-				t.Errorf("Invocation %d missing message '%s', got: %s", i+1, message, outputStr)
+				t.Errorf("Invocation %d missing message '%s', got: %s", viewIndex+1, message, outputStr)
 			}
 		}
 
 		// Verify we have exactly 3 lines
 		lines := strings.Split(strings.TrimSpace(outputStr), "\n")
 		if len(lines) != len(messages) {
-			t.Errorf("Invocation %d expected %d history lines, got %d", i+1, len(messages), len(lines))
+			t.Errorf("Invocation %d expected %d history lines, got %d", viewIndex+1, len(messages), len(lines))
 		}
 	}
 
@@ -280,7 +281,7 @@ func TestViewHistoryWithUTF8Characters(t *testing.T) {
 	// Write history entry with UTF-8 characters
 	message := "Decision: 日本語のテスト with émojis 🎉"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -289,7 +290,7 @@ func TestViewHistoryWithUTF8Characters(t *testing.T) {
 
 	// View history
 	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
 	if err != nil {
@@ -317,7 +318,7 @@ func TestViewHistoryZeroExitCode(t *testing.T) {
 
 	// Write a history entry
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "test message")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	_, err := cmd.CombinedOutput()
 	if err != nil {
@@ -326,7 +327,7 @@ func TestViewHistoryZeroExitCode(t *testing.T) {
 
 	// View history
 	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	err = viewCmd.Run()
 	if err != nil {

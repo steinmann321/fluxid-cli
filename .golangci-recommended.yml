@@ -1,0 +1,75 @@
+# Recommended golangci-lint configuration for fluxid-loop
+# This adds critical linters to catch antipatterns found in the codebase
+#
+# To apply: Review this file, then merge into .golangci.yml
+
+version: 2
+run:
+  timeout: 5m
+  tests: true
+  go: "1.25"
+
+linters:
+  enable:
+    # TIER 1: CRITICAL - Catches issues found in codebase analysis
+    - contextcheck      # ✓ Missing context.Context in workflow functions
+    - reassign          # ✓ Global variable mutation detected
+    - nilnil            # ✓ Functions returning (nil, nil)
+    - forcetypeassert   # Prevents panic from type assertions
+    - err113            # Error handling best practices
+    - errname           # Error naming conventions
+
+    # TIER 2: HIGH VALUE
+    - funlen            # ✓ Large functions found (90+ lines)
+    - ireturn           # Accept interfaces, return concrete types
+    - wastedassign      # Useless assignments
+    - perfsprint        # Performance improvements
+    - usestdlibvars     # Use stdlib constants
+    - mirror            # Correct bytes/strings usage
+    - fatcontext        # Context in loops
+
+    # TIER 3: CODE QUALITY
+    - cyclop            # Cyclomatic complexity
+    - maintidx          # Maintainability index
+    - varnamelen        # Variable name length
+    - interfacebloat    # Interface method count
+    - nonamedreturns    # Prevent named returns
+    - testifylint       # Testify best practices (if using)
+    - depguard          # Dependency control
+
+linters-settings:
+  contextcheck:
+    check-error-free-funcs:
+      - (*github.com/DATA-DOG/go-sqlmock.Sqlmock).ExpectExec
+      - (*github.com/DATA-DOG/go-sqlmock.Sqlmock).ExpectQuery
+
+  funlen:
+    lines: 50           # ✓ Found functions with 90+ lines
+    statements: 30
+
+  cyclop:
+    max-complexity: 12  # Match current gocognit setting
+
+  varnamelen:
+    min-name-length: 2
+    ignore-names:
+      - err
+      - i
+      - j
+      - ok
+      - id
+
+  interfacebloat:
+    max: 5              # Max methods per interface
+
+  reassign:
+    patterns:
+      - '.*'            # Check all reassignments
+
+  nilnil:
+    checked-types:
+      - ptr
+      - func
+      - iface
+      - map
+      - chan

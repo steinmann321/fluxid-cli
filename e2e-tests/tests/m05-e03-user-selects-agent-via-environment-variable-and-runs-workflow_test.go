@@ -92,6 +92,8 @@ func TestM05E03CLIBeatsEnv(t *testing.T) {
 }
 
 // TestM05E03FullPrecedenceChain validates complete precedence: CLI > env > project > home > default.
+//
+//nolint:funlen // E2E test with full precedence chain validation
 func TestM05E03FullPrecedenceChain(t *testing.T) {
 	t.Parallel()
 
@@ -155,14 +157,14 @@ func TestM05E03FullPrecedenceChain(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpHome := setupTestHome(t, tt.homeAgent)
-			tmpDir := setupTestProject(t, tt.projectAgent)
-			env := buildTestEnv(tt.envAgent)
-			args := buildTestArgs(tt.cliAgent)
+			tmpHome := setupTestHome(t, testCase.homeAgent)
+			tmpDir := setupTestProject(t, testCase.projectAgent)
+			env := buildTestEnv(testCase.envAgent)
+			args := buildTestArgs(testCase.cliAgent)
 			args = append(args, "--fluxid-dry-run")
 
 			output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, args)
@@ -170,8 +172,8 @@ func TestM05E03FullPrecedenceChain(t *testing.T) {
 				t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 			}
 
-			verifyAgent(t, output, tt.expectedAgent)
-			verifySource(t, output, tt.expectedSource)
+			verifyAgent(t, output, testCase.expectedAgent)
+			verifySource(t, output, testCase.expectedSource)
 		})
 	}
 }

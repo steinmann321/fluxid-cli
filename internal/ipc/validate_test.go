@@ -320,6 +320,7 @@ status: INVALID
 	}
 }
 
+//nolint:funlen // Unit test with extensive issue structure validation
 func TestValidateIssuesStructure(t *testing.T) {
 	t.Parallel()
 
@@ -364,20 +365,20 @@ func TestValidateIssuesStructure(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			errors := validateIssuesStructure(tc.yaml)
+			errors := validateIssuesStructure(testCase.yaml)
 
 			hasError := len(errors) > 0
-			if hasError != tc.expectError {
-				t.Errorf("Expected error: %v, got errors: %v", tc.expectError, errors)
+			if hasError != testCase.expectError {
+				t.Errorf("Expected error: %v, got errors: %v", testCase.expectError, errors)
 			}
 
-			if tc.expectError && len(errors) > 0 {
+			if testCase.expectError && len(errors) > 0 {
 				allErrors := strings.Join(errors, " ")
-				if !strings.Contains(allErrors, tc.errorMsg) {
-					t.Errorf("Expected error to contain %q, got: %v", tc.errorMsg, errors)
+				if !strings.Contains(allErrors, testCase.errorMsg) {
+					t.Errorf("Expected error to contain %q, got: %v", testCase.errorMsg, errors)
 				}
 			}
 		})

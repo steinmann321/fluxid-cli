@@ -40,7 +40,7 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 	sessionIDPattern := regexp.MustCompile(`Session ID: ` + uuidV4Pattern)
 
 	// Run fluxid 3 times and collect session IDs
-	for i := 0; i < 3; i++ {
+	for runIndex := 0; runIndex < 3; runIndex++ {
 		binPath := filepath.Join(root, "bin", "fluxid")
 		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
 		cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
@@ -50,23 +50,23 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 		cmd.Stderr = &stdout
 
 		if err := cmd.Run(); err != nil {
-			t.Fatalf("Run %d failed: %v", i+1, err)
+			t.Fatalf("Run %d failed: %v", runIndex+1, err)
 		}
 
 		matches := sessionIDPattern.FindStringSubmatch(stdout.String())
 		if len(matches) < 2 {
-			t.Fatalf("Run %d: no session ID found", i+1)
+			t.Fatalf("Run %d: no session ID found", runIndex+1)
 		}
 
 		sessionID := matches[1]
 
 		// Verify UUID v4 format (version 4 has specific bits set)
 		if !isValidUUIDv4(sessionID) {
-			t.Errorf("Run %d: session ID %s is not a valid UUID v4", i+1, sessionID)
+			t.Errorf("Run %d: session ID %s is not a valid UUID v4", runIndex+1, sessionID)
 		}
 
 		if sessionIDs[sessionID] {
-			t.Errorf("Run %d: duplicate session ID %s", i+1, sessionID)
+			t.Errorf("Run %d: duplicate session ID %s", runIndex+1, sessionID)
 		}
 		sessionIDs[sessionID] = true
 	}
@@ -164,7 +164,7 @@ func TestM01E01SessionIDPropagation(t *testing.T) {
 	sessionID := matches[1]
 
 	// Verify stub Claude received the session ID (stub echoes it)
-	expectedEnv := fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID)
+	expectedEnv := "FLUXID_SESSION_ID=" + sessionID
 	if !strings.Contains(output, expectedEnv) {
 		t.Errorf("FLUXID_SESSION_ID not propagated to Claude process (expected %s in output)", expectedEnv)
 	}

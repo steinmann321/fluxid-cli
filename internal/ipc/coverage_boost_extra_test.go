@@ -3,6 +3,7 @@ package ipc
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -87,10 +88,11 @@ func TestWriteHistoryEntry_LargeEntry(t *testing.T) {
 
 	sessionID := "test-large-entry"
 	// Create a large message (but not too large to avoid timeout)
-	largeMessage := ""
+	var builder strings.Builder
 	for i := 0; i < 1000; i++ {
-		largeMessage += "This is a test message. "
+		builder.WriteString("This is a test message. ")
 	}
+	largeMessage := builder.String()
 
 	err := WriteHistoryEntry(sessionID, largeMessage)
 	if err != nil {

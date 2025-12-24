@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+//nolint:funlen // Unit test with table-driven home config validation
 func TestValidateHomeConfig(t *testing.T) {
 	t.Parallel()
 
@@ -36,7 +37,7 @@ func TestValidateHomeConfig(t *testing.T) {
 				ImplementRetries: intPtr(0),
 			},
 			wantErr: true,
-			errMsg:  "implement_retries must be a positive integer",
+			errMsg:  "got 0: implement_retries must be a positive integer",
 		},
 		{
 			name: "invalid implement retries negative",
@@ -44,7 +45,7 @@ func TestValidateHomeConfig(t *testing.T) {
 				ImplementRetries: intPtr(-1),
 			},
 			wantErr: true,
-			errMsg:  "implement_retries must be a positive integer",
+			errMsg:  "got -1: implement_retries must be a positive integer",
 		},
 		{
 			name: "invalid iterations zero",
@@ -52,7 +53,7 @@ func TestValidateHomeConfig(t *testing.T) {
 				Iterations: intPtr(0),
 			},
 			wantErr: true,
-			errMsg:  "iterations must be a positive integer",
+			errMsg:  "got 0: iterations must be a positive integer",
 		},
 		{
 			name: "invalid iterations negative",
@@ -60,7 +61,7 @@ func TestValidateHomeConfig(t *testing.T) {
 				Iterations: intPtr(-5),
 			},
 			wantErr: true,
-			errMsg:  "iterations must be a positive integer",
+			errMsg:  "got -5: iterations must be a positive integer",
 		},
 		{
 			name: "invalid empty agent",
@@ -72,16 +73,16 @@ func TestValidateHomeConfig(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateHomeConfig(tt.config)
-			if tt.wantErr {
+			err := validateHomeConfig(testCase.config)
+			if testCase.wantErr {
 				if err == nil {
-					t.Errorf("validateHomeConfig() expected error containing %q, got nil", tt.errMsg)
-				} else if tt.errMsg != "" && err.Error()[:len(tt.errMsg)] != tt.errMsg {
-					t.Errorf("validateHomeConfig() error = %v, want error containing %q", err, tt.errMsg)
+					t.Errorf("validateHomeConfig() expected error containing %q, got nil", testCase.errMsg)
+				} else if testCase.errMsg != "" && err.Error()[:len(testCase.errMsg)] != testCase.errMsg {
+					t.Errorf("validateHomeConfig() error = %v, want error containing %q", err, testCase.errMsg)
 				}
 			} else if err != nil {
 				t.Errorf("validateHomeConfig() unexpected error: %v", err)
@@ -90,6 +91,7 @@ func TestValidateHomeConfig(t *testing.T) {
 	}
 }
 
+//nolint:funlen // Unit test with table-driven project config validation
 func TestValidateProjectConfig(t *testing.T) {
 	t.Parallel()
 
@@ -120,7 +122,7 @@ func TestValidateProjectConfig(t *testing.T) {
 				ImplementRetries: intPtr(0),
 			},
 			wantErr: true,
-			errMsg:  "implement_retries must be a positive integer",
+			errMsg:  "got 0: implement_retries must be a positive integer",
 		},
 		{
 			name: "invalid iterations",
@@ -128,7 +130,7 @@ func TestValidateProjectConfig(t *testing.T) {
 				Iterations: intPtr(-1),
 			},
 			wantErr: true,
-			errMsg:  "iterations must be a positive integer",
+			errMsg:  "got -1: iterations must be a positive integer",
 		},
 		{
 			name: "invalid empty agent",
@@ -140,16 +142,16 @@ func TestValidateProjectConfig(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateProjectConfig(tt.config)
-			if tt.wantErr {
+			err := validateProjectConfig(testCase.config)
+			if testCase.wantErr {
 				if err == nil {
 					t.Errorf("validateProjectConfig() expected error, got nil")
-				} else if tt.errMsg != "" && err.Error()[:len(tt.errMsg)] != tt.errMsg {
-					t.Errorf("validateProjectConfig() error = %v, want error containing %q", err, tt.errMsg)
+				} else if testCase.errMsg != "" && err.Error()[:len(testCase.errMsg)] != testCase.errMsg {
+					t.Errorf("validateProjectConfig() error = %v, want error containing %q", err, testCase.errMsg)
 				}
 			} else if err != nil {
 				t.Errorf("validateProjectConfig() unexpected error: %v", err)
@@ -158,6 +160,7 @@ func TestValidateProjectConfig(t *testing.T) {
 	}
 }
 
+//nolint:funlen // Unit test with comprehensive config resolution tests
 func TestResolve(t *testing.T) {
 	t.Parallel()
 
@@ -285,37 +288,53 @@ func TestResolve(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := Resolve(tt.projectConfig, tt.homeConfig, nil, nil, tt.cliIterations, tt.cliImplementRetries, nil)
+			result := Resolve(
+				testCase.projectConfig,
+				testCase.homeConfig,
+				nil,
+				nil,
+				testCase.cliIterations,
+				testCase.cliImplementRetries,
+				nil,
+			)
 
-			if result.Agent != tt.wantAgent {
-				t.Errorf("Agent = %v, want %v", result.Agent, tt.wantAgent)
+			if result.Agent != testCase.wantAgent {
+				t.Errorf("Agent = %v, want %v", result.Agent, testCase.wantAgent)
 			}
-			if result.Iterations != tt.wantIterations {
-				t.Errorf("Iterations = %v, want %v", result.Iterations, tt.wantIterations)
+			if result.Iterations != testCase.wantIterations {
+				t.Errorf("Iterations = %v, want %v", result.Iterations, testCase.wantIterations)
 			}
-			if result.ImplementRetries != tt.wantImplementRetries {
-				t.Errorf("ImplementRetries = %v, want %v", result.ImplementRetries, tt.wantImplementRetries)
+			if result.ImplementRetries != testCase.wantImplementRetries {
+				t.Errorf("ImplementRetries = %v, want %v", result.ImplementRetries, testCase.wantImplementRetries)
 			}
-			if result.CommitEnabled != tt.wantCommitEnabled {
-				t.Errorf("CommitEnabled = %v, want %v", result.CommitEnabled, tt.wantCommitEnabled)
+			if result.CommitEnabled != testCase.wantCommitEnabled {
+				t.Errorf("CommitEnabled = %v, want %v", result.CommitEnabled, testCase.wantCommitEnabled)
 			}
 
 			// Check sources (for home/project sources, check prefix since they include file paths)
-			if !strings.HasPrefix(result.Sources["agent"], tt.wantAgentSource) {
-				t.Errorf("Agent source = %v, want prefix %v", result.Sources["agent"], tt.wantAgentSource)
+			if !strings.HasPrefix(result.Sources["agent"], testCase.wantAgentSource) {
+				t.Errorf("Agent source = %v, want prefix %v", result.Sources["agent"], testCase.wantAgentSource)
 			}
-			if !strings.HasPrefix(result.Sources["iterations"], tt.wantIterationsSource) {
-				t.Errorf("Iterations source = %v, want prefix %v", result.Sources["iterations"], tt.wantIterationsSource)
+			if !strings.HasPrefix(result.Sources["iterations"], testCase.wantIterationsSource) {
+				t.Errorf("Iterations source = %v, want prefix %v", result.Sources["iterations"], testCase.wantIterationsSource)
 			}
-			if !strings.HasPrefix(result.Sources["implement_retries"], tt.wantRetriesSource) {
-				t.Errorf("ImplementRetries source = %v, want prefix %v", result.Sources["implement_retries"], tt.wantRetriesSource)
+			if !strings.HasPrefix(result.Sources["implement_retries"], testCase.wantRetriesSource) {
+				t.Errorf(
+					"ImplementRetries source = %v, want prefix %v",
+					result.Sources["implement_retries"],
+					testCase.wantRetriesSource,
+				)
 			}
-			if !strings.HasPrefix(result.Sources["commit_enabled"], tt.wantCommitEnabledSource) {
-				t.Errorf("CommitEnabled source = %v, want prefix %v", result.Sources["commit_enabled"], tt.wantCommitEnabledSource)
+			if !strings.HasPrefix(result.Sources["commit_enabled"], testCase.wantCommitEnabledSource) {
+				t.Errorf(
+					"CommitEnabled source = %v, want prefix %v",
+					result.Sources["commit_enabled"],
+					testCase.wantCommitEnabledSource,
+				)
 			}
 		})
 	}

@@ -1,9 +1,16 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+)
+
+var (
+	errCommandRequired       = errors.New("command is required but not specified")
+	errCommandFileNotFound   = errors.New("command file not found")
+	errCommandNotRegularFile = errors.New("command file is not a regular file")
 )
 
 // ResolveCommandFiles resolves command file paths with validation.
@@ -17,45 +24,64 @@ func ResolveCommandFiles(projectConfig *ProjectConfig, homeConfig *HomeConfig) (
 // Returns error if command files are configured but cannot be resolved or validated.
 func resolveCommandFiles(projectConfig *ProjectConfig, homeConfig *HomeConfig) (*ResolvedCommandFiles, error) {
 	// Determine which config to use for commands (project takes precedence)
-	var cmds *Commands
-	var baseDir string
-
-	if projectConfig != nil && projectConfig.Commands != nil {
-		// Check if project commands are fully specified
-		hasImplement := projectConfig.Commands.Implement != nil
-		hasReview := projectConfig.Commands.Review != nil
-		hasCommit := projectConfig.Commands.Commit != nil
-		if hasImplement || hasReview || hasCommit {
-			cmds = projectConfig.Commands
-			cwd, err := os.Getwd()
-			if err != nil {
-				return nil, fmt.Errorf("failed to get current directory: %w", err)
-			}
-			baseDir = filepath.Join(cwd, ".fluxid", "commands")
-		}
-	}
-
-	// Fallback to home if project doesn't have commands
-	if cmds == nil && homeConfig != nil && homeConfig.Commands != nil {
-		hasImplement := homeConfig.Commands.Implement != nil
-		hasReview := homeConfig.Commands.Review != nil
-		hasCommit := homeConfig.Commands.Commit != nil
-		if hasImplement || hasReview || hasCommit {
-			cmds = homeConfig.Commands
-			homeDir, err := os.UserHomeDir()
-			if err != nil {
-				return nil, fmt.Errorf("failed to get home directory: %w", err)
-			}
-			baseDir = filepath.Join(homeDir, ".fluxid", "commands")
-		}
+	cmds, baseDir, err := selectCommandsConfig(projectConfig, homeConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	// If no commands configured, return nil (not an error)
 	if cmds == nil {
+		//nolint:nilnil // Valid: no commands configured is not an error, return nil to indicate "no command files"
 		return nil, nil
 	}
 
 	// Resolve and validate all three command files
+	return resolveAllCommandFiles(baseDir, cmds)
+}
+
+func selectCommandsConfig(projectConfig *ProjectConfig, homeConfig *HomeConfig) (*Commands, string, error) {
+	// Try project config first
+	if cmds, baseDir, err := tryProjectCommands(projectConfig); cmds != nil || err != nil {
+		return cmds, baseDir, err
+	}
+
+	// Fallback to home config
+	return tryHomeCommands(homeConfig)
+}
+
+func tryProjectCommands(projectConfig *ProjectConfig) (*Commands, string, error) {
+	if projectConfig != nil && projectConfig.Commands != nil {
+		if hasAnyCommand(projectConfig.Commands) {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to get current directory: %w", err)
+			}
+			baseDir := filepath.Join(cwd, ".fluxid", "commands")
+			return projectConfig.Commands, baseDir, nil
+		}
+	}
+	return nil, "", nil
+}
+
+func tryHomeCommands(homeConfig *HomeConfig) (*Commands, string, error) {
+	if homeConfig != nil && homeConfig.Commands != nil {
+		if hasAnyCommand(homeConfig.Commands) {
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to get home directory: %w", err)
+			}
+			baseDir := filepath.Join(homeDir, ".fluxid", "commands")
+			return homeConfig.Commands, baseDir, nil
+		}
+	}
+	return nil, "", nil
+}
+
+func hasAnyCommand(cmds *Commands) bool {
+	return (cmds.Implement != nil) || (cmds.Review != nil) || (cmds.Commit != nil)
+}
+
+func resolveAllCommandFiles(baseDir string, cmds *Commands) (*ResolvedCommandFiles, error) {
 	implementPath, err := resolveAndValidateCommandFile(baseDir, cmds.Implement, "implement")
 	if err != nil {
 		return nil, err
@@ -81,7 +107,7 @@ func resolveCommandFiles(projectConfig *ProjectConfig, homeConfig *HomeConfig) (
 // resolveAndValidateCommandFile resolves a single command file path and validates its existence.
 func resolveAndValidateCommandFile(baseDir string, filename *string, cmdName string) (string, error) {
 	if filename == nil || *filename == "" {
-		return "", fmt.Errorf("commands.%s is required but not specified", cmdName)
+		return "", fmt.Errorf("commands.%s: %w", cmdName, errCommandRequired)
 	}
 
 	// Construct absolute path
@@ -91,14 +117,14 @@ func resolveAndValidateCommandFile(baseDir string, filename *string, cmdName str
 	fileInfo, err := os.Stat(absPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("command file not found: %s (commands.%s)", absPath, cmdName)
+			return "", fmt.Errorf("%s (commands.%s): %w", absPath, cmdName, errCommandFileNotFound)
 		}
 		return "", fmt.Errorf("cannot access command file %s (commands.%s): %w", absPath, cmdName, err)
 	}
 
 	// Ensure it's a regular file
 	if !fileInfo.Mode().IsRegular() {
-		return "", fmt.Errorf("command file %s (commands.%s) is not a regular file", absPath, cmdName)
+		return "", fmt.Errorf("%s (commands.%s): %w", absPath, cmdName, errCommandNotRegularFile)
 	}
 
 	// Check read permissions by attempting to open the file

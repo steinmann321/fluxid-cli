@@ -4,7 +4,6 @@ package tests
 import (
 	"context"
 	"fluxid-loop/internal/ipc"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,6 +12,8 @@ import (
 
 // TestWriteHistoryWithSessionID tests the basic flow:
 // set FLUXID_SESSION_ID → run fluxid --write-history "message" → verify confirmation and entry.
+//
+//nolint:cyclop,funlen // E2E test with session setup, command execution, and output validation
 func TestWriteHistoryWithSessionID(t *testing.T) {
 	sessionID := "test-session-write-history-basic"
 	setupReportDir(t)
@@ -23,7 +24,7 @@ func TestWriteHistoryWithSessionID(t *testing.T) {
 	// Write history entry
 	message := "First note"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -104,7 +105,7 @@ func TestWriteHistoryMultipleEntries(t *testing.T) {
 	// Write multiple entries
 	for _, message := range messages {
 		cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message)
-		cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -174,7 +175,7 @@ func TestWriteHistoryWithoutMessage(t *testing.T) {
 
 	// Attempt to write without message
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 
@@ -201,7 +202,7 @@ func TestWriteHistoryMultiWordMessage(t *testing.T) {
 	// Write history entry with multiple words
 	message := "This is a longer message with multiple words"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -262,7 +263,7 @@ func TestWriteHistoryNoFilePersistence(t *testing.T) {
 	// Write to first session
 	message1 := "Message for session 1"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message1)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID1))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID1)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -301,7 +302,7 @@ func TestWriteHistoryZeroExitCode(t *testing.T) {
 
 	// Write history entry
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", "test message")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	err := cmd.Run()
 	if err != nil {

@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+const (
+	permExecutable = 0o755 // Executable file permissions for test stubs
+)
+
 // writeExecutableStub writes a bash script with executable permissions.
 // This is a test helper that requires 0755 permissions for shell scripts.
 //
@@ -13,7 +17,7 @@ import (
 //
 //nolint:wrapcheck // Test helper, error context clear from usage
 func writeExecutableStub(path string, content []byte) error {
-	return os.WriteFile(path, content, 0o755)
+	return os.WriteFile(path, content, permExecutable)
 }
 
 // createStreamingStubClaude creates a stub that generates streaming output over time.

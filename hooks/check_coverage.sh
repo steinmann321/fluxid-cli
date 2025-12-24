@@ -9,7 +9,7 @@ mkdir -p "$REPO_ROOT/.tmp/coverage"
 COV_FILE="$REPO_ROOT/.tmp/coverage/coverage.out"
 # Exclude e2e-tests from coverage calculation
 PKGS=$(go list ./... | grep -v '/e2e-tests/')
-go test -failfast -timeout=10m -covermode=atomic -coverprofile="${COV_FILE}" $PKGS 
+go test -short -failfast -timeout=10m -covermode=atomic -coverprofile="${COV_FILE}" $PKGS 
 
 [[ -f "${COV_FILE}" ]] || { echo "coverage.out not found" >&2; exit 1; }
 

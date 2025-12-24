@@ -13,6 +13,8 @@ import (
 
 // TestFIFOEvictionAtSizeLimit tests that history evicts oldest entries when exceeding 32MB.
 // This test writes 34MB of data (34 entries × ~1MB each) and verifies FIFO eviction.
+//
+//nolint:cyclop,funlen // E2E test with large data writes and FIFO eviction validation
 func TestFIFOEvictionAtSizeLimit(t *testing.T) {
 	sessionID := "test-session-fifo-eviction-size-limit"
 	setupReportDir(t)
@@ -30,20 +32,21 @@ func TestFIFOEvictionAtSizeLimit(t *testing.T) {
 	entrySize := 1_000_000
 	numEntries := 34
 
-	for i := 0; i < numEntries; i++ {
+	for entryIndex := 0; entryIndex < numEntries; entryIndex++ {
 		// Generate large message with identifiable prefix
-		message := fmt.Sprintf("ENTRY-%03d:", i) + strings.Repeat("X", entrySize-len(fmt.Sprintf("ENTRY-%03d:", i)))
+		prefix := fmt.Sprintf("ENTRY-%03d:", entryIndex)
+		message := prefix + strings.Repeat("X", entrySize-len(prefix))
 
 		// Write via IPC library directly (CLI args too long)
 		err := ipc.WriteHistoryEntry(sessionID, message)
 		if err != nil {
-			t.Fatalf("Failed to write entry %d: %v", i, err)
+			t.Fatalf("Failed to write entry %d: %v", entryIndex, err)
 		}
 	}
 
 	// View history
 	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
 	if err != nil {
@@ -156,15 +159,15 @@ func TestFIFOEvictionBoundary(t *testing.T) {
 	}
 
 	// Check that retained entries are in order
-	for i := 1; i < len(lines); i++ {
-		prevLine := lines[i-1]
-		currLine := lines[i]
+	for lineIndex := 1; lineIndex < len(lines); lineIndex++ {
+		prevLine := lines[lineIndex-1]
+		currLine := lines[lineIndex]
 
 		// Extract timestamps (assumes ISO 8601 format: [YYYY-MM-DDTHH:MM:SSZ])
 		// Timestamps should be increasing
 		if prevLine > currLine { // Lexicographic comparison works for ISO 8601
 			t.Errorf("Chronological order violated: line %d (%s) > line %d (%s)",
-				i-1, prevLine[:30], i, currLine[:30])
+				lineIndex-1, prevLine[:30], lineIndex, currLine[:30])
 		}
 	}
 
@@ -194,15 +197,15 @@ func TestFIFOEvictionMultibyteUTF8(t *testing.T) {
 	entrySize := 1_000_000
 	numEntries := 34
 
-	for i := 0; i < numEntries; i++ {
+	for entryIndex := 0; entryIndex < numEntries; entryIndex++ {
 		// Include UTF-8 chars in each entry
-		prefix := fmt.Sprintf("UTF8-%03d-%s:", i, utf8Chars)
+		prefix := fmt.Sprintf("UTF8-%03d-%s:", entryIndex, utf8Chars)
 		padding := strings.Repeat("Z", entrySize-len([]byte(prefix)))
 		message := prefix + padding
 
 		err := ipc.WriteHistoryEntry(sessionID, message)
 		if err != nil {
-			t.Fatalf("Failed to write UTF-8 entry %d: %v", i, err)
+			t.Fatalf("Failed to write UTF-8 entry %d: %v", entryIndex, err)
 		}
 	}
 
@@ -264,7 +267,7 @@ func TestFIFOEvictionViaIPCCommand(t *testing.T) {
 
 	// View history via CLI command
 	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	viewCmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
 	if err != nil {

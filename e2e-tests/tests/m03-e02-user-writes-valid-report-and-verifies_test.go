@@ -13,6 +13,8 @@ import (
 
 // TestM03E02WriteAndReadValidReport verifies that a valid report can be written
 // and read back within the same session.
+//
+//nolint:cyclop,funlen // E2E test with report writing, reading, and validation
 func TestM03E02WriteAndReadValidReport(t *testing.T) {
 	t.Parallel()
 
@@ -105,6 +107,8 @@ summary: "Test report for write-read flow"
 
 // TestM03E02SessionOverrideViaFlag verifies that --session flag
 // overrides FLUXID_SESSION_ID environment variable.
+//
+//nolint:funlen // E2E test with session override validation
 func TestM03E02SessionOverrideViaFlag(t *testing.T) {
 	t.Parallel()
 
@@ -181,6 +185,8 @@ issues:
 
 // TestM03E02WriteInvalidReportFails verifies that an invalid report
 // is rejected with clear error diagnostics.
+//
+//nolint:funlen // E2E test with extensive error validation
 func TestM03E02WriteInvalidReportFails(t *testing.T) {
 	t.Parallel()
 
@@ -249,12 +255,12 @@ status: PASS
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			writeCmd := exec.CommandContext(t.Context(), binPath, "ipc", "write-report")
 			writeCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
-			writeCmd.Stdin = strings.NewReader(tc.report)
+			writeCmd.Stdin = strings.NewReader(testCase.report)
 
 			var stdout, stderr bytes.Buffer
 			writeCmd.Stdout = &stdout
@@ -267,8 +273,8 @@ status: PASS
 
 			// Verify error message contains relevant information
 			errOutput := stderr.String()
-			if !strings.Contains(errOutput, tc.expectedErr) {
-				t.Errorf("Expected error output to contain %q, got:\n%s", tc.expectedErr, errOutput)
+			if !strings.Contains(errOutput, testCase.expectedErr) {
+				t.Errorf("Expected error output to contain %q, got:\n%s", testCase.expectedErr, errOutput)
 			}
 		})
 	}

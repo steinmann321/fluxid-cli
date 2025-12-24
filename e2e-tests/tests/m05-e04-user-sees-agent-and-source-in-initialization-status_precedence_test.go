@@ -69,6 +69,8 @@ func TestM05E04PrecedenceChainForAgent(t *testing.T) {
 
 // TestM05E04FormattingConsistentAcrossSources validates that the agent line
 // format is consistent regardless of the source.
+//
+//nolint:funlen // E2E test with format consistency checks
 func TestM05E04FormattingConsistentAcrossSources(t *testing.T) {
 	t.Parallel()
 
@@ -111,11 +113,11 @@ func TestM05E04FormattingConsistentAcrossSources(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpHome, tmpProjectDir, envVars, args := tt.setupFunc(t)
+			tmpHome, tmpProjectDir, envVars, args := testCase.setupFunc(t)
 
 			var output string
 			switch {
@@ -127,8 +129,8 @@ func TestM05E04FormattingConsistentAcrossSources(t *testing.T) {
 				output = runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
 			}
 
-			if !strings.Contains(output, tt.expectedLine) {
-				t.Errorf("Expected consistent format %q, got:\n%s", tt.expectedLine, output)
+			if !strings.Contains(output, testCase.expectedLine) {
+				t.Errorf("Expected consistent format %q, got:\n%s", testCase.expectedLine, output)
 			}
 		})
 	}

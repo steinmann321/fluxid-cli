@@ -55,6 +55,8 @@ func TestM02E05AllConfigKeysDisplayed(t *testing.T) {
 
 // TestM02E05CommandFilePathsDisplayed validates that command file paths
 // are displayed as absolute paths when configured.
+//
+//nolint:cyclop,funlen // E2E test with config setup, execution, and path validation
 func TestM02E05CommandFilePathsDisplayed(t *testing.T) {
 	t.Parallel()
 
@@ -162,6 +164,8 @@ func TestM02E05NoCommandFilesWhenNotConfigured(t *testing.T) {
 
 // TestM02E05OutputStructuredAndScannable validates that the initialization
 // status output is well-structured with clear formatting.
+//
+//nolint:cyclop // E2E test with multiple output format checks and field validations
 func TestM02E05OutputStructuredAndScannable(t *testing.T) {
 	t.Parallel()
 

@@ -12,6 +12,8 @@ import (
 )
 
 // TestM05E05MultipleAgentFlagsError validates clear error for conflicting CLI flags.
+//
+//nolint:funlen // E2E test with multiple error scenarios
 func TestM05E05MultipleAgentFlagsError(t *testing.T) {
 	t.Parallel()
 
@@ -44,12 +46,12 @@ func TestM05E05MultipleAgentFlagsError(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, tt.args...)
+			cmd := exec.CommandContext(t.Context(), binPath, testCase.args...)
 			cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 			var stderr bytes.Buffer
@@ -57,16 +59,16 @@ func TestM05E05MultipleAgentFlagsError(t *testing.T) {
 
 			err := cmd.Run()
 
-			if !tt.wantExitErr {
+			if !testCase.wantExitErr {
 				if err != nil {
-					t.Fatalf("Expected success with args %v, got error: %v\nStderr: %s", tt.args, err, stderr.String())
+					t.Fatalf("Expected success with args %v, got error: %v\nStderr: %s", testCase.args, err, stderr.String())
 				}
 				return
 			}
 
 			// Error is expected from here on
 			if err == nil {
-				t.Fatalf("Expected error with args %v, but succeeded", tt.args)
+				t.Fatalf("Expected error with args %v, but succeeded", testCase.args)
 			}
 
 			var exitErr *exec.ExitError
@@ -75,8 +77,8 @@ func TestM05E05MultipleAgentFlagsError(t *testing.T) {
 			}
 
 			stderrStr := stderr.String()
-			if !strings.Contains(stderrStr, tt.wantError) {
-				t.Errorf("Expected error text %q, got:\n%s", tt.wantError, stderrStr)
+			if !strings.Contains(stderrStr, testCase.wantError) {
+				t.Errorf("Expected error text %q, got:\n%s", testCase.wantError, stderrStr)
 			}
 
 			// Verify helpful guidance is present
@@ -98,7 +100,7 @@ func testEnvVarAgent(t *testing.T, root string) {
 	cmd.Env = append(
 		os.Environ(),
 		"FLUXID_AGENT=foo",
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stderr bytes.Buffer
@@ -143,8 +145,8 @@ func testHomeConfigAgent(t *testing.T, root string) {
 	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Env = append(
 		os.Environ(),
-		fmt.Sprintf("HOME=%s", tmpHome),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stderr bytes.Buffer

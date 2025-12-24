@@ -4,7 +4,6 @@ package tests
 import (
 	"context"
 	"fluxid-loop/internal/ipc"
-	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -15,6 +14,8 @@ import (
 // TestHistoryErrorMissingSessionID tests that missing FLUXID_SESSION_ID yields clear error.
 // Success criteria: Missing or invalid FLUXID_SESSION_ID yields clear error
 // [Test: unset env; verify message and non-zero exit].
+//
+//nolint:cyclop // E2E test with error condition setup and validation
 func TestHistoryErrorMissingSessionID(t *testing.T) {
 	setupReportDir(t)
 
@@ -98,7 +99,7 @@ func TestHistoryErrorEmptyMessage(t *testing.T) {
 
 	// Test 1: ipc write-history with no message argument
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	outputStr := string(output)
@@ -121,7 +122,7 @@ func TestHistoryErrorEmptyMessage(t *testing.T) {
 
 	// Test 2: --write-history with no message argument
 	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "--write-history")
-	cmd2.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output2, err2 := cmd2.CombinedOutput()
 	outputStr2 := string(output2)
@@ -160,7 +161,7 @@ func TestHistoryErrorConsistentFormat(t *testing.T) {
 
 	// Error 2: Missing message
 	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
-	cmd2.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	output2, _ := cmd2.CombinedOutput()
 	errorMessages = append(errorMessages, string(output2))
 
@@ -174,20 +175,20 @@ func TestHistoryErrorConsistentFormat(t *testing.T) {
 	// All should start with "Error:" prefix
 	errorPattern := regexp.MustCompile(`^Error:`)
 
-	for i, msg := range errorMessages {
+	for errorIndex, msg := range errorMessages {
 		if !errorPattern.MatchString(msg) {
-			t.Errorf("Error message %d does not start with 'Error:', got: %s", i+1, msg)
+			t.Errorf("Error message %d does not start with 'Error:', got: %s", errorIndex+1, msg)
 		}
 
 		// Verify errors are plain text (no HTML, JSON, etc.)
 		if strings.Contains(msg, "<html>") || strings.Contains(msg, "\"error\":") || strings.Contains(msg, "{\"") {
-			t.Errorf("Error message %d appears to contain structured data, expected plain text: %s", i+1, msg)
+			t.Errorf("Error message %d appears to contain structured data, expected plain text: %s", errorIndex+1, msg)
 		}
 
 		// Verify errors are concise (not overly verbose)
 		lines := strings.Split(strings.TrimSpace(msg), "\n")
 		if len(lines) > 5 {
-			t.Errorf("Error message %d is too verbose (%d lines), expected concise error", i+1, len(lines))
+			t.Errorf("Error message %d is too verbose (%d lines), expected concise error", errorIndex+1, len(lines))
 		}
 	}
 }
@@ -211,7 +212,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 
 	// Step 2: Fix issue by setting FLUXID_SESSION_ID and retry
 	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
-	cmd2.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	output2, err2 := cmd2.CombinedOutput()
 	if err2 != nil {
 		t.Fatalf("Expected success after setting session ID, got error: %v\nOutput: %s", err2, output2)
@@ -219,7 +220,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 
 	// Step 3: Fail with missing message
 	cmd3 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
-	cmd3.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd3.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	_, err3 := cmd3.CombinedOutput()
 	if err3 == nil {
 		t.Errorf("Expected error for missing message, got success")
@@ -228,7 +229,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 	// Step 4: Fix issue by providing message and retry
 	message := "Test recovery message"
 	cmd4 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-	cmd4.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd4.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	output4, err4 := cmd4.CombinedOutput()
 	if err4 != nil {
 		t.Fatalf("Expected success after providing message, got error: %v\nOutput: %s", err4, output4)

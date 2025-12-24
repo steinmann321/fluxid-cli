@@ -151,5 +151,26 @@ gosec ./...
 command -v govulncheck >/dev/null || { echo "govulncheck not installed"; exit 1; }
 echo "Running govulncheck..."
 govulncheck ./... 
+# Test flakiness prevention: check for goroutine leaks and anti-patterns
+echo "Checking for test flakiness patterns..."
+TEST_FILES=$(printf '%s\n' "$PROJECT_CHANGED" | grep -E '_test\.go$' || true)
+if [[ -n "$TEST_FILES" ]]; then
+  for file in $TEST_FILES; do
+    # Check 1: Tests with goroutines should use goleak or explicit cleanup
+    if grep -q 'go func()' "$file" || grep -q 'go \w\+(' "$file"; then
+      if ! grep -q 'goleak\.VerifyNone' "$file" && ! grep -q '\.Wait()' "$file" && ! grep -q 't\.Cleanup' "$file"; then
+        echo "⚠ Warning: $file starts goroutines without visible cleanup (goleak.VerifyNone, WaitGroup, or t.Cleanup)" >&2
+        echo "  Consider adding: defer goleak.VerifyNone(t) to detect goroutine leaks" >&2
+      fi
+    fi
+
+    # Check 2: Warn about time.Sleep in tests (flakiness anti-pattern)
+    if grep -q 'time\.Sleep' "$file"; then
+      echo "⚠ Warning: $file uses time.Sleep - consider using proper synchronization instead" >&2
+      echo "  Use channels, WaitGroups, or context with timeout for reliable synchronization" >&2
+    fi
+  done
+fi
+
 # Coverage checks
 ./hooks/check_coverage.sh

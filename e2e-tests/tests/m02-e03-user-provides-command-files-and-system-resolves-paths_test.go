@@ -73,6 +73,8 @@ commands:
 
 // TestM02E03ProjectCommandFilesOverrideHome validates that project command files
 // take precedence over home command files.
+//
+//nolint:cyclop,funlen // E2E test with file setup, command execution, and multiple validations
 func TestM02E03ProjectCommandFilesOverrideHome(t *testing.T) {
 	t.Parallel()
 
@@ -278,6 +280,8 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 }
 
 // TestM02E03AbsolutePathsDisplayed validates that displayed paths are absolute.
+//
+//nolint:cyclop // E2E test with path resolution and multiple output format validations
 func TestM02E03AbsolutePathsDisplayed(t *testing.T) {
 	t.Parallel()
 

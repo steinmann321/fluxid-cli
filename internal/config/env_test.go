@@ -102,12 +102,12 @@ func TestLoadEnvConfig_CommitEnabled(t *testing.T) {
 		{"no", "no", false},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			env := &mockEnv{vars: map[string]string{
-				"FLUXID_COMMIT_ENABLED": tt.value,
+				"FLUXID_COMMIT_ENABLED": testCase.value,
 			}}
 			cfg, err := LoadEnvConfig(env)
 			if err != nil {
@@ -118,8 +118,8 @@ func TestLoadEnvConfig_CommitEnabled(t *testing.T) {
 				t.Fatal("Expected non-nil config")
 			}
 
-			if cfg.CommitEnabled == nil || *cfg.CommitEnabled != tt.expected {
-				t.Errorf("Expected CommitEnabled=%v, got: %v", tt.expected, cfg.CommitEnabled)
+			if cfg.CommitEnabled == nil || *cfg.CommitEnabled != testCase.expected {
+				t.Errorf("Expected CommitEnabled=%v, got: %v", testCase.expected, cfg.CommitEnabled)
 			}
 		})
 	}
@@ -137,17 +137,17 @@ func TestLoadEnvConfig_InvalidIterations(t *testing.T) {
 		{"non-numeric", "abc"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			env := &mockEnv{vars: map[string]string{
-				"FLUXID_ITERATIONS": tt.value,
+				"FLUXID_ITERATIONS": testCase.value,
 			}}
 			_, err := LoadEnvConfig(env)
 
 			if err == nil {
-				t.Errorf("Expected error for invalid FLUXID_ITERATIONS=%s", tt.value)
+				t.Errorf("Expected error for invalid FLUXID_ITERATIONS=%s", testCase.value)
 			}
 		})
 	}
@@ -165,17 +165,17 @@ func TestLoadEnvConfig_InvalidImplementRetries(t *testing.T) {
 		{"non-numeric", "xyz"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			env := &mockEnv{vars: map[string]string{
-				"FLUXID_IMPLEMENT_RETRIES": tt.value,
+				"FLUXID_IMPLEMENT_RETRIES": testCase.value,
 			}}
 			_, err := LoadEnvConfig(env)
 
 			if err == nil {
-				t.Errorf("Expected error for invalid FLUXID_IMPLEMENT_RETRIES=%s", tt.value)
+				t.Errorf("Expected error for invalid FLUXID_IMPLEMENT_RETRIES=%s", testCase.value)
 			}
 		})
 	}
@@ -194,6 +194,7 @@ func TestLoadEnvConfig_InvalidCommitEnabled(t *testing.T) {
 	}
 }
 
+//nolint:cyclop // Unit test validating all environment variable configurations
 func TestLoadEnvConfig_AllFields(t *testing.T) {
 	t.Parallel()
 

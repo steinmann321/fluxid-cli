@@ -2,12 +2,23 @@
 package ipc
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
+)
+
+const (
+	permDir  = 0o750 // Directory permissions for IPC storage
+	permFile = 0o600 // File permissions for IPC storage (private files)
+)
+
+var (
+	errSessionIDEmpty = errors.New("session ID cannot be empty")
+	errMessageEmpty   = errors.New("message cannot be empty")
 )
 
 // getReportPath returns the file path for storing a session's report.
@@ -21,18 +32,18 @@ func getReportPath(sessionID string) string {
 // Reports are stored as YAML files in /tmp/fluxid-reports/.
 func WriteReport(sessionID string, reportYAML string) error {
 	if sessionID == "" {
-		return fmt.Errorf("session ID cannot be empty")
+		return errSessionIDEmpty
 	}
 
 	// Ensure reports directory exists
 	dir := filepath.Join(os.TempDir(), "fluxid-reports")
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, permDir); err != nil {
 		return fmt.Errorf("failed to create reports directory: %w", err)
 	}
 
 	// Write report to file
 	reportPath := getReportPath(sessionID)
-	if err := os.WriteFile(reportPath, []byte(reportYAML), 0o600); err != nil {
+	if err := os.WriteFile(reportPath, []byte(reportYAML), permFile); err != nil {
 		return fmt.Errorf("failed to write report file: %w", err)
 	}
 
@@ -43,7 +54,7 @@ func WriteReport(sessionID string, reportYAML string) error {
 // Returns an empty string if no report exists for the session.
 func ReadReport(sessionID string) (string, error) {
 	if sessionID == "" {
-		return "", fmt.Errorf("session ID cannot be empty")
+		return "", errSessionIDEmpty
 	}
 
 	reportPath := getReportPath(sessionID)
@@ -73,18 +84,18 @@ func getAbortFlagPath(sessionID string) string {
 // This signals that the workflow should gracefully terminate.
 func SetAbortFlag(sessionID string) error {
 	if sessionID == "" {
-		return fmt.Errorf("session ID cannot be empty")
+		return errSessionIDEmpty
 	}
 
 	// Ensure reports directory exists
 	dir := filepath.Join(os.TempDir(), "fluxid-reports")
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, permDir); err != nil {
 		return fmt.Errorf("failed to create reports directory: %w", err)
 	}
 
 	// Write abort flag file
 	abortPath := getAbortFlagPath(sessionID)
-	if err := os.WriteFile(abortPath, []byte("abort"), 0o600); err != nil {
+	if err := os.WriteFile(abortPath, []byte("abort"), permFile); err != nil {
 		return fmt.Errorf("failed to write abort flag: %w", err)
 	}
 
@@ -95,7 +106,7 @@ func SetAbortFlag(sessionID string) error {
 // Returns true if abort was requested, false otherwise.
 func CheckAbortFlag(sessionID string) (bool, error) {
 	if sessionID == "" {
-		return false, fmt.Errorf("session ID cannot be empty")
+		return false, errSessionIDEmpty
 	}
 
 	abortPath := getAbortFlagPath(sessionID)
@@ -114,7 +125,7 @@ func CheckAbortFlag(sessionID string) (bool, error) {
 // This is primarily for testing and cleanup.
 func ClearAbortFlag(sessionID string) error {
 	if sessionID == "" {
-		return fmt.Errorf("session ID cannot be empty")
+		return errSessionIDEmpty
 	}
 
 	abortPath := getAbortFlagPath(sessionID)
@@ -147,7 +158,7 @@ const maxHistorySize = 32 * 1024 * 1024
 func acquireFileLock(lockPath string) (*os.File, error) {
 	// Create lock file if it doesn't exist
 	// #nosec G304 - lockPath is constructed internally from validated sessionID
-	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
+	lockFile, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, permFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open lock file: %w", err)
 	}
@@ -167,42 +178,62 @@ func acquireFileLock(lockPath string) (*os.File, error) {
 // If adding the new entry would exceed 32MB, oldest entries are evicted (FIFO) until under limit.
 // Uses file-based locking to ensure concurrent writes from multiple processes are safe.
 func WriteHistoryEntry(sessionID string, message string) error {
-	if sessionID == "" {
-		return fmt.Errorf("session ID cannot be empty")
-	}
-
-	if message == "" {
-		return fmt.Errorf("message cannot be empty")
+	if err := validateHistoryInput(sessionID, message); err != nil {
+		return err
 	}
 
 	// Ensure reports directory exists
 	dir := filepath.Join(os.TempDir(), "fluxid-reports")
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, permDir); err != nil {
 		return fmt.Errorf("failed to create reports directory: %w", err)
 	}
 
 	historyPath := getHistoryPath(sessionID)
 
 	// Acquire file lock for atomic read-modify-write across processes
-	lockPath := historyPath + ".lock"
-	lockFile, err := acquireFileLock(lockPath)
+	lockFile, err := acquireHistoryLock(historyPath)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN)
-		_ = lockFile.Close()
-	}()
+	defer releaseHistoryLock(lockFile)
 
-	// Generate ISO 8601 timestamp
+	// Prepare new entry
+	entry := formatHistoryEntry(message)
+	entrySize := len([]byte(entry))
+
+	// Read and process existing history
+	finalContent := prepareHistoryContent(historyPath, entry, entrySize)
+
+	// Write atomically
+	return writeHistoryFile(historyPath, finalContent)
+}
+
+func validateHistoryInput(sessionID, message string) error {
+	if sessionID == "" {
+		return errSessionIDEmpty
+	}
+	if message == "" {
+		return errMessageEmpty
+	}
+	return nil
+}
+
+func acquireHistoryLock(historyPath string) (*os.File, error) {
+	lockPath := historyPath + ".lock"
+	return acquireFileLock(lockPath)
+}
+
+func releaseHistoryLock(lockFile *os.File) {
+	_ = syscall.Flock(int(lockFile.Fd()), syscall.LOCK_UN)
+	_ = lockFile.Close()
+}
+
+func formatHistoryEntry(message string) string {
 	timestamp := fmt.Sprintf("[%s]", formatISO8601())
+	return fmt.Sprintf("%s %s\n", timestamp, message)
+}
 
-	// Format entry with timestamp prefix
-	entry := fmt.Sprintf("%s %s\n", timestamp, message)
-	entryBytes := []byte(entry)
-	entrySize := len(entryBytes)
-
-	// Read existing history
+func prepareHistoryContent(historyPath, entry string, entrySize int) string {
 	existingHistory := ""
 	// #nosec G304 - historyPath is constructed from validated sessionID
 	if data, err := os.ReadFile(historyPath); err == nil {
@@ -215,38 +246,42 @@ func WriteHistoryEntry(sessionID string, message string) error {
 	// If adding new entry exceeds limit, evict oldest entries (FIFO)
 	finalHistory := existingHistory
 	if totalSize > maxHistorySize {
-		// Split into lines
-		lines := []string{}
-		if existingHistory != "" {
-			lines = strings.Split(strings.TrimRight(existingHistory, "\n"), "\n")
-		}
-
-		// Evict oldest entries (from beginning) until under limit
-		currentSize := existingSize
-		evictedLines := 0
-		for evictedLines < len(lines) && currentSize+entrySize > maxHistorySize {
-			lineToEvict := lines[evictedLines]
-			lineSize := len([]byte(lineToEvict + "\n"))
-			currentSize -= lineSize
-			evictedLines++
-		}
-
-		// Keep only non-evicted lines
-		remainingLines := lines[evictedLines:]
-		if len(remainingLines) > 0 {
-			finalHistory = strings.Join(remainingLines, "\n") + "\n"
-		} else {
-			finalHistory = ""
-		}
+		finalHistory = evictOldestEntries(existingHistory, existingSize, entrySize)
 	}
 
-	// Append new entry to final history
-	finalContent := finalHistory + entry
+	return finalHistory + entry
+}
 
+func evictOldestEntries(existingHistory string, existingSize, entrySize int) string {
+	// Split into lines
+	lines := []string{}
+	if existingHistory != "" {
+		lines = strings.Split(strings.TrimRight(existingHistory, "\n"), "\n")
+	}
+
+	// Evict oldest entries (from beginning) until under limit
+	currentSize := existingSize
+	evictedLines := 0
+	for evictedLines < len(lines) && currentSize+entrySize > maxHistorySize {
+		lineToEvict := lines[evictedLines]
+		lineSize := len([]byte(lineToEvict + "\n"))
+		currentSize -= lineSize
+		evictedLines++
+	}
+
+	// Keep only non-evicted lines
+	remainingLines := lines[evictedLines:]
+	if len(remainingLines) > 0 {
+		return strings.Join(remainingLines, "\n") + "\n"
+	}
+	return ""
+}
+
+func writeHistoryFile(historyPath, content string) error {
 	// Write atomically: write to temp file, then rename
 	// Use timestamp to make temp file unique for concurrent writes
 	tmpFile := fmt.Sprintf("%s.tmp.%d", historyPath, time.Now().UnixNano())
-	if err := os.WriteFile(tmpFile, []byte(finalContent), 0o600); err != nil {
+	if err := os.WriteFile(tmpFile, []byte(content), permFile); err != nil {
 		return fmt.Errorf("failed to write temporary history file: %w", err)
 	}
 
@@ -262,7 +297,7 @@ func WriteHistoryEntry(sessionID string, message string) error {
 // Returns an empty string if no history exists for the session.
 func ReadHistory(sessionID string) (string, error) {
 	if sessionID == "" {
-		return "", fmt.Errorf("session ID cannot be empty")
+		return "", errSessionIDEmpty
 	}
 
 	historyPath := getHistoryPath(sessionID)
@@ -285,7 +320,7 @@ func ReadHistory(sessionID string) (string, error) {
 // This is primarily for testing and cleanup.
 func ClearHistory(sessionID string) error {
 	if sessionID == "" {
-		return fmt.Errorf("session ID cannot be empty")
+		return errSessionIDEmpty
 	}
 
 	historyPath := getHistoryPath(sessionID)

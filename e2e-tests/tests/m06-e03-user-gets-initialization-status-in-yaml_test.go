@@ -38,6 +38,8 @@ type CommandFilesYAML struct {
 }
 
 // TestM06E03YAMLOutputBasic validates basic YAML output functionality.
+//
+//nolint:cyclop // E2E test with YAML parsing and field validation
 func TestM06E03YAMLOutputBasic(t *testing.T) {
 	t.Parallel()
 

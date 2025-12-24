@@ -15,6 +15,8 @@ import (
 const uuidV4Pattern = `([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})`
 
 // TestM05E01UserSelectsAgentViaCLIFlag validates agent selection via CLI flags.
+//
+//nolint:funlen // E2E test with agent selection validation
 func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 	t.Parallel()
 
@@ -48,12 +50,12 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, tt.flag, "--fluxid-iterations", "1")
+			cmd := exec.CommandContext(t.Context(), binPath, testCase.flag, "--fluxid-iterations", "1")
 			cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 			var stdout bytes.Buffer
@@ -61,15 +63,15 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 			cmd.Stderr = &stdout
 
 			if err := cmd.Run(); err != nil {
-				t.Fatalf("fluxid %s failed: %v\nOutput:\n%s", tt.flag, err, stdout.String())
+				t.Fatalf("fluxid %s failed: %v\nOutput:\n%s", testCase.flag, err, stdout.String())
 			}
 
 			output := stdout.String()
 
 			// Verify agent is shown in initialization
-			expectedAgent := fmt.Sprintf("Agent: %s", tt.wantAgent)
+			expectedAgent := "Agent: " + testCase.wantAgent
 			if !strings.Contains(output, expectedAgent) {
-				t.Errorf("Expected agent %s in output, got:\n%s", tt.wantAgent, output)
+				t.Errorf("Expected agent %s in output, got:\n%s", testCase.wantAgent, output)
 			}
 
 			// Verify source is CLI
@@ -86,6 +88,8 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 }
 
 // TestM05E01ExactlyOneAgentFlagRequired validates mutual exclusion of agent flags.
+//
+//nolint:funlen // E2E test with flag validation checks
 func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 	t.Parallel()
 
@@ -125,14 +129,14 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			args := tt.args
+			args := testCase.args
 			// Add minimal iterations for tests that run workflows (success cases).
-			if !tt.expectError {
+			if !testCase.expectError {
 				args = append(args, "--fluxid-iterations", "1")
 			}
 			cmd := exec.CommandContext(t.Context(), binPath, args...)
@@ -143,16 +147,16 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 
 			err := cmd.Run()
 
-			if !tt.expectError {
+			if !testCase.expectError {
 				if err != nil {
-					t.Fatalf("Expected success with args %v, got error: %v", tt.args, err)
+					t.Fatalf("Expected success with args %v, got error: %v", testCase.args, err)
 				}
 				return
 			}
 
 			// Error is expected from here on
 			if err == nil {
-				t.Fatalf("Expected error with args %v, but succeeded", tt.args)
+				t.Fatalf("Expected error with args %v, but succeeded", testCase.args)
 			}
 
 			var exitErr *exec.ExitError
@@ -160,8 +164,8 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 				t.Errorf("Expected exit code 1, got: %v", err)
 			}
 
-			if !strings.Contains(stderr.String(), tt.errorText) {
-				t.Errorf("Expected error text %q, got: %s", tt.errorText, stderr.String())
+			if !strings.Contains(stderr.String(), testCase.errorText) {
+				t.Errorf("Expected error text %q, got: %s", testCase.errorText, stderr.String())
 			}
 		})
 	}
@@ -206,7 +210,7 @@ func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 		homeDir, _ := os.UserHomeDir()
 		cmd.Env = []string{
 			"PATH=/usr/bin:/bin",
-			fmt.Sprintf("HOME=%s", homeDir),
+			"HOME=" + homeDir,
 		}
 
 		var stderr bytes.Buffer
@@ -288,7 +292,7 @@ func TestM05E01OrchestrationMatchesBaseline(t *testing.T) {
 	}
 	sessionID := matches[1]
 
-	expectedEnv := fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID)
+	expectedEnv := "FLUXID_SESSION_ID=" + sessionID
 	if !strings.Contains(output, expectedEnv) {
 		t.Errorf("FLUXID_SESSION_ID not propagated to agent process")
 	}

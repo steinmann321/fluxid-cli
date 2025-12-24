@@ -36,16 +36,16 @@ func TestM05E04AgentAndSourceDisplayedViaCLI(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			tmpHome, tmpProjectDir := setupM05TestEnv(t, root, "", "")
 
-			output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, tt.flag)
+			output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, testCase.flag)
 
 			// Verify agent is displayed with source: cli
-			expectedLine := "Agent: " + tt.wantAgent + " (source: cli)"
+			expectedLine := "Agent: " + testCase.wantAgent + " (source: cli)"
 			if !strings.Contains(output, expectedLine) {
 				t.Errorf("Expected %q in output, got:\n%s", expectedLine, output)
 			}
@@ -86,19 +86,19 @@ func TestM05E04AgentAndSourceDisplayedViaEnv(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			tmpHome, tmpProjectDir := setupM05TestEnv(t, root, "", "")
 
 			envVars := map[string]string{
-				"FLUXID_AGENT": tt.envAgent,
+				"FLUXID_AGENT": testCase.envAgent,
 			}
 			output := runFluxidInDirWithEnv(t, root, tmpHome, tmpProjectDir, envVars)
 
 			// Verify agent is displayed with source: env
-			expectedLine := "Agent: " + tt.wantAgent + " (source: env)"
+			expectedLine := "Agent: " + testCase.wantAgent + " (source: env)"
 			if !strings.Contains(output, expectedLine) {
 				t.Errorf("Expected %q in output, got:\n%s", expectedLine, output)
 			}
@@ -134,16 +134,16 @@ func TestM05E04AgentAndSourceDisplayedViaHomeConfig(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpHome, tmpProjectDir := setupM05TestEnv(t, root, tt.agent, "")
+			tmpHome, tmpProjectDir := setupM05TestEnv(t, root, testCase.agent, "")
 
 			output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
 
 			// Verify agent is displayed with source: home (<path>)
-			if !strings.Contains(output, "Agent: "+tt.wantAgent) {
+			if !strings.Contains(output, "Agent: "+testCase.wantAgent) {
 				t.Errorf("Agent name not found in output:\n%s", output)
 			}
 
@@ -151,7 +151,7 @@ func TestM05E04AgentAndSourceDisplayedViaHomeConfig(t *testing.T) {
 				t.Errorf("Source 'home' not found in output:\n%s", output)
 			}
 
-			agentPattern := "Agent: " + tt.wantAgent
+			agentPattern := "Agent: " + testCase.wantAgent
 			verifyAgentBeforeWorkflow(t, output, agentPattern)
 		})
 	}
@@ -183,16 +183,16 @@ func TestM05E04AgentAndSourceDisplayedViaProjectConfig(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpHome, tmpProjectDir := setupM05TestEnv(t, root, "", tt.agent)
+			tmpHome, tmpProjectDir := setupM05TestEnv(t, root, "", testCase.agent)
 
 			output := runFluxidInDirWithOutput(t, root, tmpHome, tmpProjectDir)
 
 			// Verify agent is displayed with source: project (<path>)
-			if !strings.Contains(output, "Agent: "+tt.wantAgent) {
+			if !strings.Contains(output, "Agent: "+testCase.wantAgent) {
 				t.Errorf("Agent name not found in output:\n%s", output)
 			}
 
@@ -200,7 +200,7 @@ func TestM05E04AgentAndSourceDisplayedViaProjectConfig(t *testing.T) {
 				t.Errorf("Source 'project' not found in output:\n%s", output)
 			}
 
-			agentPattern := "Agent: " + tt.wantAgent
+			agentPattern := "Agent: " + testCase.wantAgent
 			verifyAgentBeforeWorkflow(t, output, agentPattern)
 		})
 	}

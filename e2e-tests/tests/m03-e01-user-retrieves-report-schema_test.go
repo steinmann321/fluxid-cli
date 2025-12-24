@@ -50,6 +50,8 @@ func TestM03E01GetReportSchemaOutputsValidYAML(t *testing.T) {
 
 // TestM03E01GetReportSchemaContainsRequiredFields verifies that the schema
 // contains all required fields and the status enum with PASS/FAIL values.
+//
+//nolint:cyclop,funlen // E2E test with extensive schema field validation checks
 func TestM03E01GetReportSchemaContainsRequiredFields(t *testing.T) {
 	t.Parallel()
 
@@ -74,8 +76,8 @@ func TestM03E01GetReportSchemaContainsRequiredFields(t *testing.T) {
 	}
 
 	// Verify 'required' field exists and contains expected keys
-	required, ok := schema["required"].([]interface{})
-	if !ok {
+	required, found := schema["required"].([]interface{})
+	if !found {
 		t.Fatal("Schema does not have a 'required' array")
 	}
 
@@ -104,19 +106,19 @@ func TestM03E01GetReportSchemaContainsRequiredFields(t *testing.T) {
 	}
 
 	// Verify properties exist
-	properties, ok := schema["properties"].(map[string]interface{})
-	if !ok {
+	properties, propertiesFound := schema["properties"].(map[string]interface{})
+	if !propertiesFound {
 		t.Fatal("Schema does not have a 'properties' object")
 	}
 
 	// Verify 'status' property has enum with PASS and FAIL
-	status, ok := properties["status"].(map[string]interface{})
-	if !ok {
+	status, statusFound := properties["status"].(map[string]interface{})
+	if !statusFound {
 		t.Fatal("Schema 'properties' does not contain 'status'")
 	}
 
-	statusEnum, ok := status["enum"].([]interface{})
-	if !ok {
+	statusEnum, enumFound := status["enum"].([]interface{})
+	if !enumFound {
 		t.Fatal("Status property does not have an 'enum' array")
 	}
 
@@ -143,13 +145,13 @@ func TestM03E01GetReportSchemaContainsRequiredFields(t *testing.T) {
 	}
 
 	// Verify 'issues' property exists and has required categories
-	issues, ok := properties["issues"].(map[string]interface{})
-	if !ok {
+	issues, issuesFound := properties["issues"].(map[string]interface{})
+	if !issuesFound {
 		t.Fatal("Schema 'properties' does not contain 'issues'")
 	}
 
-	issuesProperties, ok := issues["properties"].(map[string]interface{})
-	if !ok {
+	issuesProperties, issuesPropsFound := issues["properties"].(map[string]interface{})
+	if !issuesPropsFound {
 		t.Fatal("Issues property does not have 'properties'")
 	}
 

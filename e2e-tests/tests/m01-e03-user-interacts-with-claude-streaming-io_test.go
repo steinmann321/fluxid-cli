@@ -15,7 +15,7 @@ import (
 // TestM01E03StreamingOutputPassthrough validates that stdout/stderr from Claude
 // are streamed in real-time to the user with acceptable latency.
 //
-//nolint:paralleltest // Sequential stub usage; I/O streaming complexity
+//nolint:paralleltest,cyclop,funlen // Sequential stub usage; I/O streaming complexity with multiple validations
 func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 	t.Skip("BROKEN: Stub doesn't write reports (M03-E04 workflow requirement)")
 	root := getProjectRoot(t)
@@ -125,7 +125,7 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 // TestM01E03InteractiveStdinDelivery validates that user input from stdin
 // is delivered to the Claude process reliably.
 //
-//nolint:paralleltest // Sequential stub usage; I/O complexity
+//nolint:paralleltest,cyclop,funlen // Sequential stub usage; I/O complexity with stdin interaction
 func TestM01E03InteractiveStdinDelivery(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
@@ -290,7 +290,7 @@ func TestM01E03StreamOrderingReadable(t *testing.T) {
 // TestM01E03WorkflowContinuesAfterInteraction validates that after user
 // provides input during an interactive phase, the workflow continues correctly.
 //
-//nolint:paralleltest // Sequential stub; workflow I/O complexity
+//nolint:paralleltest,cyclop // Sequential stub; workflow I/O complexity with report validation
 func TestM01E03WorkflowContinuesAfterInteraction(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)

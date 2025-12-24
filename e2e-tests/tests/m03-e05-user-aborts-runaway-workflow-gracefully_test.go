@@ -32,7 +32,7 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
-		fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID),
+		"FLUXID_SESSION_ID="+sessionID,
 	)
 
 	// Capture output
@@ -94,7 +94,7 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "1")
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
-		fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID),
+		"FLUXID_SESSION_ID="+sessionID,
 	)
 
 	// Start the command
@@ -160,7 +160,7 @@ func TestM03E05AbortViaIPCCommand(t *testing.T) {
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
-		fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID),
+		"FLUXID_SESSION_ID="+sessionID,
 	)
 
 	// Capture output
@@ -225,7 +225,7 @@ func TestM03E05AbortMessageContent(t *testing.T) {
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
-		fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID),
+		"FLUXID_SESSION_ID="+sessionID,
 	)
 
 	// Capture output

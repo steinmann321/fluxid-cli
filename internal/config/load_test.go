@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+//nolint:cyclop,funlen // Unit test with table-driven tests for home config scenarios
 func TestLoadHomeConfig(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -113,8 +114,8 @@ func TestLoadHomeConfig(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			// Create temporary home directory
 			tmpHome := t.TempDir()
 			originalHome := os.Getenv("HOME")
@@ -123,21 +124,22 @@ func TestLoadHomeConfig(t *testing.T) {
 				_ = os.Setenv("HOME", originalHome)
 			}()
 
-			tt.setupHome(t, tmpHome)
+			testCase.setupHome(t, tmpHome)
 
 			got, err := LoadHomeConfig()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadHomeConfig() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("LoadHomeConfig() error = %v, wantErr %v", err, testCase.wantErr)
 				return
 			}
 
-			if !tt.wantErr && !equalHomeConfig(got, tt.wantConfig) {
-				t.Errorf("LoadHomeConfig() = %+v, want %+v", got, tt.wantConfig)
+			if !testCase.wantErr && !equalHomeConfig(got, testCase.wantConfig) {
+				t.Errorf("LoadHomeConfig() = %+v, want %+v", got, testCase.wantConfig)
 			}
 		})
 	}
 }
 
+//nolint:cyclop,funlen // Unit test with table-driven tests for project config scenarios
 func TestLoadProjectConfig(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -219,8 +221,8 @@ func TestLoadProjectConfig(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			// Create temporary project directory and change to it
 			tmpProject := t.TempDir()
 			originalWd, _ := os.Getwd()
@@ -231,16 +233,16 @@ func TestLoadProjectConfig(t *testing.T) {
 				_ = os.Chdir(originalWd)
 			}()
 
-			tt.setupProject(t, tmpProject)
+			testCase.setupProject(t, tmpProject)
 
 			got, err := LoadProjectConfig()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("LoadProjectConfig() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("LoadProjectConfig() error = %v, wantErr %v", err, testCase.wantErr)
 				return
 			}
 
-			if !tt.wantErr && !equalProjectConfig(got, tt.wantConfig) {
-				t.Errorf("LoadProjectConfig() = %+v, want %+v", got, tt.wantConfig)
+			if !testCase.wantErr && !equalProjectConfig(got, testCase.wantConfig) {
+				t.Errorf("LoadProjectConfig() = %+v, want %+v", got, testCase.wantConfig)
 			}
 		})
 	}

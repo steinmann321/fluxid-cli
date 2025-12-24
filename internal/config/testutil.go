@@ -14,60 +14,60 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
-func equalHomeConfig(a, b *HomeConfig) bool {
-	if a == nil && b == nil {
+func equalHomeConfig(actual, expected *HomeConfig) bool {
+	if actual == nil && expected == nil {
 		return true
 	}
-	if a == nil || b == nil {
+	if actual == nil || expected == nil {
 		return false
 	}
 
-	return equalStrPtr(a.Agent, b.Agent) &&
-		equalIntPtr(a.Iterations, b.Iterations) &&
-		equalIntPtr(a.ImplementRetries, b.ImplementRetries) &&
-		equalBoolPtr(a.CommitEnabled, b.CommitEnabled)
+	return equalStrPtr(actual.Agent, expected.Agent) &&
+		equalIntPtr(actual.Iterations, expected.Iterations) &&
+		equalIntPtr(actual.ImplementRetries, expected.ImplementRetries) &&
+		equalBoolPtr(actual.CommitEnabled, expected.CommitEnabled)
 }
 
-func equalProjectConfig(a, b *ProjectConfig) bool {
-	if a == nil && b == nil {
+func equalProjectConfig(actual, expected *ProjectConfig) bool {
+	if actual == nil && expected == nil {
 		return true
 	}
-	if a == nil || b == nil {
+	if actual == nil || expected == nil {
 		return false
 	}
 
-	return equalStrPtr(a.Agent, b.Agent) &&
-		equalIntPtr(a.Iterations, b.Iterations) &&
-		equalIntPtr(a.ImplementRetries, b.ImplementRetries) &&
-		equalBoolPtr(a.CommitEnabled, b.CommitEnabled)
+	return equalStrPtr(actual.Agent, expected.Agent) &&
+		equalIntPtr(actual.Iterations, expected.Iterations) &&
+		equalIntPtr(actual.ImplementRetries, expected.ImplementRetries) &&
+		equalBoolPtr(actual.CommitEnabled, expected.CommitEnabled)
 }
 
-func equalStrPtr(a, b *string) bool {
-	if a == nil && b == nil {
+func equalStrPtr(actual, expected *string) bool {
+	if actual == nil && expected == nil {
 		return true
 	}
-	if a == nil || b == nil {
+	if actual == nil || expected == nil {
 		return false
 	}
-	return *a == *b
+	return *actual == *expected
 }
 
-func equalIntPtr(a, b *int) bool {
-	if a == nil && b == nil {
+func equalIntPtr(actual, expected *int) bool {
+	if actual == nil && expected == nil {
 		return true
 	}
-	if a == nil || b == nil {
+	if actual == nil || expected == nil {
 		return false
 	}
-	return *a == *b
+	return *actual == *expected
 }
 
-func equalBoolPtr(a, b *bool) bool {
-	if a == nil && b == nil {
+func equalBoolPtr(actual, expected *bool) bool {
+	if actual == nil && expected == nil {
 		return true
 	}
-	if a == nil || b == nil {
+	if actual == nil || expected == nil {
 		return false
 	}
-	return *a == *b
+	return *actual == *expected
 }

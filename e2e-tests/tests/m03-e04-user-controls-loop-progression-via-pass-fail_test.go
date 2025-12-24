@@ -143,7 +143,7 @@ issues:
 
 	// Write via IPC command
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-report")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	cmd.Stdin = strings.NewReader(validReport)
 
 	output, err := cmd.CombinedOutput()
@@ -175,7 +175,7 @@ func TestIPCReadReportCommand(t *testing.T) {
 
 	// Read via IPC command
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "read-report")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

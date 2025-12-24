@@ -37,6 +37,8 @@ type CommandFilesJSON struct {
 }
 
 // TestM06E02JSONOutputBasic validates basic JSON output functionality.
+//
+//nolint:cyclop // E2E test with JSON parsing and field validation
 func TestM06E02JSONOutputBasic(t *testing.T) {
 	t.Parallel()
 

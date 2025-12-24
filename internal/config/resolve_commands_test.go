@@ -8,7 +8,9 @@ import (
 	"testing"
 )
 
-//nolint:paralleltest,usetesting // Cannot run in parallel or use t.Chdir - test uses os.Getwd/Chdir
+// os.Getwd/Chdir; long table-driven test
+//
+//nolint:paralleltest,usetesting,funlen // Cannot run in parallel or use t.Chdir - test uses
 func TestResolveCommandFiles(t *testing.T) {
 	// Cannot run in parallel because we need to change working directory
 
@@ -125,21 +127,21 @@ func TestResolveCommandFiles(t *testing.T) {
 			setupHome: homeDir,
 			wantNil:   false,
 			wantErr:   true,
-			errMsg:    "commands.review is required",
+			errMsg:    "commands.review: command is required",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			// Cannot run in parallel because resolveCommandFiles uses os.Getwd()
 
 			// Set up environment if needed
-			setupTestEnv(t, tt.setupWd, tt.setupHome)
+			setupTestEnv(t, testCase.setupWd, testCase.setupHome)
 
-			result, err := ResolveCommandFiles(tt.projectConfig, tt.homeConfig)
+			result, err := ResolveCommandFiles(testCase.projectConfig, testCase.homeConfig)
 
-			checkResolveError(t, err, tt.wantErr, tt.errMsg)
-			checkResolveResult(t, result, tt.wantNil, tt.wantErr)
+			checkResolveError(t, err, testCase.wantErr, testCase.errMsg)
+			checkResolveResult(t, result, testCase.wantNil, testCase.wantErr)
 		})
 	}
 }
@@ -180,6 +182,7 @@ func checkResolveResult(t *testing.T, result *ResolvedCommandFiles, wantNil, wan
 	}
 }
 
+//nolint:funlen // Unit test with file resolution validation
 func TestResolveAndValidateCommandFile(t *testing.T) {
 	t.Parallel()
 
@@ -211,7 +214,7 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 			filename: nil,
 			cmdName:  "implement",
 			wantErr:  true,
-			errMsg:   "commands.implement is required",
+			errMsg:   "commands.implement: command is required",
 		},
 		{
 			name:     "empty filename",
@@ -219,7 +222,7 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 			filename: strPtr(""),
 			cmdName:  "review",
 			wantErr:  true,
-			errMsg:   "commands.review is required",
+			errMsg:   "commands.review: command is required",
 		},
 		{
 			name:     "valid file",
@@ -246,13 +249,13 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result, err := resolveAndValidateCommandFile(tt.baseDir, tt.filename, tt.cmdName)
+			result, err := resolveAndValidateCommandFile(testCase.baseDir, testCase.filename, testCase.cmdName)
 
-			checkValidateFileError(t, err, result, tt.wantErr, tt.errMsg)
+			checkValidateFileError(t, err, result, testCase.wantErr, testCase.errMsg)
 		})
 	}
 }
@@ -278,6 +281,7 @@ func checkValidateFileError(t *testing.T, err error, result string, wantErr bool
 	}
 }
 
+//nolint:funlen // Unit test with command validation scenarios
 func TestValidateCommands(t *testing.T) {
 	t.Parallel()
 
@@ -352,16 +356,16 @@ func TestValidateCommands(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateCommands(tt.cmds)
-			if tt.wantErr {
+			err := validateCommands(testCase.cmds)
+			if testCase.wantErr {
 				if err == nil {
-					t.Errorf("validateCommands() expected error containing %q, got nil", tt.errMsg)
-				} else if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("validateCommands() error = %v, want error containing %q", err, tt.errMsg)
+					t.Errorf("validateCommands() expected error containing %q, got nil", testCase.errMsg)
+				} else if testCase.errMsg != "" && !strings.Contains(err.Error(), testCase.errMsg) {
+					t.Errorf("validateCommands() error = %v, want error containing %q", err, testCase.errMsg)
 				}
 			} else if err != nil {
 				t.Errorf("validateCommands() unexpected error: %v", err)

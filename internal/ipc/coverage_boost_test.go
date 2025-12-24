@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -19,23 +20,25 @@ func TestWriteReport_LargeReport(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	sessionID := testSessionLarge
-	largeReport := `command: test
+	var builder strings.Builder
+	builder.WriteString(`command: test
 artifact: test
 timestamp: 2025-12-15T10:00:00Z
 status: PASS
-summary: `
+summary: `)
 	// Add a large summary to test size handling
-	for i := 0; i < 1000; i++ {
-		largeReport += "This is a test message. "
+	for index := 0; index < 1000; index++ {
+		builder.WriteString("This is a test message. ")
 	}
-	largeReport += `
+	builder.WriteString(`
 issues:
   blockers: []
   defects: []
   concerns: []
   observations: []
   enhancements: []
-`
+`)
+	largeReport := builder.String()
 
 	err := WriteReport(sessionID, largeReport)
 	if err != nil {
@@ -60,18 +63,18 @@ func TestSetAbortFlag_MultipleSets(t *testing.T) {
 	sessionID := testSessionMultiAbort
 
 	// Set abort flag multiple times
-	for i := 0; i < 5; i++ {
+	for index := 0; index < 5; index++ {
 		err := SetAbortFlag(sessionID)
 		if err != nil {
-			t.Errorf("Expected no error on iteration %d, got: %v", i, err)
+			t.Errorf("Expected no error on iteration %d, got: %v", index, err)
 		}
 
 		aborted, err := CheckAbortFlag(sessionID)
 		if err != nil {
-			t.Errorf("Expected no error checking abort on iteration %d, got: %v", i, err)
+			t.Errorf("Expected no error checking abort on iteration %d, got: %v", index, err)
 		}
 		if !aborted {
-			t.Errorf("Expected abort flag to be set on iteration %d", i)
+			t.Errorf("Expected abort flag to be set on iteration %d", index)
 		}
 	}
 }
@@ -84,10 +87,10 @@ func TestWriteHistoryEntry_MultipleEntries(t *testing.T) {
 	sessionID := testSessionMultiHist
 
 	// Write multiple entries
-	for i := 0; i < 10; i++ {
-		err := WriteHistoryEntry(sessionID, "Entry "+string(rune('A'+i)))
+	for index := 0; index < 10; index++ {
+		err := WriteHistoryEntry(sessionID, "Entry "+string(rune('A'+index)))
 		if err != nil {
-			t.Errorf("Expected no error on entry %d, got: %v", i, err)
+			t.Errorf("Expected no error on entry %d, got: %v", index, err)
 		}
 	}
 
@@ -127,7 +130,7 @@ issues:
 
 	// Read concurrently
 	done := make(chan bool)
-	for i := 0; i < 5; i++ {
+	for index := 0; index < 5; index++ {
 		go func() {
 			_, err := ReadReport(sessionID)
 			if err != nil {
@@ -137,7 +140,7 @@ issues:
 		}()
 	}
 
-	for i := 0; i < 5; i++ {
+	for index := 0; index < 5; index++ {
 		<-done
 	}
 }

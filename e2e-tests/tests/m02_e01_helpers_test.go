@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,8 +49,8 @@ func runFluxidWithHome(t *testing.T, root, homeDir string) string {
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer
@@ -72,8 +71,8 @@ func runFluxidWithHomeAndArgs(t *testing.T, root, homeDir string, args ...string
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer
@@ -94,8 +93,8 @@ func runFluxidExpectError(t *testing.T, root, homeDir string) (string, int) {
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stderr bytes.Buffer
@@ -133,8 +132,8 @@ func runFluxidInDir(t *testing.T, root, homeDir, workDir string) {
 	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Dir = workDir
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer
@@ -154,8 +153,8 @@ func runFluxidInDirWithOutput(t *testing.T, root, homeDir, workDir string) strin
 	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Dir = workDir
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer
@@ -192,8 +191,8 @@ func runFluxidInDirWithArgs(t *testing.T, root, homeDir, workDir string, args ..
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Dir = workDir
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer
@@ -215,8 +214,8 @@ func runFluxidInDirExpectError(t *testing.T, root, homeDir, workDir string) (str
 	cmd := exec.CommandContext(t.Context(), binPath)
 	cmd.Dir = workDir
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("HOME=%s", homeDir),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+homeDir,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stderr bytes.Buffer

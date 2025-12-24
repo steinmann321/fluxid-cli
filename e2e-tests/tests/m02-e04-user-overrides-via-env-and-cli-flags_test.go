@@ -223,8 +223,8 @@ func TestM02E04CommitEnabledTrueFalseVariations(t *testing.T) {
 		{"no", "no", false},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			root := getProjectRoot(t)
@@ -236,10 +236,10 @@ func TestM02E04CommitEnabledTrueFalseVariations(t *testing.T) {
 
 			// Run in dry-run mode (only need init status)
 			output := runFluxidInDirWithEnvAndArgs(t, root, tmpHome, tmpProjectDir, map[string]string{
-				"FLUXID_COMMIT_ENABLED": tc.envValue,
+				"FLUXID_COMMIT_ENABLED": testCase.envValue,
 			}, "--fluxid-dry-run")
 
-			expectedOutput := fmt.Sprintf("Commit Enabled: %v (source: env)", tc.expected)
+			expectedOutput := fmt.Sprintf("Commit Enabled: %v (source: env)", testCase.expected)
 			if !strings.Contains(output, expectedOutput) {
 				t.Errorf("Expected '%s', got:\n%s", expectedOutput, output)
 			}

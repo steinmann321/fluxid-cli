@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,8 +37,8 @@ func TestSetAbortFlagEmptySession(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 
@@ -82,8 +83,8 @@ func TestCheckAbortFlagEmptySession(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 
@@ -131,8 +132,8 @@ func TestClearAbortFlagEmptySession(t *testing.T) {
 		t.Error("Expected error for empty session ID, got nil")
 	}
 
-	if err.Error() != errSessionIDEmpty {
-		t.Errorf("Expected 'session ID cannot be empty' error, got: %v", err)
+	if !errors.Is(err, errSessionIDEmpty) {
+		t.Errorf("Expected errSessionIDEmpty error, got: %v", err)
 	}
 }
 

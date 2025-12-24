@@ -4,7 +4,6 @@ package tests
 import (
 	"context"
 	"fluxid-loop/internal/ipc"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,6 +12,8 @@ import (
 
 // TestIPCWriteHistoryBasic tests the basic flow:
 // set FLUXID_SESSION_ID → run fluxid ipc write-history "message" → verify confirmation and entry.
+//
+//nolint:cyclop,funlen // E2E test with IPC command execution and history validation
 func TestIPCWriteHistoryBasic(t *testing.T) {
 	sessionID := "test-session-ipc-write-history-basic"
 	setupReportDir(t)
@@ -23,7 +24,7 @@ func TestIPCWriteHistoryBasic(t *testing.T) {
 	// Write history entry via IPC
 	message := "Decision: adopt FIFO eviction"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -152,7 +153,7 @@ func TestIPCWriteHistoryMultipleEntries(t *testing.T) {
 	// Write multiple entries
 	for _, message := range messages {
 		cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-		cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
 		if err != nil {
@@ -219,7 +220,7 @@ func TestIPCWriteHistoryWithoutMessage(t *testing.T) {
 
 	// Attempt to write without message
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 
@@ -246,7 +247,7 @@ func TestIPCWriteHistoryMultiWordMessage(t *testing.T) {
 	// Write history entry with multiple words
 	message := "This is a longer decision with multiple words"
 	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("FLUXID_SESSION_ID=%s", sessionID))
+	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
