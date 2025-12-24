@@ -2,12 +2,12 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestWriteHistoryWithSessionID tests the basic flow:
@@ -23,7 +23,7 @@ func TestWriteHistoryWithSessionID(t *testing.T) {
 
 	// Write history entry
 	message := "First note"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", message)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -104,7 +104,7 @@ func TestWriteHistoryMultipleEntries(t *testing.T) {
 
 	// Write multiple entries
 	for _, message := range messages {
-		cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message)
+		cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", message)
 		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
@@ -144,7 +144,7 @@ func TestWriteHistoryWithoutSessionID(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Attempt to write without session ID
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", "test message")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", "test message")
 	// Explicitly clear FLUXID_SESSION_ID from environment
 	cmd.Env = []string{}
 
@@ -174,7 +174,7 @@ func TestWriteHistoryWithoutMessage(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Attempt to write without message
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -201,7 +201,7 @@ func TestWriteHistoryMultiWordMessage(t *testing.T) {
 
 	// Write history entry with multiple words
 	message := "This is a longer message with multiple words"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", message)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -231,7 +231,7 @@ func TestWriteHistoryHelp(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Request help
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", "--help")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", "--help")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -262,7 +262,7 @@ func TestWriteHistoryNoFilePersistence(t *testing.T) {
 
 	// Write to first session
 	message1 := "Message for session 1"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message1)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", message1)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID1)
 
 	output, err := cmd.CombinedOutput()
@@ -301,7 +301,7 @@ func TestWriteHistoryZeroExitCode(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Write history entry
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "--write-history", "test message")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", "test message")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	err := cmd.Run()

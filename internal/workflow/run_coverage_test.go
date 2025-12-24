@@ -6,12 +6,17 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestRun_AbortAfterImplementPhase tests abort flag check after implement phase completes.
 func TestRun_AbortAfterImplementPhase(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -31,10 +36,13 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 	}
 
 	// Set abort flag after implement phase runs
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		defer waitGroup.Done()
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
-		time.Sleep(50 * time.Millisecond)
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
 
@@ -45,10 +53,14 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 	if exitCode != 130 {
 		t.Errorf("Expected exit code 130 for abort, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }
 
 // TestRun_ReviewCycleFAILContinuation tests workflow continuing after FAIL review.
 func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -69,9 +81,12 @@ func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 
 	// Return FAIL for first review cycle, PASS for second
 	reportCount := 0
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
+		defer waitGroup.Done()
 		for i := 0; i < 10; i++ {
-			time.Sleep(50 * time.Millisecond)
+			<-time.After(50 * time.Millisecond)
 			reportCount++
 			// First cycle: implement PASS, review FAIL
 			// Second cycle: implement PASS, review PASS
@@ -93,4 +108,6 @@ func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }

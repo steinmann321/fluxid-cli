@@ -35,15 +35,15 @@ func TestExecute_UnsupportedAgent(t *testing.T) {
 }
 
 func TestExecute_ProjectConfigLoadError(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	t.Setenv("HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
+	t.Setenv("HOME", dataDir)
 
 	// Create invalid project config (malformed YAML)
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configPath := filepath.Join(tmpDir, ".fluxid", "config.yaml")
+	configPath := filepath.Join(dataDir, ".fluxid", "config.yaml")
 	if err := os.WriteFile(configPath, []byte("invalid: [yaml content"), 0o644); err != nil {
 		t.Fatal(err)
 	}

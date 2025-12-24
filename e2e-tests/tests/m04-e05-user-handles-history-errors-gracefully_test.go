@@ -2,13 +2,13 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestHistoryErrorMissingSessionID tests that missing FLUXID_SESSION_ID yields clear error.
@@ -23,7 +23,7 @@ func TestHistoryErrorMissingSessionID(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Test 1: ipc view-history without FLUXID_SESSION_ID
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	// Explicitly set env WITHOUT FLUXID_SESSION_ID
 	cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
 
@@ -47,7 +47,7 @@ func TestHistoryErrorMissingSessionID(t *testing.T) {
 	}
 
 	// Test 2: ipc write-history without FLUXID_SESSION_ID
-	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "test message")
+	cmd2 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", "test message")
 	cmd2.Env = []string{"PATH=" + os.Getenv("PATH")}
 
 	output2, err2 := cmd2.CombinedOutput()
@@ -67,7 +67,7 @@ func TestHistoryErrorMissingSessionID(t *testing.T) {
 	}
 
 	// Test 3: --write-history without FLUXID_SESSION_ID
-	cmd3 := exec.CommandContext(context.Background(), fluxidBin, "--write-history", "test message")
+	cmd3 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", "test message")
 	cmd3.Env = []string{"PATH=" + os.Getenv("PATH")}
 
 	output3, err3 := cmd3.CombinedOutput()
@@ -98,7 +98,7 @@ func TestHistoryErrorEmptyMessage(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Test 1: ipc write-history with no message argument
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -121,7 +121,7 @@ func TestHistoryErrorEmptyMessage(t *testing.T) {
 	}
 
 	// Test 2: --write-history with no message argument
-	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "--write-history")
+	cmd2 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history")
 	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output2, err2 := cmd2.CombinedOutput()
@@ -154,19 +154,19 @@ func TestHistoryErrorConsistentFormat(t *testing.T) {
 	errorMessages := []string{}
 
 	// Error 1: Missing session ID
-	cmd1 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	cmd1 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	cmd1.Env = []string{"PATH=" + os.Getenv("PATH")}
 	output1, _ := cmd1.CombinedOutput()
 	errorMessages = append(errorMessages, string(output1))
 
 	// Error 2: Missing message
-	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
+	cmd2 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history")
 	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	output2, _ := cmd2.CombinedOutput()
 	errorMessages = append(errorMessages, string(output2))
 
 	// Error 3: Invalid session flag value
-	cmd3 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history", "--session")
+	cmd3 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history", "--session")
 	cmd3.Env = []string{"PATH=" + os.Getenv("PATH")}
 	output3, _ := cmd3.CombinedOutput()
 	errorMessages = append(errorMessages, string(output3))
@@ -203,7 +203,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Step 1: Fail with missing session ID
-	cmd1 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	cmd1 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	cmd1.Env = []string{"PATH=" + os.Getenv("PATH")}
 	_, err1 := cmd1.CombinedOutput()
 	if err1 == nil {
@@ -211,7 +211,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 	}
 
 	// Step 2: Fix issue by setting FLUXID_SESSION_ID and retry
-	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	cmd2 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	output2, err2 := cmd2.CombinedOutput()
 	if err2 != nil {
@@ -219,7 +219,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 	}
 
 	// Step 3: Fail with missing message
-	cmd3 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
+	cmd3 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history")
 	cmd3.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	_, err3 := cmd3.CombinedOutput()
 	if err3 == nil {
@@ -228,7 +228,7 @@ func TestHistoryErrorRecovery(t *testing.T) {
 
 	// Step 4: Fix issue by providing message and retry
 	message := "Test recovery message"
-	cmd4 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+	cmd4 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 	cmd4.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	output4, err4 := cmd4.CombinedOutput()
 	if err4 != nil {
@@ -292,7 +292,7 @@ func TestHistoryErrorDoesNotAbortWrapper(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			cmd := exec.CommandContext(context.Background(), fluxidBin, tc.args...)
+			cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, tc.args...)
 			cmd.Env = tc.env
 
 			output, err := cmd.CombinedOutput()
@@ -330,7 +330,7 @@ func TestHistoryErrorSessionFlagOverride(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Test 1: --session flag with no value (should error)
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history", "--session")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history", "--session")
 	cmd.Env = []string{"PATH=" + os.Getenv("PATH")}
 
 	output, err := cmd.CombinedOutput()
@@ -348,7 +348,7 @@ func TestHistoryErrorSessionFlagOverride(t *testing.T) {
 	}
 
 	// Test 2: --session flag with valid value (should succeed)
-	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history", "--session", sessionID)
+	cmd2 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history", "--session", sessionID)
 	cmd2.Env = []string{"PATH=" + os.Getenv("PATH")} // No FLUXID_SESSION_ID
 
 	output2, err2 := cmd2.CombinedOutput()

@@ -118,11 +118,7 @@ func TestLoadHomeConfig(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Create temporary home directory
 			tmpHome := t.TempDir()
-			originalHome := os.Getenv("HOME")
 			t.Setenv("HOME", tmpHome)
-			defer func() {
-				_ = os.Setenv("HOME", originalHome)
-			}()
 
 			testCase.setupHome(t, tmpHome)
 

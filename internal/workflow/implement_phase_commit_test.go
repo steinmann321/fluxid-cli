@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 func TestRunImplementPhase_WithCommit(t *testing.T) {
@@ -40,6 +42,8 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 }
 
 func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	// Test successful implement phase with commit
 	sessionID := "test-implement-success-commit-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()

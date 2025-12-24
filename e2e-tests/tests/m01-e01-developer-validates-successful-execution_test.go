@@ -4,7 +4,6 @@ package tests
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -64,7 +63,7 @@ func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 	}
 
 	// Execute fluxid with --fluxid-dry-run flag
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binaryPath, "--fluxid-dry-run", "--claude")
 	cmd.Dir = projectDir
@@ -106,7 +105,7 @@ func testHelpFlag(t *testing.T, binaryPath, flag string) {
 	start := time.Now()
 
 	// Execute fluxid with help flag
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binaryPath, flag)
 
@@ -217,7 +216,7 @@ commit_enabled: false
 				args = append(args, testCase.flag)
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := testContext(5 * time.Second)
 			defer cancel()
 			cmd := exec.CommandContext(ctx, binaryPath, args...)
 			cmd.Dir = projectDir
@@ -286,7 +285,7 @@ func TestMain_ExecutionSpeed(t *testing.T) {
 	for iteration := 0; iteration < 3; iteration++ {
 		start := time.Now()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := testContext(5 * time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "--fluxid-dry-run", "--claude")
 		cmd.Dir = projectDir

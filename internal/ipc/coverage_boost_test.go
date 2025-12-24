@@ -2,7 +2,10 @@ package ipc
 
 import (
 	"strings"
+	"sync"
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 const (
@@ -106,6 +109,8 @@ func TestWriteHistoryEntry_MultipleEntries(t *testing.T) {
 
 // TestReadReport_Concurrent tests concurrent report reading.
 func TestReadReport_Concurrent(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -129,20 +134,19 @@ issues:
 	}
 
 	// Read concurrently
-	done := make(chan bool)
+	var waitGroup sync.WaitGroup
 	for index := 0; index < 5; index++ {
+		waitGroup.Add(1)
 		go func() {
+			defer waitGroup.Done()
 			_, err := ReadReport(sessionID)
 			if err != nil {
 				t.Errorf("Expected no error reading concurrently, got: %v", err)
 			}
-			done <- true
 		}()
 	}
 
-	for index := 0; index < 5; index++ {
-		<-done
-	}
+	waitGroup.Wait()
 }
 
 // TestGetStorageDir_InvalidHome tests storage dir with invalid XDG_DATA_HOME.

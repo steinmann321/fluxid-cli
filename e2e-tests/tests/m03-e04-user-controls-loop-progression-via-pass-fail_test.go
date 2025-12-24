@@ -2,15 +2,17 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 const (
@@ -142,7 +144,7 @@ issues:
 	fluxidBin := buildFluxidBinary(t)
 
 	// Write via IPC command
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-report")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-report")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 	cmd.Stdin = strings.NewReader(validReport)
 
@@ -174,7 +176,7 @@ func TestIPCReadReportCommand(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Read via IPC command
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "read-report")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "read-report")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -191,12 +193,17 @@ func TestIPCReadReportCommand(t *testing.T) {
 // TestWaitForValidReportTimeout tests that waitForValidReport retries on missing reports.
 // This test simulates the retry behavior by writing a report after a delay.
 func TestWaitForValidReportRetry(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	sessionID := "test-session-wait-retry"
 	setupReportDir(t)
 
 	// Start goroutine that writes report after delay
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
-		time.Sleep(1 * time.Second)
+		defer waitGroup.Done()
+		<-time.After(1 * time.Second)
 		writeReport(t, sessionID, statusPass, "delayed-write")
 	}()
 
@@ -213,7 +220,7 @@ func TestWaitForValidReportRetry(t *testing.T) {
 		if reportYAML != "" {
 			break
 		}
-		time.Sleep(500 * time.Millisecond)
+		<-time.After(500 * time.Millisecond)
 	}
 
 	elapsed := time.Since(start)
@@ -225,6 +232,8 @@ func TestWaitForValidReportRetry(t *testing.T) {
 	if elapsed < 1*time.Second {
 		t.Errorf("Expected at least 1 second delay, got %v", elapsed)
 	}
+
+	waitGroup.Wait()
 }
 
 // Helper functions
@@ -298,7 +307,7 @@ func buildFluxidBinary(t *testing.T) string {
 	}
 
 	fluxidPath := filepath.Join(projectRoot, "cmd", "fluxid")
-	cmd := exec.CommandContext(context.Background(), "go", "build", "-o", binPath, fluxidPath)
+	cmd := exec.CommandContext(testCtx(30*time.Second), "go", "build", "-o", binPath, fluxidPath)
 	cmd.Dir = projectRoot
 
 	output, err := cmd.CombinedOutput()

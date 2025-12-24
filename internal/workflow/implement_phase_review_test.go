@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 func TestRunReviewPhase_Failure(t *testing.T) {
@@ -39,6 +41,8 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 }
 
 func TestRunReviewPhase_Success(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	// Test successful review phase
 	sessionID := "test-review-success-" + time.Now().Format("20060102150405.000000")
 	tmpDir := t.TempDir()

@@ -8,9 +8,13 @@ import (
 	"fluxid-loop/internal/types"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 func TestRunImplementPhase_Success(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -30,7 +34,7 @@ func TestRunImplementPhase_Success(t *testing.T) {
 	}
 
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -44,6 +48,8 @@ func TestRunImplementPhase_Success(t *testing.T) {
 }
 
 func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -63,7 +69,7 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 	}
 
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -77,6 +83,8 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 }
 
 func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -96,7 +104,7 @@ func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 	}
 
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -141,6 +149,8 @@ func TestRunCommitPhase_SuccessViaRun(t *testing.T) {
 }
 
 func TestRunImplementPhase_WithCommandFile(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -164,7 +174,7 @@ func TestRunImplementPhase_WithCommandFile(t *testing.T) {
 	}
 
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 

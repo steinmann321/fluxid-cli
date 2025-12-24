@@ -2,13 +2,13 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestViewHistoryBasic tests the basic flow:
@@ -25,7 +25,7 @@ func TestViewHistoryBasic(t *testing.T) {
 	// Write two history entries using different methods
 	// Entry 1: via --write-history flag
 	message1 := "First decision: use FIFO eviction"
-	cmd1 := exec.CommandContext(context.Background(), fluxidBin, "--write-history", message1)
+	cmd1 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "--write-history", message1)
 	cmd1.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output1, err := cmd1.CombinedOutput()
@@ -35,7 +35,7 @@ func TestViewHistoryBasic(t *testing.T) {
 
 	// Entry 2: via ipc write-history
 	message2 := "Second decision: implement buffer cap"
-	cmd2 := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message2)
+	cmd2 := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message2)
 	cmd2.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output2, err := cmd2.CombinedOutput()
@@ -44,7 +44,7 @@ func TestViewHistoryBasic(t *testing.T) {
 	}
 
 	// View history
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
@@ -99,7 +99,7 @@ func TestViewHistoryWithSessionFlag(t *testing.T) {
 	// Write history entry
 	message := "Decision recorded via flag"
 	writeCmd := exec.CommandContext(
-		context.Background(),
+		testCtx(30*time.Second),
 		fluxidBin, "ipc", "write-history", message, "--session", sessionID,
 	)
 	// Filter out FLUXID_SESSION_ID from environment to verify --session flag works
@@ -117,7 +117,7 @@ func TestViewHistoryWithSessionFlag(t *testing.T) {
 	}
 
 	// View history with --session flag
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history", "--session", sessionID)
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history", "--session", sessionID)
 	viewCmd.Env = filteredEnv
 
 	viewOutput, err := viewCmd.CombinedOutput()
@@ -145,7 +145,7 @@ func TestViewHistoryEmpty(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// View history (no entries written)
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
@@ -169,7 +169,7 @@ func TestViewHistoryWithoutSessionID(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Attempt to view history without session ID
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	// Explicitly clear FLUXID_SESSION_ID from environment
 	cmd.Env = []string{}
 
@@ -195,7 +195,7 @@ func TestViewHistoryHelp(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Request help
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history", "--help")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history", "--help")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -231,7 +231,7 @@ func TestViewHistoryMultipleInvocations(t *testing.T) {
 	}
 
 	for _, message := range messages {
-		cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+		cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
@@ -242,7 +242,7 @@ func TestViewHistoryMultipleInvocations(t *testing.T) {
 
 	// View history multiple times
 	for viewIndex := 0; viewIndex < 3; viewIndex++ {
-		viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+		viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 		viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		viewOutput, err := viewCmd.CombinedOutput()
@@ -280,7 +280,7 @@ func TestViewHistoryWithUTF8Characters(t *testing.T) {
 
 	// Write history entry with UTF-8 characters
 	message := "Decision: 日本語のテスト with émojis 🎉"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -289,7 +289,7 @@ func TestViewHistoryWithUTF8Characters(t *testing.T) {
 	}
 
 	// View history
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
@@ -317,7 +317,7 @@ func TestViewHistoryZeroExitCode(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Write a history entry
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "test message")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", "test message")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	_, err := cmd.CombinedOutput()
@@ -326,7 +326,7 @@ func TestViewHistoryZeroExitCode(t *testing.T) {
 	}
 
 	// View history
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	err = viewCmd.Run()

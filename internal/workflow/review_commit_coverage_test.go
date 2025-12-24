@@ -8,6 +8,8 @@ import (
 	"fluxid-loop/internal/types"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestRunCommitPhase_AgentFailure tests commit phase with failing agent.
@@ -121,6 +123,8 @@ func TestRunReviewPhase_AgentFailsZeroExit(t *testing.T) {
 
 // TestRunReviewPhase_ReportWaitAbort tests abort during review report wait.
 func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -138,7 +142,7 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 
 	// Set abort flag while waiting for report
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
 
@@ -156,6 +160,8 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 
 // TestWaitForValidReport_UnmarshalError tests handling of report unmarshal errors.
 func TestWaitForValidReport_UnmarshalError(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -163,7 +169,7 @@ func TestWaitForValidReport_UnmarshalError(t *testing.T) {
 
 	// Write a report that passes validation but has unmarshal issues, then a good one
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		<-time.After(50 * time.Millisecond)
 		// This will pass basic YAML validation but might cause unmarshal issues
 		invalidStructure := `command: test
 artifact: test
@@ -177,7 +183,7 @@ issues:
   enhancements: []
 `
 		_ = ipc.WriteReport(sessionID, invalidStructure)
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 

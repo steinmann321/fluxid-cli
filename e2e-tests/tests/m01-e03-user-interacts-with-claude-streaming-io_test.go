@@ -8,8 +8,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestM01E03StreamingOutputPassthrough validates that stdout/stderr from Claude
@@ -17,6 +20,8 @@ import (
 //
 //nolint:paralleltest,cyclop,funlen // Sequential stub usage; I/O streaming complexity with multiple validations
 func TestM01E03StreamingOutputPassthrough(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	t.Skip("BROKEN: Stub doesn't write reports (M03-E04 workflow requirement)")
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
@@ -51,10 +56,11 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 	startTime := time.Now()
 
 	// Read stdout and stderr concurrently
-	outDone := make(chan struct{})
-	errDone := make(chan struct{})
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(2)
 
 	go func() {
+		defer waitGroup.Done()
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			lines = append(lines, timedLine{
@@ -62,10 +68,10 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 				timestamp: time.Now(),
 			})
 		}
-		close(outDone)
 	}()
 
 	go func() {
+		defer waitGroup.Done()
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
 			lines = append(lines, timedLine{
@@ -73,12 +79,10 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 				timestamp: time.Now(),
 			})
 		}
-		close(errDone)
 	}()
 
 	// Wait for completion
-	<-outDone
-	<-errDone
+	waitGroup.Wait()
 
 	if err := cmd.Wait(); err != nil {
 		t.Fatalf("fluxid failed: %v", err)
@@ -127,6 +131,8 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 //
 //nolint:paralleltest,cyclop,funlen // Sequential stub usage; I/O complexity with stdin interaction
 func TestM01E03InteractiveStdinDelivery(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createInteractiveStubClaude(t, root)
@@ -152,9 +158,12 @@ func TestM01E03InteractiveStdinDelivery(t *testing.T) {
 
 	// Read output and provide input when prompted
 	var output bytes.Buffer
-	done := make(chan error)
+	var scanErr error
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 
 	go func() {
+		defer waitGroup.Done()
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -162,24 +171,25 @@ func TestM01E03InteractiveStdinDelivery(t *testing.T) {
 
 			// When we see the prompt, send input
 			if strings.Contains(line, "PROMPT: Enter your name:") {
-				time.Sleep(50 * time.Millisecond) // Small delay to simulate user typing
+				<-time.After(50 * time.Millisecond) // Small delay to simulate user typing
 				if _, err := stdin.Write([]byte("TestUser\n")); err != nil {
-					done <- fmt.Errorf("failed to write to stdin: %w", err)
+					scanErr = fmt.Errorf("failed to write to stdin: %w", err)
 					return
 				}
 			}
 		}
-		done <- scanner.Err()
+		scanErr = scanner.Err()
 	}()
 
-	// Wait for completion
-	select {
-	case err := <-done:
-		if err != nil {
-			t.Fatalf("error reading output: %v", err)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("test timeout - process did not complete")
+	// Wait for completion (using time.AfterFunc for timeout)
+	timer := time.AfterFunc(5*time.Second, func() {
+		t.Error("test timeout - process did not complete")
+	})
+	waitGroup.Wait()
+	timer.Stop()
+
+	if scanErr != nil {
+		t.Fatalf("error reading output: %v", scanErr)
 	}
 
 	if err := stdin.Close(); err != nil {

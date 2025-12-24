@@ -3,6 +3,7 @@ package workflow
 import (
 	"errors"
 	"fluxid-loop/internal/ipc"
+	"sync"
 	"testing"
 	"time"
 )
@@ -14,10 +15,14 @@ func TestWaitForValidReport_InvalidReportRetries(t *testing.T) {
 	sessionID := "test-invalid-report-" + time.Now().Format("20060102150405")
 
 	// Write invalid report first, then valid one after delay
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		defer waitGroup.Done()
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, "invalid: yaml: [content")
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -28,6 +33,8 @@ func TestWaitForValidReport_InvalidReportRetries(t *testing.T) {
 	if status != statusPass {
 		t.Errorf("Expected PASS status, got %s", status)
 	}
+
+	waitGroup.Wait()
 }
 
 func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
@@ -37,8 +44,12 @@ func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
 	sessionID := "test-abort-waiting-" + time.Now().Format("20060102150405")
 
 	// Set abort flag after delay
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		defer waitGroup.Done()
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
 
@@ -56,6 +67,8 @@ func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
 			t.Errorf("Expected exit code 130, got: %d", abortErr.ExitCode)
 		}
 	}
+
+	waitGroup.Wait()
 }
 
 func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
@@ -85,12 +98,16 @@ func TestWaitForValidReport_MultipleInvalidThenValid(t *testing.T) {
 	sessionID := "test-multi-invalid-" + time.Now().Format("20060102150405")
 
 	// Write multiple invalid reports, then a valid one
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+
 	go func() {
-		time.Sleep(30 * time.Millisecond)
+		defer waitGroup.Done()
+		<-time.After(30 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, "bad yaml 1")
-		time.Sleep(30 * time.Millisecond)
+		<-time.After(30 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, "bad yaml 2: [[[")
-		time.Sleep(30 * time.Millisecond)
+		<-time.After(30 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -101,6 +118,8 @@ func TestWaitForValidReport_MultipleInvalidThenValid(t *testing.T) {
 	if status != statusPass {
 		t.Errorf("Expected PASS status, got %s", status)
 	}
+
+	waitGroup.Wait()
 }
 
 func TestWaitForValidReport_CheckAbortFlagError(t *testing.T) {

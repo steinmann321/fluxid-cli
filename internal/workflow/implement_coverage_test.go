@@ -6,12 +6,17 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestRunImplementPhase_RetryOnFailReport tests the retry loop when implement reports FAIL.
 func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -31,9 +36,12 @@ func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
 
 	// Return FAIL reports to trigger retries
 	reportCount := 0
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
+		defer waitGroup.Done()
 		for i := 0; i < 5; i++ {
-			time.Sleep(50 * time.Millisecond)
+			<-time.After(50 * time.Millisecond)
 			reportCount++
 			if reportCount < 3 {
 				_ = ipc.WriteReport(sessionID, testFailReport)
@@ -50,10 +58,14 @@ func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }
 
 // TestRunImplementPhase_MaxRetriesExceeded tests exceeding max implement retries.
 func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -72,9 +84,12 @@ func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 	}
 
 	// Always return FAIL to exceed retries
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
+		defer waitGroup.Done()
 		for i := 0; i < 10; i++ {
-			time.Sleep(50 * time.Millisecond)
+			<-time.After(50 * time.Millisecond)
 			_ = ipc.WriteReport(sessionID, testFailReport)
 		}
 	}()
@@ -86,10 +101,14 @@ func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 	if exitCode != 1 {
 		t.Errorf("Expected exit code 1, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }
 
 // TestRunImplementPhase_WithCommitEnabled tests implement phase with commit enabled.
 func TestRunImplementPhase_WithCommitEnabled(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -108,8 +127,11 @@ func TestRunImplementPhase_WithCommitEnabled(t *testing.T) {
 	}
 
 	// Provide PASS report for implement phase
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		defer waitGroup.Done()
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -120,6 +142,8 @@ func TestRunImplementPhase_WithCommitEnabled(t *testing.T) {
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }
 
 // TestRunImplementPhase_CommitPhaseFailure tests failure in commit phase.
@@ -183,6 +207,8 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 
 // TestRunImplementPhase_ReportWaitAbort tests abort during implement report wait.
 func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -201,8 +227,11 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 	}
 
 	// Set abort flag while waiting for implement report
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		defer waitGroup.Done()
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
 
@@ -213,4 +242,6 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 	if exitCode != 130 {
 		t.Errorf("Expected exit code 130, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }

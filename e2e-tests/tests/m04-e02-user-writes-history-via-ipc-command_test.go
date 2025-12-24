@@ -2,12 +2,12 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestIPCWriteHistoryBasic tests the basic flow:
@@ -23,7 +23,7 @@ func TestIPCWriteHistoryBasic(t *testing.T) {
 
 	// Write history entry via IPC
 	message := "Decision: adopt FIFO eviction"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -98,7 +98,7 @@ func TestIPCWriteHistoryWithSessionFlag(t *testing.T) {
 
 	// Write history entry via IPC with --session flag
 	message := "Testing session flag"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message, "--session", sessionID)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message, "--session", sessionID)
 	// Filter out FLUXID_SESSION_ID from environment to verify --session flag works
 	var filteredEnv []string
 	for _, env := range os.Environ() {
@@ -152,7 +152,7 @@ func TestIPCWriteHistoryMultipleEntries(t *testing.T) {
 
 	// Write multiple entries
 	for _, message := range messages {
-		cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+		cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()
@@ -192,7 +192,7 @@ func TestIPCWriteHistoryWithoutSessionID(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Attempt to write without session ID
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "test message")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", "test message")
 	// Explicitly clear FLUXID_SESSION_ID from environment
 	cmd.Env = []string{}
 
@@ -219,7 +219,7 @@ func TestIPCWriteHistoryWithoutMessage(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Attempt to write without message
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -246,7 +246,7 @@ func TestIPCWriteHistoryMultiWordMessage(t *testing.T) {
 
 	// Write history entry with multiple words
 	message := "This is a longer decision with multiple words"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	output, err := cmd.CombinedOutput()
@@ -276,7 +276,7 @@ func TestIPCWriteHistoryHelp(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Request help
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "--help")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", "--help")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

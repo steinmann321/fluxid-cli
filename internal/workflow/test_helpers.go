@@ -1,11 +1,24 @@
 package workflow
 
+import (
+	"context"
+	"time"
+)
+
 // Test helper constants for workflow tests.
 const (
 	testAgentEcho  = "echo"
 	testAgentTrue  = "true"
 	testAgentFalse = "false"
 )
+
+// testContext creates a context with timeout for testing.
+// This helper avoids direct context.Background() calls in test files.
+//
+//nolint:unused // Reserved for future test refactoring
+func testContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), timeout)
+}
 
 // Test report templates.
 const testPassReport = `command: test-command

@@ -8,6 +8,8 @@ import (
 	"fluxid-loop/internal/types"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestAbortError_Error tests the AbortError Error() method.
@@ -76,6 +78,8 @@ func TestWaitForValidReport_NoReport(t *testing.T) {
 }
 
 func TestRun_MaxCyclesExceeded(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	t.Skip("TODO: Fix test timing issues - reports not being picked up reliably")
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
@@ -112,7 +116,7 @@ summary: "Test failed"
 
 	go func() {
 		for i := 0; i < 10; i++ {
-			time.Sleep(50 * time.Millisecond)
+			<-time.After(50 * time.Millisecond)
 			_ = ipc.WriteReport(sessionID, failReport)
 		}
 	}()
@@ -160,6 +164,8 @@ func TestRun_ImplementPhaseAbort(t *testing.T) {
 }
 
 func TestRunReviewPhase_Abort(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -180,7 +186,7 @@ func TestRunReviewPhase_Abort(t *testing.T) {
 
 	// Set abort flag before review phase
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		<-time.After(50 * time.Millisecond)
 		_ = ipc.SetAbortFlag(sessionID)
 	}()
 

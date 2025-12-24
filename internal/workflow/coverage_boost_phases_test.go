@@ -12,10 +12,10 @@ import (
 
 func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 	sessionID := "test-abort-implement-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -47,10 +47,10 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 
 func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 	sessionID := "test-retries-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -84,10 +84,10 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 
 func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 	sessionID := "test-all-fail-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -121,10 +121,10 @@ func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 
 func TestRunImplementPhase_AgentFailure(t *testing.T) {
 	sessionID := "test-agent-fail-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -152,10 +152,10 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 
 func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
 	sessionID := "test-nonexistent-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -182,8 +182,8 @@ func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
 }
 
 func TestRunCommitPhase_Disabled(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
 	cfg := types.Config{
 		SessionID:           "test-commit-disabled",
@@ -208,8 +208,8 @@ func TestRunCommitPhase_Disabled(t *testing.T) {
 }
 
 func TestRunCommitPhase_Enabled(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 
 	cfg := types.Config{
 		SessionID:           "test-commit-enabled",

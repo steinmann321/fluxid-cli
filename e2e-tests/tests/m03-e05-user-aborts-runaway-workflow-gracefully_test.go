@@ -2,7 +2,6 @@
 package tests
 
 import (
-	"context"
 	"errors"
 	"fluxid-loop/internal/ipc"
 	"fmt"
@@ -26,7 +25,7 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	sessionID := "test-abort-signal-" + time.Now().Format("20060102150405")
 	binPath := filepath.Join(root, "bin", "fluxid")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
@@ -46,7 +45,7 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	}
 
 	// Wait for workflow to start first phase
-	time.Sleep(300 * time.Millisecond)
+	<-time.After(300 * time.Millisecond)
 
 	// Send SIGINT to trigger graceful abort
 	if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
@@ -54,7 +53,7 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	}
 
 	// Give signal handler time to set abort flag
-	time.Sleep(100 * time.Millisecond)
+	<-time.After(100 * time.Millisecond)
 
 	// Verify abort flag was set by signal handler
 	aborted, err := ipc.CheckAbortFlag(sessionID)
@@ -88,7 +87,7 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	sessionID := "test-forced-exit-" + time.Now().Format("20060102150405")
 	binPath := filepath.Join(root, "bin", "fluxid")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := testContext(10 * time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "1")
@@ -103,7 +102,7 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	}
 
 	// Wait for workflow to start
-	time.Sleep(500 * time.Millisecond)
+	<-time.After(500 * time.Millisecond)
 
 	startTime := time.Now()
 
@@ -113,7 +112,7 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	}
 
 	// Immediately send second SIGINT
-	time.Sleep(100 * time.Millisecond)
+	<-time.After(100 * time.Millisecond)
 	if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
 		t.Fatalf("Failed to send second SIGINT: %v", err)
 	}
@@ -154,7 +153,7 @@ func TestM03E05AbortViaIPCCommand(t *testing.T) {
 	sessionID := "test-ipc-abort-" + time.Now().Format("20060102150405")
 	binPath := filepath.Join(root, "bin", "fluxid")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
@@ -174,7 +173,7 @@ func TestM03E05AbortViaIPCCommand(t *testing.T) {
 	}
 
 	// Wait for workflow to start
-	time.Sleep(300 * time.Millisecond)
+	<-time.After(300 * time.Millisecond)
 
 	// Issue abort via IPC command
 	abortCmd := exec.CommandContext(ctx, binPath, "ipc", "abort", "--session", sessionID)
@@ -219,7 +218,7 @@ func TestM03E05AbortMessageContent(t *testing.T) {
 	sessionID := "test-abort-messages-" + time.Now().Format("20060102150405")
 	binPath := filepath.Join(root, "bin", "fluxid")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
@@ -239,7 +238,7 @@ func TestM03E05AbortMessageContent(t *testing.T) {
 	}
 
 	// Wait for workflow to start
-	time.Sleep(300 * time.Millisecond)
+	<-time.After(300 * time.Millisecond)
 
 	// Send SIGINT
 	if err := cmd.Process.Signal(syscall.SIGINT); err != nil {

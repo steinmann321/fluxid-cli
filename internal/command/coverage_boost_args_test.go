@@ -16,11 +16,11 @@ const (
 )
 
 func TestHandleSpecialCommands_WriteHistory(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	dataDir := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", dataDir)
 	t.Setenv("FLUXID_SESSION_ID", "test-write-history")
 
-	if err := os.MkdirAll(filepath.Join(tmpDir, ".fluxid"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 

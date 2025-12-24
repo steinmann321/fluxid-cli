@@ -2,7 +2,6 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"fmt"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // TestIPCWriteHistoryConcurrentWrites tests concurrent writes to verify no corruption.
@@ -33,7 +33,7 @@ func TestIPCWriteHistoryConcurrentWrites(t *testing.T) {
 			defer waitGroup.Done()
 
 			message := fmt.Sprintf("Concurrent write %d", index)
-			cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+			cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 			cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 			output, err := cmd.CombinedOutput()
@@ -96,7 +96,7 @@ func TestIPCWriteHistorySessionIsolation(t *testing.T) {
 
 	// Write to first session
 	message1 := "Message for session 1"
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message1)
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message1)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID1)
 
 	output, err := cmd.CombinedOutput()
@@ -106,7 +106,7 @@ func TestIPCWriteHistorySessionIsolation(t *testing.T) {
 
 	// Write to second session
 	message2 := "Message for session 2"
-	cmd = exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message2)
+	cmd = exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message2)
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID2)
 
 	output, err = cmd.CombinedOutput()
@@ -152,7 +152,7 @@ func TestIPCWriteHistoryZeroExitCode(t *testing.T) {
 	fluxidBin := buildFluxidBinary(t)
 
 	// Write history entry
-	cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", "test message")
+	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", "test message")
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	err := cmd.Run()
@@ -183,7 +183,7 @@ func TestIPCWriteHistoryUTF8Support(t *testing.T) {
 	}
 
 	for _, message := range messages {
-		cmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "write-history", message)
+		cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "write-history", message)
 		cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 		output, err := cmd.CombinedOutput()

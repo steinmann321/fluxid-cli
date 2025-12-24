@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -153,8 +154,12 @@ func TestRunWorkflow_SuccessFirstCycle(t *testing.T) {
 	// Write reports asynchronously to simulate agent responses
 	// Use channel-based coordination instead of arbitrary sleep delays
 	started := make(chan struct{})
+	defer close(started)
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go func() {
-		close(started) // Signal goroutine is ready
+		defer waitGroup.Done()
+		started <- struct{}{} // Signal goroutine is ready
 		implementReport := `command: test-implement
 artifact: test-artifact
 timestamp: 2025-12-13T10:00:00Z
@@ -173,7 +178,7 @@ next_steps:
 
 		// Delay to allow implement phase to read the report
 		// before we overwrite it with the review report
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		reviewReport := `command: test-review
 artifact: test-artifact
 timestamp: 2025-12-13T10:00:00Z
@@ -199,6 +204,8 @@ next_steps:
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0, got %d", exitCode)
 	}
+
+	waitGroup.Wait()
 }
 
 func TestRunWorkflow_FailThenPass(t *testing.T) {

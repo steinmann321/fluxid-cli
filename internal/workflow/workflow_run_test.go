@@ -8,9 +8,13 @@ import (
 	"fluxid-loop/internal/types"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 func TestRun_SingleCycleSuccess(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -31,7 +35,7 @@ func TestRun_SingleCycleSuccess(t *testing.T) {
 
 	// Start goroutine to write reports after a brief delay
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 
@@ -78,6 +82,8 @@ func TestRun_AbortBeforeImplement(t *testing.T) {
 }
 
 func TestRun_MultipleReviewCycles(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -113,7 +119,7 @@ summary: "Test failed"
 	callCount := 0
 	go func() {
 		for callCount < 4 {
-			time.Sleep(100 * time.Millisecond)
+			<-time.After(100 * time.Millisecond)
 			callCount++
 			// First implement: PASS, first review: FAIL
 			// Second implement: PASS, second review: PASS
@@ -136,6 +142,8 @@ summary: "Test failed"
 }
 
 func TestRun_WithAgentArgs(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
@@ -155,7 +163,7 @@ func TestRun_WithAgentArgs(t *testing.T) {
 	}
 
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 

@@ -5,6 +5,8 @@ import (
 	"fluxid-loop/internal/ipc"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 func TestWaitForValidReport_Timeout(t *testing.T) {
@@ -126,6 +128,7 @@ func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expe
 		err    error
 	}
 	done := make(chan result, 1)
+	defer close(done)
 	started := make(chan struct{})
 
 	// Start waitForValidReport in background
@@ -216,6 +219,8 @@ next_steps:
 }
 
 func TestWaitForValidReport_ReadError(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	t.Skip("TODO: Fix test - abort flag checking interferes with read error testing")
 	// Test waitForValidReport with a read error scenario
 	sessionID := "test-read-error"
@@ -228,6 +233,7 @@ func TestWaitForValidReport_ReadError(t *testing.T) {
 		status string
 		err    error
 	}, 1)
+	defer close(done)
 
 	go func() {
 		status, err := waitForValidReport(sessionID, "test")
@@ -248,6 +254,8 @@ func TestWaitForValidReport_ReadError(t *testing.T) {
 }
 
 func TestWaitForValidReport_CheckAbortError(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	// Test abort flag check error path (warning logged but execution continues)
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
@@ -255,7 +263,7 @@ func TestWaitForValidReport_CheckAbortError(t *testing.T) {
 
 	// Provide a valid report after a delay to ensure abort check happens first
 	go func() {
-		time.Sleep(100 * time.Millisecond)
+		<-time.After(100 * time.Millisecond)
 		_ = ipc.WriteReport(sessionID, testPassReport)
 	}()
 

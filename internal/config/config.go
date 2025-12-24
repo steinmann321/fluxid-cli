@@ -164,7 +164,7 @@ func LoadProjectConfig() (*ProjectConfig, error) {
 // resolveField resolves a configuration field with precedence: CLI > env > project > home > default.
 // For project and home sources, file paths are included in the source string.
 //
-//nolint:ireturn // Generic function returns generic type
+//nolint:ireturn // Generic function must return generic type parameter
 func resolveField[T any](
 	fieldName string,
 	cliValue *T,

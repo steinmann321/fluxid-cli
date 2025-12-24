@@ -116,6 +116,7 @@ func TestWriteReportConcurrent(t *testing.T) {
 
 	// Write from multiple goroutines to test file locking
 	done := make(chan bool)
+	defer close(done)
 	for index := 0; index < 5; index++ {
 		go func(n int) {
 			report := "command: test\nartifact: test.txt\ntimestamp: 2025-12-12T10:00:00Z\nstatus: PASS\n"

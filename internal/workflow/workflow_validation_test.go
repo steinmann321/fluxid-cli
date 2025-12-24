@@ -61,7 +61,9 @@ func testWaitForValidReportHelper(t *testing.T, sessionID, reportYAML, expectedS
 	}
 
 	resultChan := make(chan string, 1)
+	defer close(resultChan)
 	errorChan := make(chan error, 1)
+	defer close(errorChan)
 
 	go func() {
 		status, err := waitForValidReport(sessionID, "implement")

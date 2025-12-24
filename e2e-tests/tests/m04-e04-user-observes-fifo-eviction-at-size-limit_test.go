@@ -2,13 +2,13 @@
 package tests
 
 import (
-	"context"
 	"fluxid-loop/internal/ipc"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestFIFOEvictionAtSizeLimit tests that history evicts oldest entries when exceeding 32MB.
@@ -45,7 +45,7 @@ func TestFIFOEvictionAtSizeLimit(t *testing.T) {
 	}
 
 	// View history
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
@@ -266,7 +266,7 @@ func TestFIFOEvictionViaIPCCommand(t *testing.T) {
 	}
 
 	// View history via CLI command
-	viewCmd := exec.CommandContext(context.Background(), fluxidBin, "ipc", "view-history")
+	viewCmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin, "ipc", "view-history")
 	viewCmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+sessionID)
 
 	viewOutput, err := viewCmd.CombinedOutput()
