@@ -67,3 +67,191 @@ func testChannelWithoutClose(m dsl.Matcher) {
 		Where(m.File().Name.Matches("_test\\.go$")).
 		Report("channel created in test; ensure proper cleanup with 'defer close(ch)' or clear lifecycle management")
 }
+
+// RESOURCE LEAK DETECTION
+
+// Detect file opens without defer close
+func testFileOpenWithoutDefer(m dsl.Matcher) {
+	m.Match(`
+		func $name($*_) {
+			$*_
+			$file, $*_ := os.Open($path)
+			$*body
+		}`,
+		`
+		func $name($*_) {
+			$*_
+			$file, $*_ := os.OpenFile($path, $*_)
+			$*body
+		}`,
+		`
+		func $name($*_) {
+			$*_
+			$file, $*_ := os.Create($path)
+			$*body
+		}`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*\\.Close\\(\\).*")).
+		Report("file opened without defer close in test; add 'defer file.Close()' to prevent resource leak")
+}
+
+// Detect HTTP response body without close
+func testHTTPBodyWithoutClose(m dsl.Matcher) {
+	m.Match(`
+		$resp, $*_ := http.Get($*_)
+		$*body`,
+		`
+		$resp, $*_ := http.Post($*_)
+		$*body`,
+		`
+		$resp, $*_ := $client.Do($*_)
+		$*body`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*Body\\.Close\\(\\).*")).
+		Report("HTTP response body not closed in test; add 'defer resp.Body.Close()' to prevent leak")
+}
+
+// STATE POLLUTION DETECTION
+
+// Detect os.Setenv instead of t.Setenv (Go 1.17+)
+func testUsesOsSetenv(m dsl.Matcher) {
+	m.Match(`os.Setenv($_, $_)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("use t.Setenv() instead of os.Setenv() in tests; t.Setenv auto-restores env vars to prevent pollution")
+}
+
+// Detect os.Chdir without restoration
+func testChdirWithoutRestore(m dsl.Matcher) {
+	m.Match(`
+		func $name($*_) {
+			$*_
+			os.Chdir($path)
+			$*body
+		}`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*Chdir.*")).
+		Report("os.Chdir without restoration in test; save original dir and defer restore to prevent state pollution")
+}
+
+// CONTEXT HANDLING
+
+// Detect context.Background() in tests
+func testUsesContextBackground(m dsl.Matcher) {
+	m.Match(`context.Background()`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("avoid context.Background() in tests; use context.WithTimeout() or context.WithDeadline() to prevent hangs")
+}
+
+// Detect context.WithCancel without defer cancel
+func testContextWithoutCancel(m dsl.Matcher) {
+	m.Match(`
+		$ctx, $cancel := context.WithCancel($*_)
+		$*body`,
+		`
+		$ctx, $cancel := context.WithTimeout($*_)
+		$*body`,
+		`
+		$ctx, $cancel := context.WithDeadline($*_)
+		$*body`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*cancel\\(\\).*")).
+		Report("context created without defer cancel(); add 'defer cancel()' to prevent context leak")
+}
+
+// SYNCHRONIZATION PRIMITIVES
+
+// Detect mutex lock without defer unlock
+func testMutexWithoutDefer(m dsl.Matcher) {
+	m.Match(`
+		$mu.Lock()
+		$*body`,
+		`
+		$mu.RLock()
+		$*body`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*Unlock\\(\\).*")).
+		Report("mutex locked without defer unlock; add 'defer mu.Unlock()' to prevent deadlock")
+}
+
+// TEMP FILES/DIRECTORIES
+
+// Detect manual temp dir creation instead of t.TempDir()
+func testMkdirInsteadOfTempDir(m dsl.Matcher) {
+	m.Match(`os.MkdirAll($path, $_)`,
+		`os.Mkdir($path, $_)`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      m["path"].Text.Matches(".*tmp.*|.*temp.*")).
+		Report("creating temp dir manually; use t.TempDir() for automatic cleanup")
+}
+
+// Detect ioutil.TempDir (deprecated in favor of t.TempDir)
+func testUsesIoutilTempDir(m dsl.Matcher) {
+	m.Match(`ioutil.TempDir($*_)`,
+		`os.MkdirTemp($*_)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("use t.TempDir() instead of ioutil.TempDir/os.MkdirTemp in tests for automatic cleanup")
+}
+
+// NETWORK/EXTERNAL OPERATIONS
+
+// Detect HTTP client without timeout
+func testHTTPClientWithoutTimeout(m dsl.Matcher) {
+	m.Match(`&http.Client{}`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("HTTP client without timeout; set Timeout field to prevent test hangs")
+}
+
+// Detect net.Dial without timeout
+func testDialWithoutTimeout(m dsl.Matcher) {
+	m.Match(`net.Dial($*_)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("use net.DialTimeout() instead of net.Dial() in tests to prevent hangs")
+}
+
+// Detect exec.Command without timeout/context
+func testCommandWithoutContext(m dsl.Matcher) {
+	m.Match(`exec.Command($*_)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("use exec.CommandContext() with timeout instead of exec.Command() to prevent test hangs")
+}
+
+// NON-DETERMINISM
+
+// Detect rand usage without seed
+func testRandWithoutSeed(m dsl.Matcher) {
+	m.Match(`rand.Int($*_)`,
+		`rand.Intn($*_)`,
+		`rand.Float64($*_)`).
+		Where(m.File().Name.Matches("_test\\.go$")).
+		Report("rand usage without explicit seed; use rand.New(rand.NewSource(seed)) for deterministic tests")
+}
+
+// WAITGROUP PATTERNS
+
+// This is harder to detect perfectly, but we can catch obvious cases
+func testWaitGroupAddWithoutDone(m dsl.Matcher) {
+	m.Match(`
+		$wg.Add($_)
+		go func() {
+			$*body
+		}()`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*Done\\(\\).*") &&
+		      !m["body"].Text.Matches(".*\\.Done\\(\\).*")).
+		Report("WaitGroup.Add without corresponding Done in goroutine; add 'defer wg.Done()' or wg.Done() at end")
+}
+
+// TEST CLEANUP
+
+// Detect t.Parallel() tests that modify shared state
+func testParallelWithGlobalState(m dsl.Matcher) {
+	m.Match(`
+		func $name(t *testing.T) {
+			t.Parallel()
+			$*body
+		}`).
+		Where(m.File().Name.Matches("_test\\.go$") &&
+		      (m["body"].Text.Matches(".*os\\.Setenv.*") ||
+		       m["body"].Text.Matches(".*os\\.Chdir.*"))).
+		Report("t.Parallel() test modifies global state (env/dir); this causes race conditions between parallel tests")
+}
