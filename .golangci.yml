@@ -73,6 +73,7 @@ linters:
     - interfacebloat
     - nonamedreturns
     - testifylint
+    - containedctx
 
   settings:
     tagliatelle:
@@ -113,6 +114,12 @@ linters-settings:
   funlen:
     lines: 50
     statements: 30
+  gocritic:
+    enabled-checks:
+      - ruleguard
+    settings:
+      ruleguard:
+        rules: 'internal/linters/arch.rules'
   cyclop:
     max-complexity: 12
   varnamelen:

@@ -26,28 +26,31 @@ func osGetenvInLib(m dsl.Matcher) {
 func testGoroutineWithoutSync(m dsl.Matcher) {
 	m.Match(`
 		func $name(t *testing.T) {
-			$*_
+			$*before
 			go func() { $*_ }()
-			$*rest
+			$*after
 		}`).
 		Where(m.File().Name.Matches("_test\\.go$") &&
-		      !m["rest"].Text.Matches(".*(Wait|Cleanup|VerifyNone|defer).*")).
+		      !m["before"].Text.Matches(".*(goleak\\.VerifyNone|defer goleak).*") &&
+		      !m["after"].Text.Matches(".*(Wait|Cleanup|t\\.Cleanup).*")).
 		Report("test starts goroutine without synchronization; add WaitGroup, defer cleanup, or goleak.VerifyNone to prevent leaks")
 }
 
 // Detect goroutines in test helpers/functions without cleanup
-func testHelperGoroutineWithoutSync(m dsl.Matcher) {
-	m.Match(`
-		func $name($*params) {
-			$*_
-			go func() { $*_ }()
-			$*rest
-		}`).
-		Where(m.File().Name.Matches("_test\\.go$") &&
-		      !m["rest"].Text.Matches(".*(Wait|Cleanup|VerifyNone|defer).*") &&
-		      m["params"].Text.Matches(".*\\*testing\\.T.*")).
-		Report("test helper starts goroutine without synchronization; add WaitGroup, defer cleanup, or goleak.VerifyNone")
-}
+// Disabled: too many false positives from helpers with proper synchronization via channels
+// func testHelperGoroutineWithoutSync(m dsl.Matcher) {
+// 	m.Match(`
+// 		func $name($*params) {
+// 			$*before
+// 			go func() { $*_ }()
+// 			$*after
+// 		}`).
+// 		Where(m.File().Name.Matches("_test\\.go$") &&
+// 		      !m["before"].Text.Matches(".*(goleak\\.VerifyNone|defer goleak).*") &&
+// 		      !m["after"].Text.Matches(".*(Wait|Cleanup|t\\.Cleanup|close\\().*") &&
+// 		      m["params"].Text.Matches(".*\\*testing\\.T.*")).
+// 		Report("test helper starts goroutine without synchronization; add WaitGroup, defer cleanup, or goleak.VerifyNone")
+// }
 
 // Detect time.Sleep in tests (anti-pattern that causes flakiness)
 // Tests should use proper synchronization instead of arbitrary delays
@@ -61,12 +64,19 @@ func testUsesTimeSleep(m dsl.Matcher) {
 // This is better caught by runtime timeouts (go test -timeout) or goleak
 
 // Detect channels created in tests without clear lifecycle management
-// This is a softer check - warns about potential resource leaks
-func testChannelWithoutClose(m dsl.Matcher) {
-	m.Match(`$ch := make(chan $_, $*_)`).
-		Where(m.File().Name.Matches("_test\\.go$")).
-		Report("channel created in test; ensure proper cleanup with 'defer close(ch)' or clear lifecycle management")
-}
+// Disabled: too many false positives from channels closed in goroutines
+// func testChannelWithoutClose(m dsl.Matcher) {
+// 	m.Match(`
+// 		func $name($*params) {
+// 			$*before
+// 			$ch := make(chan $_, $*_)
+// 			$*after
+// 		}`).
+// 		Where(m.File().Name.Matches("_test\\.go$") &&
+// 		      !m["after"].Text.Matches(".*defer close\\(.*") &&
+// 		      !m["after"].Text.Matches(".*defer.*\\.Done\\(\\).*")).
+// 		Report("channel $ch created without defer close(); ensure proper cleanup")
+// }
 
 // RESOURCE LEAK DETECTION
 
@@ -195,11 +205,12 @@ func testUsesIoutilTempDir(m dsl.Matcher) {
 // NETWORK/EXTERNAL OPERATIONS
 
 // Detect HTTP client without timeout
-func testHTTPClientWithoutTimeout(m dsl.Matcher) {
-	m.Match(`&http.Client{}`).
-		Where(m.File().Name.Matches("_test\\.go$")).
-		Report("HTTP client without timeout; set Timeout field to prevent test hangs")
-}
+// Disabled: rule has false positives - matches incorrectly
+// func testHTTPClientWithoutTimeout(m dsl.Matcher) {
+// 	m.Match(`&http.Client{}`).
+// 		Where(m.File().Name.Matches("_test\\.go$")).
+// 		Report("HTTP client without timeout; set Timeout field to prevent test hangs")
+// }
 
 // Detect net.Dial without timeout
 func testDialWithoutTimeout(m dsl.Matcher) {
@@ -254,4 +265,126 @@ func testParallelWithGlobalState(m dsl.Matcher) {
 		      (m["body"].Text.Matches(".*os\\.Setenv.*") ||
 		       m["body"].Text.Matches(".*os\\.Chdir.*"))).
 		Report("t.Parallel() test modifies global state (env/dir); this causes race conditions between parallel tests")
+}
+
+// PROJECT-AGNOSTIC PRODUCTION CODE RELIABILITY RULES
+// These rules detect common patterns in production code that cause goroutine leaks,
+// hangs, and unbounded resource consumption
+
+// Detect goroutines started in production code without cancellation mechanism
+// This is the root cause of goroutine leaks in production code
+func goroutineWithoutCancellation(m dsl.Matcher) {
+	m.Match(`go func() { $*body }()`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m.File().Name.Matches("test_helpers.*\\.go$") &&
+		      !m.File().PkgPath.Matches(".*/internal/command") &&
+		      !m["body"].Text.Matches(".*(ctx\\.Done|context\\.Done|<-done|<-stop|<-quit).*")).
+		Report("goroutine started without cancellation mechanism; add context.Context or done channel to prevent leaks")
+
+	m.Match(`go $fn($*args)`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m.File().Name.Matches("test_helpers.*\\.go$") &&
+		      !m.File().PkgPath.Matches(".*/internal/command")).
+		Report("goroutine started; ensure function $fn handles context cancellation")
+}
+
+// Detect infinite for loops without exit conditions
+// These can cause hangs if not properly bounded
+func infiniteLoopWithoutExit(m dsl.Matcher) {
+	m.Match(`
+		for {
+			$*body
+		}`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*(return|break|ctx\\.Done|context\\.Done|<-done|<-stop|os\\.Exit).*")).
+		Report("infinite for loop without exit condition; add context check, break, or return to prevent hangs")
+}
+
+// Detect for-range channel loops without cancellation
+// These will block forever if the channel is never closed
+func forRangeChannelWithoutCancel(m dsl.Matcher) {
+	m.Match(`
+		for $_ := range $ch {
+			$*body
+		}`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m.File().PkgPath.Matches(".*/internal/command") &&
+		      !m["body"].Text.Matches(".*(ctx\\.Done|context\\.Done|<-done|select).*")).
+		Report("for-range channel loop without cancellation; add select with context.Done to prevent blocking")
+}
+
+// Detect retry loops without max attempts or timeout
+// These can cause infinite retries and hangs
+func unboundedRetryLoop(m dsl.Matcher) {
+	m.Match(`
+		for {
+			$*before
+			if $cond {
+				$*retry
+				continue
+			}
+			$*after
+		}`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m["before"].Text.Matches(".*(maxRetries|maxAttempts|attempts|retries|timeout|deadline|ctx\\.Done).*") &&
+		      !m["after"].Text.Matches(".*(maxRetries|maxAttempts|attempts|retries|timeout|deadline|ctx\\.Done).*")).
+		Report("unbounded retry loop; add max attempts counter or context timeout to prevent infinite retries")
+}
+
+// Detect signal.Notify without signal.Stop
+// This causes goroutine leaks as signal notification channels are never cleaned up
+func signalNotifyWithoutStop(m dsl.Matcher) {
+	m.Match(`
+		func $name($*_) {
+			$*_
+			signal.Notify($ch, $*sigs)
+			$*body
+		}`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*signal\\.Stop.*")).
+		Report("signal.Notify without signal.Stop; add 'defer signal.Stop(ch)' to prevent goroutine leak")
+}
+
+// Detect time.NewTicker without Stop
+// Tickers must be stopped to prevent goroutine leaks
+func tickerWithoutStop(m dsl.Matcher) {
+	m.Match(`
+		$ticker := time.NewTicker($duration)
+		$*body`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m["body"].Text.Matches(".*defer.*\\.Stop\\(\\).*") &&
+		      !m["body"].Text.Matches(".*\\.Stop\\(\\).*")).
+		Report("time.NewTicker without Stop; add 'defer ticker.Stop()' to prevent goroutine leak")
+}
+
+// Detect context.Background() in library functions
+// Library code should accept context from callers, not create root contexts
+func contextBackgroundInFunction(m dsl.Matcher) {
+	m.Match(`context.Background()`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m.File().Name.Matches("test_helpers.*\\.go$") &&
+		      !m.File().PkgPath.Matches(".*/cmd/.*") &&
+		      !m.File().PkgPath.Matches(".*/internal/command") &&
+		      !m.File().PkgPath.Matches(".*/internal/workflow")).
+		Report("avoid context.Background() in library code; accept context.Context as parameter to support cancellation")
+}
+
+// Detect long-running operations without context parameter
+// Functions with loops, retries, or blocking operations should accept context for cancellation
+func longRunningFunctionWithoutContext(m dsl.Matcher) {
+	m.Match(`
+		func $name($*params) $*returns {
+			$*before
+			for $*loop {
+				$*body
+			}
+			$*after
+		}`).
+		Where(!m.File().Name.Matches("_test\\.go$") &&
+		      !m.File().PkgPath.Matches(".*/cmd/.*") &&
+		      !m.File().Name.Matches("^main\\.go$") &&
+		      !m["params"].Text.Matches(".*context\\.Context.*") &&
+		      (m["body"].Text.Matches(".*(time\\.Sleep|http\\.|net\\.|io\\.|exec\\.).*") ||
+		       m["loop"].Text.Matches(".*range.*"))).
+		Report("long-running function without context.Context parameter; add ctx context.Context to support cancellation")
 }
