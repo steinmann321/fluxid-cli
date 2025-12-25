@@ -619,6 +619,232 @@ TestEnvVarsIgnored_VerifyRemoval
 
 ---
 
+### 9. CLI Equals Syntax: Standardize on Equals Format
+
+**Decision:** Use equals syntax (`--flag=value`) consistently throughout the entire project.
+
+**Rationale:**
+- Consistency across all CLI flags
+- Clear and unambiguous parsing
+- Standard Go flag package behavior
+- Easier to test and maintain
+
+**Syntax Standard:**
+```bash
+# Config flag
+--config=/path/to/config.yaml         ✓ STANDARD
+--config /path/to/config.yaml         ✗ NOT SUPPORTED
+
+# Command override flags
+--implement-command=prompts/impl.md   ✓ STANDARD
+--review-command=prompts/review.md    ✓ STANDARD
+--commit-command=prompts/commit.md    ✓ STANDARD
+
+# Scalar flags
+--fluxid-iterations=10                ✓ STANDARD
+--fluxid-implement-retries=3          ✓ STANDARD
+
+# Agent flags (no value needed)
+--claude                              ✓ STANDARD
+--codex                               ✓ STANDARD
+--opencode                            ✓ STANDARD
+
+# Boolean flags
+--fluxid-commit                       ✓ STANDARD
+--fluxid-no-commit                    ✓ STANDARD
+--dry-run                             ✓ STANDARD
+```
+
+**Implementation Requirements:**
+```go
+// CLI parser should ONLY accept equals syntax for value flags
+func ParseArgs() (*CLIArgs, error) {
+    for i := 1; i < len(os.Args); i++ {
+        arg := os.Args[i]
+
+        // Value flags MUST use equals syntax
+        if strings.HasPrefix(arg, "--config=") {
+            // Parse --config=value
+            value := strings.TrimPrefix(arg, "--config=")
+            // ...
+        } else if arg == "--config" {
+            // ERROR: missing equals syntax
+            return nil, NewArgsError("--config requires equals syntax: --config=<path>")
+        }
+
+        // Boolean/agent flags don't need equals
+        if arg == "--claude" || arg == "--codex" || arg == "--opencode" {
+            // Valid as-is
+        }
+    }
+}
+```
+
+**Error Messages:**
+```
+error: args: --config requires equals syntax: --config=<path>
+error: args: --implement-command requires equals syntax: --implement-command=<path>
+error: args: --fluxid-iterations requires equals syntax: --fluxid-iterations=<number>
+```
+
+**Test Coverage (Comprehensive):**
+```go
+// Positive tests - equals syntax works
+TestCLIArgs_ConfigFlag_EqualsSyntax
+TestCLIArgs_ImplementCommand_EqualsSyntax
+TestCLIArgs_ReviewCommand_EqualsSyntax
+TestCLIArgs_CommitCommand_EqualsSyntax
+TestCLIArgs_Iterations_EqualsSyntax
+TestCLIArgs_ImplementRetries_EqualsSyntax
+
+// Negative tests - space syntax rejected
+TestCLIArgs_ConfigFlag_SpaceSyntax_Error
+TestCLIArgs_ImplementCommand_SpaceSyntax_Error
+TestCLIArgs_Iterations_SpaceSyntax_Error
+
+// Boolean flags (no equals needed)
+TestCLIArgs_AgentFlags_NoEquals
+TestCLIArgs_BooleanFlags_NoEquals
+
+// Edge cases
+TestCLIArgs_EmptyValue_Error          // --config=
+TestCLIArgs_MultipleEquals_Valid      // --config=/path/with=equals
+TestCLIArgs_EqualsInValue             // --implement-command=path/file=v2.md
+```
+
+**Documentation Updates:**
+```bash
+# Help text examples
+fluxid --config=custom.yaml
+fluxid --implement-command=prompts/impl.md --fluxid-iterations=30
+fluxid --config=workflows/feature.yaml --claude
+
+# README examples
+$ fluxid --config=.fluxid/feature.yaml
+$ fluxid --config=base.yaml --fluxid-iterations=50
+```
+
+**Important:** ALL existing code, tests, and documentation must be updated to use equals syntax exclusively.
+
+---
+
+### 10. Source Tracking Removal: Delete All Traces
+
+**Decision:** Completely remove the source tracking feature from the codebase.
+
+**Rationale:**
+- Not used in production workflows
+- Adds complexity without value
+- Creates maintenance overhead
+- Dead code after env var removal
+
+**Code to DELETE:**
+```go
+// In internal/config/config.go or types.Config
+type ResolvedConfig struct {
+    Agent            string
+    Iterations       int
+    ImplementRetries int
+    CommitEnabled    bool
+    CommandFiles     *CommandFiles
+
+    // DELETE THIS FIELD
+    Sources map[string]string  // ✗ REMOVE COMPLETELY
+}
+
+// DELETE source tracking methods
+func (c *ResolvedConfig) SetSource(field string, source string) {
+    // ✗ DELETE ENTIRE METHOD
+}
+
+func (c *ResolvedConfig) GetSource(field string) string {
+    // ✗ DELETE ENTIRE METHOD
+}
+
+// DELETE source tracking initialization
+func NewResolvedConfig() *ResolvedConfig {
+    return &ResolvedConfig{
+        Sources: make(map[string]string),  // ✗ DELETE THIS
+    }
+}
+
+// DELETE source tracking in merge logic
+func mergeConfigs(base, override *Config) *ResolvedConfig {
+    // Remove all lines that set Sources["field"] = "source"
+    // Keep only the actual value merging logic
+}
+```
+
+**Tests to DELETE:**
+```go
+// Delete all source tracking tests
+TestSourceTracking_*
+TestConfigMerge_SourceTracking_*
+TestCLIOverride_SourceTracking_*
+TestResolvedConfig_GetSource_*
+TestResolvedConfig_SetSource_*
+
+// Remove source tracking assertions from other tests
+func TestConfigMerge_Precedence(t *testing.T) {
+    // Keep: assert actual values
+    assert.Equal(t, "claude", cfg.Agent)
+
+    // DELETE: source tracking assertions
+    assert.Equal(t, "cli", cfg.Sources["agent"])  // ✗ REMOVE
+}
+```
+
+**Files to Review for Dead Code:**
+```
+internal/config/config.go           # Remove Sources field and methods
+internal/config/config_test.go      # Remove source tracking tests
+internal/config/merge.go            # Remove source tracking in merge logic
+internal/command/args.go            # Remove source tracking when applying CLI flags
+internal/command/args_test.go       # Remove source tracking test assertions
+```
+
+**Search Pattern for Cleanup:**
+```bash
+# Find all references to source tracking
+grep -r "Sources" internal/
+grep -r "SetSource" internal/
+grep -r "GetSource" internal/
+grep -r "source tracking" internal/
+grep -r "SourceTracking" internal/
+
+# All matches should be deleted
+```
+
+**Validation After Removal:**
+```bash
+# Build should succeed
+go build ./...
+
+# No references to Sources field
+! grep -r "\.Sources\[" internal/
+! grep -r "Sources:" internal/types/
+
+# All tests pass
+go test ./...
+```
+
+**Test Coverage (Ensure No Gaps):**
+```go
+// Make sure config merging tests still validate behavior
+TestConfigMerge_CLIOverridesCustom
+// Should test that CLI values win WITHOUT checking Sources
+
+TestConfigMerge_CustomOverridesProject
+// Should test that custom values win WITHOUT checking Sources
+
+// Source tracking tests should be completely deleted
+// Behavior tests should remain
+```
+
+**Important:** This is a complete removal - no commented code, no "TODO: remove later", no deprecation. Clean deletion.
+
+---
+
 ## Updated Configuration Precedence
 
 ### Final Precedence Chain (Lowest to Highest)
@@ -637,19 +863,21 @@ TestEnvVarsIgnored_VerifyRemoval
    └─ If neither: ERROR (abort)
 
 3. Custom Config (OPTIONAL)
-   └─ --config <path>
+   └─ --config=<path>
 
 4. CLI Flags (highest precedence)
    ├─ --claude / --codex / --opencode
-   ├─ --fluxid-iterations <n>
-   ├─ --fluxid-implement-retries <n>
-   ├─ --fluxid-commit-enabled / --fluxid-no-commit
-   ├─ --implement-command <path>
-   ├─ --review-command <path>
-   └─ --commit-command <path>
+   ├─ --fluxid-iterations=<n>
+   ├─ --fluxid-implement-retries=<n>
+   ├─ --fluxid-commit / --fluxid-no-commit
+   ├─ --implement-command=<path>
+   ├─ --review-command=<path>
+   └─ --commit-command=<path>
 ```
 
-**Note:** Environment variables REMOVED completely (except FLUXID_SESSION_ID for IPC).
+**Note:**
+- Environment variables REMOVED completely (except FLUXID_SESSION_ID for IPC)
+- CLI flags use **equals syntax ONLY** (`--flag=value`)
 
 ---
 
@@ -753,16 +981,27 @@ TestDefaults_NoCommandDefaults                 // Commands NOT defaulted
 ### Unit Tests - CLI Args
 
 ```go
-TestCLIArgs_ConfigFlag_Valid
-TestCLIArgs_ConfigFlag_EqualsFormat           // --config=path
-TestCLIArgs_ConfigFlag_SpaceFormat            // --config path
-TestCLIArgs_ConfigFlag_MissingValue_Error
-TestCLIArgs_ConfigFlag_Multiple_Error         // Only one allowed
+// Equals syntax - positive tests
+TestCLIArgs_ConfigFlag_EqualsSyntax           // --config=path ✓
+TestCLIArgs_ImplementCommand_EqualsSyntax     // --implement-command=path ✓
+TestCLIArgs_ReviewCommand_EqualsSyntax        // --review-command=path ✓
+TestCLIArgs_CommitCommand_EqualsSyntax        // --commit-command=path ✓
+TestCLIArgs_Iterations_EqualsSyntax           // --fluxid-iterations=10 ✓
+TestCLIArgs_ImplementRetries_EqualsSyntax     // --fluxid-implement-retries=3 ✓
 
-TestCLIArgs_CommandFlags_All
-TestCLIArgs_ImplementCommand
-TestCLIArgs_ReviewCommand
-TestCLIArgs_CommitCommand
+// Space syntax - negative tests (should error)
+TestCLIArgs_ConfigFlag_SpaceSyntax_Error      // --config path ✗
+TestCLIArgs_ImplementCommand_SpaceSyntax_Error // --implement-command path ✗
+TestCLIArgs_Iterations_SpaceSyntax_Error      // --fluxid-iterations 10 ✗
+
+// Edge cases
+TestCLIArgs_ConfigFlag_EmptyValue_Error       // --config= ✗
+TestCLIArgs_ConfigFlag_MultipleEquals_Valid   // --config=/path/with=equals ✓
+TestCLIArgs_ConfigFlag_Multiple_Error         // Only one --config allowed
+
+// Boolean/agent flags (no value needed)
+TestCLIArgs_AgentFlags_NoEquals               // --claude, --codex, --opencode ✓
+TestCLIArgs_BooleanFlags_NoEquals             // --fluxid-commit, --dry-run ✓
 ```
 
 ### E2E Tests - Updated Scenarios
@@ -899,28 +1138,80 @@ TestBackwardCompatibility_ExistingWorkflows
 - [ ] Delete `internal/config/env.go` and `env_test.go`
 - [ ] Tests pass
 
-### Phase 8: E2E Tests
+### Phase 8: CLI Equals Syntax Standardization
 
-**Step 17: E2E Tests (RED)**
+**Step 17: Update CLI Parser for Equals Syntax (RED)**
+- [ ] Write tests for equals syntax on ALL value flags
+- [ ] Write tests for space syntax rejection (should error)
+- [ ] Write tests for edge cases (empty value, multiple equals, etc.)
+- [ ] Expect failures (current parser may accept space syntax)
+
+**Step 18: Implement Equals-Only Parsing (GREEN)**
+- [ ] Update CLI parser to ONLY accept `--flag=value` syntax
+- [ ] Reject `--flag value` syntax with clear error message
+- [ ] Boolean/agent flags remain as-is (no value needed)
+- [ ] Tests pass
+
+**Step 19: Update Existing Code/Tests/Docs (GREEN)**
+- [ ] Update all existing tests to use equals syntax
+- [ ] Update all example code to use equals syntax
+- [ ] Update help text to show equals syntax
+- [ ] Update WORKFLOW.md examples
+- [ ] Update README examples
+- [ ] Run full test suite to ensure nothing breaks
+
+### Phase 9: Source Tracking Removal
+
+**Step 20: Identify All Source Tracking Code (AUDIT)**
+- [ ] Run grep searches for "Sources", "SetSource", "GetSource"
+- [ ] Document all files that reference source tracking
+- [ ] Create list of all tests that check source tracking
+
+**Step 21: Remove Source Tracking Tests (RED)**
+- [ ] Delete all `TestSourceTracking_*` tests
+- [ ] Remove source tracking assertions from merge tests
+- [ ] Remove source tracking assertions from CLI override tests
+- [ ] Expect failures (code still has Sources field)
+
+**Step 22: Remove Source Tracking Code (GREEN)**
+- [ ] Delete `Sources` field from ResolvedConfig
+- [ ] Delete `SetSource()` and `GetSource()` methods
+- [ ] Remove source tracking from merge logic
+- [ ] Remove source tracking from CLI flag application
+- [ ] Tests pass
+
+**Step 23: Validate Complete Removal (GREEN)**
+- [ ] Run grep to verify no "Sources" references remain
+- [ ] Build succeeds: `go build ./...`
+- [ ] All tests pass: `go test ./...`
+- [ ] No dead code or commented-out source tracking logic
+
+### Phase 10: E2E Tests
+
+**Step 24: E2E Tests (RED)**
 - [ ] Write all E2E scenarios (m08-e01 through m08-e05)
+- [ ] All E2E tests use equals syntax for CLI flags
 - [ ] Expect failures
 
-**Step 18: E2E Tests (GREEN)**
+**Step 25: E2E Tests (GREEN)**
 - [ ] Fix integration issues
 - [ ] All E2E tests pass
 
-### Phase 9: Documentation & Cleanup
+### Phase 11: Documentation & Cleanup
 
-**Step 19: Documentation**
+**Step 26: Documentation**
 - [ ] Update WORKFLOW.md with new precedence
-- [ ] Update README with --config examples
-- [ ] Add help text for new flags
+- [ ] Update README with --config examples (equals syntax)
+- [ ] Add help text for new flags (equals syntax)
+- [ ] Document breaking changes (v2.0 migration guide)
 
-**Step 20: Final Validation**
+**Step 27: Final Validation**
 - [ ] All tests pass (unit + E2E)
 - [ ] Coverage ≥ 90%
 - [ ] No linter warnings
-- [ ] Backward compatibility verified
+- [ ] No source tracking code remains
+- [ ] All CLI examples use equals syntax
+- [ ] Backward compatibility verified (for non-breaking features)
 
 ---
 
@@ -936,6 +1227,9 @@ TestBackwardCompatibility_ExistingWorkflows
 - [ ] Centralized error logging with consistent format
 - [ ] CLI flags override all config sources
 - [ ] Environment variables removed (except FLUXID_SESSION_ID)
+- [ ] **Equals syntax ONLY** for all value flags (`--flag=value`)
+- [ ] Space syntax rejected with clear error (`--flag value` → ERROR)
+- [ ] **Source tracking completely removed** - no Sources field, no related code
 
 ### Test Requirements
 - [ ] All existing tests pass (after updates)
@@ -943,19 +1237,31 @@ TestBackwardCompatibility_ExistingWorkflows
 - [ ] 15+ new E2E tests
 - [ ] Coverage ≥ 90%
 - [ ] All error paths tested
-- [ ] Backward compatibility tests pass
+- [ ] Backward compatibility tests pass (for non-breaking features)
+- [ ] **Equals syntax tests**: Positive (works) and negative (space syntax errors)
+- [ ] **Source tracking tests**: All deleted, no references remain
+- [ ] All CLI examples in tests use equals syntax
 
 ### Error Handling
 - [ ] All errors use centralized logging
 - [ ] Error format: `error: component: description`
 - [ ] Clear error messages for all failure modes
 - [ ] Exit code 1 for config/usage errors
+- [ ] **Equals syntax errors**: Clear message explaining required format
+
+### Code Quality
+- [ ] **No source tracking code remains** (verified via grep)
+- [ ] **No dead code** or commented-out source tracking logic
+- [ ] All CLI parsing uses equals syntax only
+- [ ] No backward compatibility code for space syntax
 
 ### Documentation
 - [ ] WORKFLOW.md updated with new precedence
-- [ ] Help text includes all new flags
+- [ ] Help text includes all new flags (with equals syntax)
 - [ ] Example configs provided
 - [ ] Migration guide for env var removal
+- [ ] **All examples use equals syntax** (README, WORKFLOW.md, help text)
+- [ ] **No references to source tracking** in documentation
 
 ---
 
@@ -1000,6 +1306,11 @@ internal/config/env_test.go            # Env var tests
 3. ✅ **Default values:** Hardcoded for scalars, NO defaults for commands
 4. ✅ **Error handling:** Centralized with consistent format
 5. ✅ **Multiple --config:** Single flag only (error on multiple)
+6. ✅ **CLI syntax:** Equals syntax ONLY (`--flag=value`), space syntax rejected
+7. ✅ **Agent precedence:** Follows same rules as all other settings
+8. ✅ **Test data:** Use `.tmp/` folder in project root
+9. ✅ **Backward compatibility:** None required, breaking change acceptable
+10. ✅ **Source tracking:** Completely removed from codebase
 
 ## Questions Deferred (Later)
 
