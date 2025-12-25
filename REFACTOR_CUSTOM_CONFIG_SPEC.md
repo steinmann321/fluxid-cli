@@ -81,7 +81,6 @@ Example config:
   agent: claude
   iterations: 20
   implement_retries: 3
-  commit_enabled: false
   commands:
     implement: prompts/implement.md
     review: prompts/review.md
@@ -520,7 +519,6 @@ New (post-refactoring):
   agent: claude
   iterations: 20
   implement_retries: 3
-  commit_enabled: false
   commands:
     implement: prompts/implement.md
     review: prompts/review.md
@@ -588,7 +586,6 @@ Create `.fluxid/config.yaml` in your project:
 agent: claude
 iterations: 20
 implement_retries: 3
-commit_enabled: false
 commands:
   implement: prompts/implement.md
   review: prompts/review.md
@@ -650,8 +647,6 @@ TestEnvVarsIgnored_VerifyRemoval
 --opencode                            ✓ STANDARD
 
 # Boolean flags
---fluxid-commit                       ✓ STANDARD
---fluxid-no-commit                    ✓ STANDARD
 --dry-run                             ✓ STANDARD
 ```
 
@@ -845,6 +840,133 @@ TestConfigMerge_CustomOverridesProject
 
 ---
 
+### 11. Commit Phase: Always Enabled (Mandatory)
+
+**Decision:** Commits are now mandatory - the commit phase always runs. Remove all commit enable/disable flags and config options.
+
+**Rationale:**
+- Simplifies workflow - one less configuration option
+- Forces best practice - commits should always be created
+- Reduces flag complexity
+- Cleaner codebase without conditional commit logic
+
+**Code to REMOVE:**
+```go
+// DELETE from config
+type Config struct {
+    Agent            string
+    Iterations       int
+    ImplementRetries int
+    CommitEnabled    bool  // ✗ REMOVE THIS FIELD
+    CommandFiles     *CommandFiles
+}
+
+// DELETE from CLI flags
+--fluxid-commit       // ✗ REMOVE
+--fluxid-no-commit    // ✗ REMOVE
+
+// DELETE conditional commit logic
+if cfg.CommitEnabled {
+    runCommitPhase(cfg)  // ✗ REMOVE CONDITION
+}
+
+// REPLACE with unconditional
+runCommitPhase(cfg)  // ✓ Always run
+```
+
+**Updated Workflow:**
+```
+implement phase → commit phase → review phase
+         ↓              ↓              ↓
+     (retries)      (always)      (check PASS/FAIL)
+```
+
+**Config File Changes:**
+```yaml
+# OLD (before)
+agent: claude
+iterations: 20
+commit_enabled: false  # ✗ REMOVE THIS LINE
+commands:
+  implement: prompts/implement.md
+  review: prompts/review.md
+  commit: prompts/commit.md
+
+# NEW (after)
+agent: claude
+iterations: 20
+# commit_enabled removed - commits always happen
+commands:
+  implement: prompts/implement.md
+  review: prompts/review.md
+  commit: prompts/commit.md
+```
+
+**Implementation Changes:**
+```go
+// Before
+func runImplementPhase(cfg types.Config) error {
+    // ... implement logic ...
+
+    if cfg.CommitEnabled {
+        if err := runCommitPhase(cfg); err != nil {
+            return err
+        }
+    }
+}
+
+// After
+func runImplementPhase(cfg types.Config) error {
+    // ... implement logic ...
+
+    // Commits always run
+    if err := runCommitPhase(cfg); err != nil {
+        return err
+    }
+}
+```
+
+**Test Changes:**
+```go
+// DELETE these tests
+TestConfig_CommitEnabled_*
+TestCLIArgs_CommitFlag_*
+TestCLIArgs_NoCommitFlag_*
+TestWorkflow_CommitDisabled_*
+
+// UPDATE these tests (commit always runs)
+TestWorkflow_ImplementCommitReview  // Verify commit always executes
+TestWorkflow_CommitPhaseFailure     // Commit failure handling
+```
+
+**Breaking Change:**
+- Users who previously used `--fluxid-no-commit` must remove this flag
+- Users who set `commit_enabled: false` in config must remove this field
+- Commits now ALWAYS run (cannot be disabled)
+
+**Migration:**
+```bash
+# OLD
+fluxid --fluxid-no-commit  # Skip commits
+
+# NEW
+# No flag needed - commits always run
+# If you don't want commits, don't use fluxid
+```
+
+**Files to Modify:**
+```
+internal/types/types.go         # Remove CommitEnabled field
+internal/config/config.go       # Remove commit_enabled parsing
+internal/workflow/workflow.go   # Remove conditional commit logic
+internal/command/args.go        # Remove --fluxid-commit/--fluxid-no-commit flags
+e2e-tests/                      # Update all tests (commits always run)
+```
+
+**Important:** This simplification removes a configuration axis and makes the workflow more predictable.
+
+---
+
 ## Updated Configuration Precedence
 
 ### Final Precedence Chain (Lowest to Highest)
@@ -854,7 +976,6 @@ TestConfigMerge_CustomOverridesProject
    ├─ agent: "claude"
    ├─ iterations: 20
    ├─ implement_retries: 3
-   ├─ commit_enabled: false
    └─ Commands: NO DEFAULTS (must come from config)
 
 2. Default Config (REQUIRED - at least one must exist)
@@ -869,7 +990,6 @@ TestConfigMerge_CustomOverridesProject
    ├─ --claude / --codex / --opencode
    ├─ --fluxid-iterations=<n>
    ├─ --fluxid-implement-retries=<n>
-   ├─ --fluxid-commit / --fluxid-no-commit
    ├─ --implement-command=<path>
    ├─ --review-command=<path>
    └─ --commit-command=<path>
@@ -893,7 +1013,7 @@ TestConfigMerge_CustomOverridesProject
                   │
 ┌─────────────────▼───────────────────────────────────┐
 │ 2. Apply Hardcoded Defaults (for missing scalars)  │
-│    - agent, iterations, retries, commit_enabled    │
+│    - agent, iterations, retries                    │
 │    - Commands: NO defaults (must be in config)     │
 └─────────────────┬───────────────────────────────────┘
                   │
@@ -974,7 +1094,6 @@ TestMerge_FullChain                            // Default → Custom → CLI
 TestDefaults_Agent
 TestDefaults_Iterations
 TestDefaults_ImplementRetries
-TestDefaults_CommitEnabled
 TestDefaults_NoCommandDefaults                 // Commands NOT defaulted
 ```
 
@@ -1001,7 +1120,7 @@ TestCLIArgs_ConfigFlag_Multiple_Error         // Only one --config allowed
 
 // Boolean/agent flags (no value needed)
 TestCLIArgs_AgentFlags_NoEquals               // --claude, --codex, --opencode ✓
-TestCLIArgs_BooleanFlags_NoEquals             // --fluxid-commit, --dry-run ✓
+TestCLIArgs_BooleanFlags_NoEquals             // --dry-run ✓
 ```
 
 ### E2E Tests - Updated Scenarios
@@ -1186,31 +1305,70 @@ TestBackwardCompatibility_ExistingWorkflows
 - [ ] All tests pass: `go test ./...`
 - [ ] No dead code or commented-out source tracking logic
 
-### Phase 10: E2E Tests
+### Phase 10: Commit Always Enabled (Remove Commit Flags)
 
-**Step 24: E2E Tests (RED)**
+**Step 24: Identify All Commit Toggle Code (AUDIT)**
+- [ ] Run grep searches for "CommitEnabled", "--fluxid-commit", "--fluxid-no-commit"
+- [ ] Document all files that reference commit enable/disable
+- [ ] Create list of all tests that check commit_enabled
+
+**Step 25: Remove Commit Toggle Tests (RED)**
+- [ ] Delete all `TestConfig_CommitEnabled_*` tests
+- [ ] Delete all `TestCLIArgs_CommitFlag_*` tests
+- [ ] Delete all `TestCLIArgs_NoCommitFlag_*` tests
+- [ ] Delete all `TestWorkflow_CommitDisabled_*` tests
+- [ ] Expect failures (code still has CommitEnabled field)
+
+**Step 26: Remove Commit Toggle Code (GREEN)**
+- [ ] Delete `CommitEnabled` field from Config struct
+- [ ] Delete `--fluxid-commit` and `--fluxid-no-commit` flags from CLI parser
+- [ ] Remove conditional commit logic (make commits always run)
+- [ ] Remove `commit_enabled` from config file parsing
+- [ ] Tests pass
+
+**Step 27: Update Workflow for Mandatory Commits (GREEN)**
+- [ ] Update `runImplementPhase` to always call `runCommitPhase`
+- [ ] Remove all `if cfg.CommitEnabled` conditions
+- [ ] Update workflow tests to expect commits always run
+- [ ] All tests pass
+
+**Step 28: Validate Complete Removal (GREEN)**
+- [ ] Run grep to verify no "CommitEnabled" references remain
+- [ ] Run grep to verify no "--fluxid-commit" references remain
+- [ ] Build succeeds: `go build ./...`
+- [ ] All tests pass: `go test ./...`
+- [ ] No dead code for commit toggling
+
+### Phase 11: E2E Tests
+
+**Step 29: E2E Tests (RED)**
 - [ ] Write all E2E scenarios (m08-e01 through m08-e05)
 - [ ] All E2E tests use equals syntax for CLI flags
+- [ ] All E2E tests expect commits to always run
 - [ ] Expect failures
 
-**Step 25: E2E Tests (GREEN)**
+**Step 30: E2E Tests (GREEN)**
 - [ ] Fix integration issues
 - [ ] All E2E tests pass
 
-### Phase 11: Documentation & Cleanup
+### Phase 12: Documentation & Cleanup
 
-**Step 26: Documentation**
+**Step 31: Documentation**
 - [ ] Update WORKFLOW.md with new precedence
+- [ ] Update WORKFLOW.md to document mandatory commits
 - [ ] Update README with --config examples (equals syntax)
 - [ ] Add help text for new flags (equals syntax)
 - [ ] Document breaking changes (v2.0 migration guide)
+- [ ] Add migration note about commit flags removal
 
-**Step 27: Final Validation**
+**Step 32: Final Validation**
 - [ ] All tests pass (unit + E2E)
 - [ ] Coverage ≥ 90%
 - [ ] No linter warnings
 - [ ] No source tracking code remains
+- [ ] No commit toggle code remains
 - [ ] All CLI examples use equals syntax
+- [ ] Commits always run in all scenarios
 - [ ] Backward compatibility verified (for non-breaking features)
 
 ---
@@ -1230,6 +1388,8 @@ TestBackwardCompatibility_ExistingWorkflows
 - [ ] **Equals syntax ONLY** for all value flags (`--flag=value`)
 - [ ] Space syntax rejected with clear error (`--flag value` → ERROR)
 - [ ] **Source tracking completely removed** - no Sources field, no related code
+- [ ] **Commits always enabled** - CommitEnabled field removed, no commit toggle flags
+- [ ] **Commit phase always runs** - no conditional commit logic
 
 ### Test Requirements
 - [ ] All existing tests pass (after updates)
@@ -1251,9 +1411,11 @@ TestBackwardCompatibility_ExistingWorkflows
 
 ### Code Quality
 - [ ] **No source tracking code remains** (verified via grep)
-- [ ] **No dead code** or commented-out source tracking logic
+- [ ] **No commit toggle code remains** (verified via grep for CommitEnabled)
+- [ ] **No dead code** or commented-out source tracking/commit toggle logic
 - [ ] All CLI parsing uses equals syntax only
 - [ ] No backward compatibility code for space syntax
+- [ ] Commits always run unconditionally in workflow
 
 ### Documentation
 - [ ] WORKFLOW.md updated with new precedence
@@ -1311,6 +1473,7 @@ internal/config/env_test.go            # Env var tests
 8. ✅ **Test data:** Use `.tmp/` folder in project root
 9. ✅ **Backward compatibility:** None required, breaking change acceptable
 10. ✅ **Source tracking:** Completely removed from codebase
+11. ✅ **Commit phase:** Always enabled (mandatory), no toggle flags
 
 ## Questions Deferred (Later)
 
