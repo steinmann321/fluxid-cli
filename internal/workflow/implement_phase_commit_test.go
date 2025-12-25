@@ -1,3 +1,4 @@
+//nolint:paralleltest // Tests use global mutex, cannot run in parallel
 package workflow
 
 import (
@@ -15,8 +16,8 @@ import (
 func TestRunImplementPhase_WithCommit(t *testing.T) {
 	// Test implement phase with commit enabled
 	sessionID := "test-implement-with-commit-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -46,10 +47,10 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 
 	// Test successful implement phase with commit
 	sessionID := "test-implement-success-commit-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
+	tmpDir, cleanup := setupTestDataDir(t)
+	defer cleanup()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 
-	t.Setenv("XDG_DATA_HOME", tmpDir)
 	if err := os.MkdirAll(storageDir, 0o755); err != nil {
 		t.Fatalf("Failed to create storage dir: %v", err)
 	}
@@ -105,8 +106,8 @@ next_steps:
 func TestRunCommitPhase_Failure(t *testing.T) {
 	// Test commit phase failure
 	sessionID := "test-commit-failure-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -133,8 +134,8 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 func TestExecuteCommitIfEnabled_Disabled(t *testing.T) {
 	// Test that commit is skipped when disabled
 	sessionID := "test-commit-disabled-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,

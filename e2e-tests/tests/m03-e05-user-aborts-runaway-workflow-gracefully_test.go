@@ -22,7 +22,7 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
-	sessionID := "test-abort-signal-" + time.Now().Format("20060102150405")
+	sessionID := "test-abort-signal-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
@@ -84,7 +84,7 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
-	sessionID := "test-forced-exit-" + time.Now().Format("20060102150405")
+	sessionID := "test-forced-exit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(10 * time.Second)
@@ -150,7 +150,7 @@ func TestM03E05AbortViaIPCCommand(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
-	sessionID := "test-ipc-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-ipc-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
@@ -215,7 +215,7 @@ func TestM03E05AbortMessageContent(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
-	sessionID := "test-abort-messages-" + time.Now().Format("20060102150405")
+	sessionID := "test-abort-messages-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)

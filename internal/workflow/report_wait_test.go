@@ -1,8 +1,10 @@
+//nolint:paralleltest // Tests use global mutex, cannot run in parallel
 package workflow
 
 import (
 	"errors"
 	"fluxid-loop/internal/ipc"
+	"fmt"
 	"testing"
 	"time"
 
@@ -10,9 +12,9 @@ import (
 )
 
 func TestWaitForValidReport_Timeout(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	sessionID := "test-timeout-" + time.Now().Format("20060102150405")
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
+	sessionID := "test-timeout-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Save original values and restore after test
 	origMaxAttempts := reportMaxAttempts
@@ -42,8 +44,8 @@ func TestWaitForValidReport_Timeout(t *testing.T) {
 
 func TestWaitForValidReport_Success(t *testing.T) {
 	// Test waitForValidReport with a valid report
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 	sessionID := "test-wait-report-success"
 
 	// Write a valid report
@@ -77,8 +79,8 @@ next_steps:
 
 func TestWaitForValidReport_Fail(t *testing.T) {
 	// Test waitForValidReport with a FAIL status
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 	sessionID := "test-wait-report-fail"
 
 	// Write a valid FAIL report
@@ -114,8 +116,8 @@ next_steps:
 func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expectedStatus, command string) {
 	t.Helper()
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
 	// Write initial invalid/malformed report
 	if err := ipc.WriteReport(sessionID, initialReport); err != nil {
@@ -257,8 +259,8 @@ func TestWaitForValidReport_CheckAbortError(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	// Test abort flag check error path (warning logged but execution continues)
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 	sessionID := "test-wait-abort-check-err"
 
 	// Provide a valid report after a delay to ensure abort check happens first

@@ -1,4 +1,4 @@
-//nolint:exhaustruct // Workflow tests with subprocess execution
+//nolint:exhaustruct,paralleltest // Tests use global mutex and incomplete structs
 package workflow
 
 import (
@@ -6,6 +6,7 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,10 +16,10 @@ import (
 func TestRun_SingleCycleSuccess(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-run-single-" + time.Now().Format("20060102150405")
+	sessionID := "test-run-single-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -49,10 +50,10 @@ func TestRun_SingleCycleSuccess(t *testing.T) {
 }
 
 func TestRun_AbortBeforeImplement(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-run-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-run-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -84,10 +85,10 @@ func TestRun_AbortBeforeImplement(t *testing.T) {
 func TestRun_MultipleReviewCycles(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-run-multi-" + time.Now().Format("20060102150405")
+	sessionID := "test-run-multi-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -144,10 +145,10 @@ summary: "Test failed"
 func TestRun_WithAgentArgs(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-agent-args-" + time.Now().Format("20060102150405")
+	sessionID := "test-agent-args-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -177,8 +178,8 @@ func TestRun_WithAgentArgs(t *testing.T) {
 }
 
 func TestRun_ReadReportFailure(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
 	// Use invalid session ID to trigger read error
 	sessionID := ""

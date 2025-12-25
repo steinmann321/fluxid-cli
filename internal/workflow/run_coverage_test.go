@@ -1,4 +1,4 @@
-//nolint:exhaustruct // Run function coverage tests
+//nolint:exhaustruct,paralleltest // Tests use global mutex and incomplete structs
 package workflow
 
 import (
@@ -6,6 +6,7 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -17,10 +18,10 @@ import (
 func TestRun_AbortAfterImplementPhase(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-run-abort-after-impl-" + time.Now().Format("20060102150405")
+	sessionID := "test-run-abort-after-impl-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -61,10 +62,10 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-fail-continue-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-fail-continue-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,

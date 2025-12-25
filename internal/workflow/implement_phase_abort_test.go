@@ -1,3 +1,4 @@
+//nolint:paralleltest // Tests use global mutex, cannot run in parallel
 package workflow
 
 import (
@@ -13,10 +14,10 @@ import (
 func TestRunImplementPhase_WithAbort(t *testing.T) {
 	// Test that implement phase checks abort flag
 	sessionID := "test-implement-abort-session-" + time.Now().Format("20060102150405.000000")
-	tmpDir := t.TempDir()
+	tmpDir, cleanup := setupTestDataDir(t)
+	defer cleanup()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
 
-	t.Setenv("XDG_DATA_HOME", tmpDir)
 	if err := os.MkdirAll(storageDir, 0o755); err != nil {
 		t.Fatalf("Failed to create storage dir: %v", err)
 	}

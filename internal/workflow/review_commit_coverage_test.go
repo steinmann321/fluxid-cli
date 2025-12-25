@@ -1,4 +1,4 @@
-//nolint:exhaustruct // Review and commit phase coverage tests
+//nolint:exhaustruct,paralleltest // Tests use global mutex and incomplete structs
 package workflow
 
 import (
@@ -6,6 +6,7 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,10 +15,10 @@ import (
 
 // TestRunCommitPhase_AgentFailure tests commit phase with failing agent.
 func TestRunCommitPhase_AgentFailure(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-commit-fail-" + time.Now().Format("20060102150405")
+	sessionID := "test-commit-fail-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:     sessionID,
@@ -41,10 +42,10 @@ func TestRunCommitPhase_AgentFailure(t *testing.T) {
 
 // TestRunCommitPhase_AgentFailsZeroExit tests commit with agent that returns error but no exit code.
 func TestRunCommitPhase_AgentFailsZeroExit(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-commit-fail-zeroexit-" + time.Now().Format("20060102150405")
+	sessionID := "test-commit-fail-zeroexit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:     sessionID,
@@ -67,10 +68,10 @@ func TestRunCommitPhase_AgentFailsZeroExit(t *testing.T) {
 
 // TestRunReviewPhase_AgentNonZeroExit tests review phase error handling with non-zero exit.
 func TestRunReviewPhase_AgentNonZeroExit(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-nonzero-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-nonzero-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:    sessionID,
@@ -96,10 +97,10 @@ func TestRunReviewPhase_AgentNonZeroExit(t *testing.T) {
 
 // TestRunReviewPhase_AgentFailsZeroExit tests review with command execution error.
 func TestRunReviewPhase_AgentFailsZeroExit(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-fail-zeroexit-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-fail-zeroexit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:    sessionID,
@@ -125,10 +126,10 @@ func TestRunReviewPhase_AgentFailsZeroExit(t *testing.T) {
 func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-wait-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-wait-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:    sessionID,
@@ -162,10 +163,10 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 func TestWaitForValidReport_UnmarshalError(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-unmarshal-err-" + time.Now().Format("20060102150405")
+	sessionID := "test-unmarshal-err-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write a report that passes validation but has unmarshal issues, then a good one
 	go func() {

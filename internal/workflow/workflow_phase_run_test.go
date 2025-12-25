@@ -1,4 +1,4 @@
-//nolint:exhaustruct // Workflow phase tests with subprocess execution
+//nolint:exhaustruct,paralleltest // Tests use global mutex and incomplete structs
 package workflow
 
 import (
@@ -6,6 +6,7 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,10 +16,10 @@ import (
 func TestRunImplementPhase_Success(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-success-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-success-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -50,10 +51,10 @@ func TestRunImplementPhase_Success(t *testing.T) {
 func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-commit-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-commit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -85,10 +86,10 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-success-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-success-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -121,10 +122,10 @@ func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 }
 
 func TestRunCommitPhase_SuccessViaRun(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-commit-success-" + time.Now().Format("20060102150405")
+	sessionID := "test-commit-success-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -151,10 +152,10 @@ func TestRunCommitPhase_SuccessViaRun(t *testing.T) {
 func TestRunImplementPhase_WithCommandFile(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	tmpDir, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-implement-cmdfile-" + time.Now().Format("20060102150405")
+	sessionID := "test-implement-cmdfile-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cmdFiles := &config.ResolvedCommandFiles{
 		ImplementPath: tmpDir + "/implement.md",

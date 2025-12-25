@@ -1,18 +1,20 @@
+//nolint:paralleltest // Tests use global mutex, cannot run in parallel
 package workflow
 
 import (
 	"errors"
 	"fluxid-loop/internal/ipc"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestWaitForValidReport_InvalidReportRetries(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-invalid-report-" + time.Now().Format("20060102150405")
+	sessionID := "test-invalid-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write invalid report first, then valid one after delay
 	var waitGroup sync.WaitGroup
@@ -38,10 +40,10 @@ func TestWaitForValidReport_InvalidReportRetries(t *testing.T) {
 }
 
 func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-abort-waiting-" + time.Now().Format("20060102150405")
+	sessionID := "test-abort-waiting-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Set abort flag after delay
 	var waitGroup sync.WaitGroup
@@ -72,10 +74,10 @@ func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
 }
 
 func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-immediate-" + time.Now().Format("20060102150405")
+	sessionID := "test-immediate-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write valid report immediately (before calling waitForValidReport)
 	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
@@ -92,10 +94,10 @@ func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
 }
 
 func TestWaitForValidReport_MultipleInvalidThenValid(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-multi-invalid-" + time.Now().Format("20060102150405")
+	sessionID := "test-multi-invalid-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write multiple invalid reports, then a valid one
 	var waitGroup sync.WaitGroup
@@ -123,9 +125,10 @@ func TestWaitForValidReport_MultipleInvalidThenValid(t *testing.T) {
 }
 
 func TestWaitForValidReport_CheckAbortFlagError(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	sessionID := "test-check-abort-err-" + time.Now().Format("20060102150405")
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
+
+	sessionID := "test-check-abort-err-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write valid report immediately so we can complete successfully
 	// The goal is to test the CheckAbortFlag warning path, not to fail
@@ -144,9 +147,10 @@ func TestWaitForValidReport_CheckAbortFlagError(t *testing.T) {
 }
 
 func TestWaitForValidReport_ReadReportError(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	sessionID := "test-read-err-" + time.Now().Format("20060102150405")
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
+
+	sessionID := "test-read-err-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Create a valid session directory
 	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
@@ -164,9 +168,10 @@ func TestWaitForValidReport_ReadReportError(t *testing.T) {
 }
 
 func TestWaitForValidReport_MissingStatusField(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	sessionID := "test-missing-status-" + time.Now().Format("20060102150405")
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
+
+	sessionID := "test-missing-status-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write a report that is valid YAML and passes schema but test status extraction
 	reportWithoutStatus := `command: "test"
@@ -195,9 +200,10 @@ issues:
 }
 
 func TestWaitForValidReport_FAILStatus(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	sessionID := "test-fail-status-" + time.Now().Format("20060102150405")
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
+
+	sessionID := "test-fail-status-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	failReport := `command: "test"
 artifact: "test-artifact"

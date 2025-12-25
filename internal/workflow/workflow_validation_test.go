@@ -1,15 +1,17 @@
+//nolint:paralleltest // Tests use global mutex, cannot run in parallel
 //nolint:paralleltest // Workflow tests with subprocess execution
 package workflow
 
 import (
 	"fluxid-loop/internal/ipc"
+	"fmt"
 	"testing"
 	"time"
 )
 
 func TestWaitForValidReport_WithValidReport(t *testing.T) {
 	// Test waitForValidReport when a valid report already exists
-	sessionID := "test-wait-valid-report-" + time.Now().Format("20060102150405")
+	sessionID := "test-wait-valid-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write a valid PASS report before calling waitForValidReport
 	validReport := `command: "test"
@@ -30,7 +32,7 @@ summary: "All tests passed"
 
 func TestWaitForValidReport_WithFailReport(t *testing.T) {
 	// Test waitForValidReport when report has FAIL status
-	sessionID := "test-wait-fail-report-" + time.Now().Format("20060102150405")
+	sessionID := "test-wait-fail-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	// Write a valid FAIL report before calling waitForValidReport
 	failReport := `command: "test"
@@ -53,8 +55,8 @@ summary: "Tests failed"
 func testWaitForValidReportHelper(t *testing.T, sessionID, reportYAML, expectedStatus string) {
 	t.Helper()
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
 	if err := ipc.WriteReport(sessionID, reportYAML); err != nil {
 		t.Fatalf("Failed to write report: %v", err)

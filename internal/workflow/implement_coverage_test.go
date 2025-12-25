@@ -1,4 +1,4 @@
-//nolint:exhaustruct // Implement phase coverage tests
+//nolint:exhaustruct,paralleltest // Tests use global mutex, cannot run in parallel
 package workflow
 
 import (
@@ -6,6 +6,7 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -17,10 +18,10 @@ import (
 func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-retry-fail-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-retry-fail-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -66,10 +67,10 @@ func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
 func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-maxretry-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-maxretry-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -109,10 +110,10 @@ func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 func TestRunImplementPhase_WithCommitEnabled(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-commit-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-commit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -148,10 +149,10 @@ func TestRunImplementPhase_WithCommitEnabled(t *testing.T) {
 
 // TestRunImplementPhase_CommitPhaseFailure tests failure in commit phase.
 func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-commit-fail-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-commit-fail-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -178,10 +179,10 @@ func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
 
 // TestRunImplementPhase_AgentFailsNoExit tests implement with agent that fails without exit code.
 func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-agent-fail-noexit-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-agent-fail-noexit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -209,10 +210,10 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-wait-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-wait-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,

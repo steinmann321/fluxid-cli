@@ -1,4 +1,4 @@
-//nolint:exhaustruct // Workflow error path tests
+//nolint:exhaustruct,paralleltest // Tests use global mutex and incomplete structs
 package workflow
 
 import (
@@ -6,6 +6,7 @@ import (
 	"fluxid-loop/internal/ipc"
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
+	"fmt"
 	"testing"
 	"time"
 
@@ -28,10 +29,10 @@ func TestAbortError_Error(t *testing.T) {
 
 // TestRunImplementPhase_AbortBeforeRetry tests abort checking across retries.
 func TestRunImplementPhase_AbortBeforeRetry(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-abort-retry-" + time.Now().Format("20060102150405")
+	sessionID := "test-abort-retry-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -62,15 +63,19 @@ func TestRunImplementPhase_AbortBeforeRetry(t *testing.T) {
 
 // TestWaitForValidReport_NoReport tests handling when no report is written.
 func TestWaitForValidReport_NoReport(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping timeout test in short mode (takes 5 minutes)")
-	}
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-noreport-" + time.Now().Format("20060102150405")
+	sessionID := "test-noreport-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Don't write any report - should timeout
+	// Reduce max attempts to avoid long test duration (3 attempts * 2s = 6s)
+	origMaxAttempts := reportMaxAttempts
+	t.Cleanup(func() {
+		reportMaxAttempts = origMaxAttempts
+	})
+	reportMaxAttempts = 3
+
+	// Don't write any report - should timeout after 6 seconds
 	_, err := waitForValidReport(sessionID, "test-phase")
 	if err == nil {
 		t.Error("Expected timeout error when no report is written, got nil")
@@ -81,10 +86,10 @@ func TestRun_MaxCyclesExceeded(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	t.Skip("TODO: Fix test timing issues - reports not being picked up reliably")
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-run-maxcycles-" + time.Now().Format("20060102150405")
+	sessionID := "test-run-maxcycles-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -131,10 +136,10 @@ summary: "Test failed"
 }
 
 func TestRun_ImplementPhaseAbort(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-run-impl-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-run-impl-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -166,10 +171,10 @@ func TestRun_ImplementPhaseAbort(t *testing.T) {
 func TestRunReviewPhase_Abort(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -202,10 +207,10 @@ func TestRunReviewPhase_Abort(t *testing.T) {
 }
 
 func TestRunImplementPhase_Abort(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-impl-abort-" + time.Now().Format("20060102150405")
+	sessionID := "test-impl-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -235,10 +240,10 @@ func TestRunImplementPhase_Abort(t *testing.T) {
 }
 
 func TestRunReviewPhase_AgentCommandFail(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
+	_, cleanup := setupTestDataDir(t)
+	defer cleanup()
 
-	sessionID := "test-review-agentfail-" + time.Now().Format("20060102150405")
+	sessionID := "test-review-agentfail-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
 		SessionID:           sessionID,
