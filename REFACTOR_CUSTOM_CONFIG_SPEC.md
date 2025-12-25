@@ -357,6 +357,268 @@ TestCLIArgs_ConfigEqualsAndSpace  // --config=a vs --config a (both valid)
 
 ---
 
+### 6. Agent Precedence: CLI Flag Same as Config Field
+
+**Decision:** Agent selection via CLI flag follows exact same precedence as any other setting.
+
+**Clarification:** The spec's merge/override behavior applies uniformly to ALL settings including agent.
+
+**Agent Selection Mapping:**
+```go
+// CLI flags map to config field
+--claude   → agent: "claude"
+--codex    → agent: "codex"
+--opencode → agent: "opencode"
+
+// Then normal precedence applies (same as iterations, retries, etc.)
+```
+
+**Precedence (same as all other settings):**
+```
+1. CLI flag: --claude                    (highest)
+2. Custom config: agent: "codex"
+3. Project config: agent: "claude"
+4. User config: agent: "opencode"
+5. Hardcoded default: "claude"           (lowest)
+```
+
+**Example:**
+```yaml
+# User config
+agent: opencode
+
+# Project config
+agent: codex
+
+# Run with CLI flag
+$ fluxid --claude
+
+# Result: agent = "claude" (CLI wins, same as any setting)
+```
+
+**Test Coverage:**
+```go
+TestAgentPrecedence_CLIOverridesConfig
+// Config: agent: "codex", CLI: --claude
+// Result: agent = "claude"
+
+TestAgentPrecedence_CustomConfigOverridesProject
+// Project: agent: "claude", Custom: agent: "codex"
+// Result: agent = "codex"
+
+TestAgentPrecedence_DefaultUsed
+// No config specified, no CLI flag
+// Result: agent = "claude" (hardcoded default)
+```
+
+**Important:** Agent flag is NOT special - it follows the same precedence rules as all other settings.
+
+---
+
+### 7. Test Data Organization: Use .tmp/ Folder
+
+**Decision:** All test config files and temporary test data stored in `.tmp/` directory in project root.
+
+**Directory Structure:**
+```
+<project-root>/
+  .tmp/                          # Created by tests, gitignored
+    configs/                     # Config files for tests
+      valid-complete.yaml
+      valid-partial.yaml
+      invalid-yaml.yaml
+      custom-feature.yaml
+    prompts/                     # Test command files
+      test-implement.md
+      test-review.md
+      test-commit.md
+    sessions/                    # Test session data
+      test-session-123/
+```
+
+**Test Implementation:**
+```go
+func TestCustomConfig_ValidFile(t *testing.T) {
+    // Setup: Create test config in .tmp/
+    testDir := filepath.Join(projectRoot, ".tmp", "configs")
+    os.MkdirAll(testDir, 0755)
+
+    configPath := filepath.Join(testDir, "test-config.yaml")
+    configContent := `
+agent: claude
+iterations: 10
+commands:
+  implement: prompts/impl.md
+  review: prompts/review.md
+  commit: prompts/commit.md
+`
+    os.WriteFile(configPath, []byte(configContent), 0644)
+    defer os.Remove(configPath) // Cleanup
+
+    // Test logic...
+}
+```
+
+**Cleanup Strategy:**
+```go
+// Option 1: Per-test cleanup
+defer os.RemoveAll(testConfigPath)
+
+// Option 2: Test suite cleanup (TestMain)
+func TestMain(m *testing.M) {
+    code := m.Run()
+
+    // Cleanup all test data
+    os.RemoveAll(filepath.Join(projectRoot, ".tmp"))
+
+    os.Exit(code)
+}
+```
+
+**Rationale:**
+- Centralized test data location
+- Easy to clean up (single directory)
+- Mirrors production structure (.fluxid/ vs .tmp/)
+- Gitignored by default (`.tmp/` in .gitignore)
+
+**Update .gitignore:**
+```gitignore
+# Add to .gitignore
+.tmp/
+```
+
+**Test Coverage:**
+```go
+// No specific tests needed for this (implementation detail)
+// All E2E tests will use .tmp/ for config files
+```
+
+---
+
+### 8. Backward Compatibility: None Required
+
+**Decision:** NO backward compatibility support. Remove all obsolete tests and code.
+
+**Breaking Changes (Acceptable):**
+1. Environment variables removed (FLUXID_ITERATIONS, etc.)
+2. Default config now REQUIRED (cannot run without config file)
+3. Commands must be in config (no defaults)
+
+**Migration Path for Users:**
+```
+Old (pre-refactoring):
+  $ FLUXID_ITERATIONS=10 fluxid
+  → Uses env var, no config file needed
+
+New (post-refactoring):
+  $ fluxid --fluxid-iterations 10
+  → ERROR: no configuration file found
+
+  User must create:
+  $ mkdir -p .fluxid
+  $ cat > .fluxid/config.yaml <<EOF
+  agent: claude
+  iterations: 20
+  implement_retries: 3
+  commit_enabled: false
+  commands:
+    implement: prompts/implement.md
+    review: prompts/review.md
+    commit: prompts/commit.md
+  EOF
+
+  $ fluxid --fluxid-iterations 10
+  → Works (config + CLI override)
+```
+
+**Code Removal (Aggressive Cleanup):**
+```
+DELETE:
+  ✗ internal/config/env.go              (entire file)
+  ✗ internal/config/env_test.go         (entire file)
+  ✗ All env var loading code
+  ✗ All env var tests
+  ✗ Optional config loading (make required)
+  ✗ Any default command paths (if they exist)
+
+KEEP:
+  ✓ FLUXID_SESSION_ID (used for IPC, not config)
+```
+
+**Test Removal:**
+```go
+// DELETE these test scenarios:
+TestConfig_EnvironmentVariables*        // All env var tests
+TestConfig_OptionalConfig*              // Config now required
+TestConfig_DefaultCommands*             // Commands now required
+TestBackwardCompatibility_*             // No backward compat
+```
+
+**Rationale:**
+- Clean slate approach
+- Simpler codebase (less maintenance)
+- Forces explicit configuration (better UX long-term)
+- Removes ambiguous behavior (env vars vs config)
+
+**Migration Notice (README/CHANGELOG):**
+```markdown
+## Breaking Changes in v2.0
+
+### Environment Variables Removed
+Environment variables (FLUXID_ITERATIONS, etc.) are no longer supported.
+Use CLI flags or config files instead.
+
+**Before:**
+```bash
+FLUXID_ITERATIONS=10 fluxid
+```
+
+**After:**
+```bash
+fluxid --fluxid-iterations 10
+# OR
+fluxid --config custom-config.yaml
+```
+
+### Config File Now Required
+You must have a config file (project or user) before running fluxid.
+
+Create `.fluxid/config.yaml` in your project:
+```yaml
+agent: claude
+iterations: 20
+implement_retries: 3
+commit_enabled: false
+commands:
+  implement: prompts/implement.md
+  review: prompts/review.md
+  commit: prompts/commit.md
+```
+
+See [Configuration Guide](docs/configuration.md) for details.
+```
+
+**Test Coverage:**
+```go
+// REMOVE backward compatibility tests
+// ADD breaking change tests (verify old behavior fails properly)
+
+TestNoConfigFile_Error
+// No .fluxid/config.yaml, no ~/.fluxid/config.yaml
+// Expect: Clear error message
+// Expect: Exit code 1
+
+TestEnvVarsIgnored_VerifyRemoval
+// Set FLUXID_ITERATIONS=99
+// Config has iterations: 10
+// CLI has no override
+// Expect: iterations = 10 (env var has no effect)
+```
+
+**Important:** This is a MAJOR version bump (v1.x → v2.0) due to breaking changes.
+
+---
+
 ## Updated Configuration Precedence
 
 ### Final Precedence Chain (Lowest to Highest)
@@ -707,9 +969,10 @@ e2e-tests/tests/m08-e01-custom-config-basic_test.go
 e2e-tests/tests/m08-e02-custom-config-precedence_test.go
 e2e-tests/tests/m08-e03-default-config-required_test.go
 e2e-tests/tests/m08-e04-error-handling_test.go
-e2e-tests/tests/m08-e05-backward-compatibility_test.go
-e2e-tests/testdata/configs/               # Test config files
+.tmp/                                  # Test data directory (gitignored)
 ```
+
+**Note:** Test config files created dynamically in `.tmp/` during tests (not committed to repo).
 
 ### Modified Files
 ```
@@ -719,6 +982,7 @@ internal/command/args.go               # New CLI flags
 internal/command/args_test.go          # CLI flag tests
 internal/command/root.go               # Integration
 WORKFLOW.md                            # Documentation
+.gitignore                             # Add .tmp/ directory
 ```
 
 ### Deleted Files
