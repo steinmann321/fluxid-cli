@@ -141,11 +141,11 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 		Sources:      map[string]string{},
 	}
 
-	// Set abort flag while waiting for report
-	go func() {
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.SetAbortFlag(sessionID)
-	}()
+	// Set abort flag before calling runReviewPhase
+	// With immediate report checking, abort must be set before the phase runs
+	if err := ipc.SetAbortFlag(sessionID); err != nil {
+		t.Fatalf("Failed to set abort flag: %v", err)
+	}
 
 	status, exitCode, err := runReviewPhase(cfg)
 	if err == nil {
@@ -159,7 +159,7 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 	}
 }
 
-// TestWaitForValidReport_UnmarshalError tests handling of report unmarshal errors.
+// TestWaitForValidReport_UnmarshalError tests that reports with invalid structure are treated as FAIL.
 func TestWaitForValidReport_UnmarshalError(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
@@ -168,11 +168,9 @@ func TestWaitForValidReport_UnmarshalError(t *testing.T) {
 
 	sessionID := "test-unmarshal-err-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Write a report that passes validation but has unmarshal issues, then a good one
-	go func() {
-		<-time.After(50 * time.Millisecond)
-		// This will pass basic YAML validation but might cause unmarshal issues
-		invalidStructure := `command: test
+	// Write a report with invalid structure (status is array instead of string)
+	// With immediate checking, this should return FAIL immediately
+	invalidStructure := `command: test
 artifact: test
 timestamp: "2024-01-01T00:00:00Z"
 status: [PASS, FAIL]
@@ -183,16 +181,16 @@ issues:
   observations: []
   enhancements: []
 `
-		_ = ipc.WriteReport(sessionID, invalidStructure)
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	if err := ipc.WriteReport(sessionID, invalidStructure); err != nil {
+		t.Fatalf("Failed to write invalid report: %v", err)
+	}
 
+	// waitForValidReport should immediately return FAIL for invalid structure
 	status, err := waitForValidReport(sessionID, "test")
 	if err != nil {
-		t.Errorf("Expected no error after valid report, got: %v", err)
+		t.Errorf("Expected no error (should return FAIL status), got: %v", err)
 	}
-	if status != statusPass {
-		t.Errorf("Expected PASS status, got %s", status)
+	if status != statusFail {
+		t.Errorf("Expected FAIL status for invalid structure, got %s", status)
 	}
 }

@@ -61,24 +61,20 @@ func TestRunImplementPhase_AbortBeforeRetry(t *testing.T) {
 	}
 }
 
-// TestWaitForValidReport_NoReport tests handling when no report is written.
-func TestWaitForValidReport_NoReport(t *testing.T) {
+// TestWaitForValidReport_NoReportReturnsFAIL tests handling when no report is written.
+func TestWaitForValidReport_NoReportReturnsFAIL(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
 	sessionID := "test-noreport-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Reduce max attempts to avoid long test duration (3 attempts * 2s = 6s)
-	origMaxAttempts := reportMaxAttempts
-	t.Cleanup(func() {
-		reportMaxAttempts = origMaxAttempts
-	})
-	reportMaxAttempts = 3
-
-	// Don't write any report - should timeout after 6 seconds
-	_, err := waitForValidReport(sessionID, "test-phase")
-	if err == nil {
-		t.Error("Expected timeout error when no report is written, got nil")
+	// Don't write any report - should return FAIL immediately
+	status, err := waitForValidReport(sessionID, "test-phase")
+	if err != nil {
+		t.Errorf("Expected no error when report missing (should return FAIL), got: %v", err)
+	}
+	if status != statusFail {
+		t.Errorf("Expected status FAIL when no report exists, got: %s", status)
 	}
 }
 
@@ -189,11 +185,11 @@ func TestRunReviewPhase_Abort(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Set abort flag before review phase
-	go func() {
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.SetAbortFlag(sessionID)
-	}()
+	// Set abort flag before calling runReviewPhase
+	// With immediate report checking, abort must be set before the phase runs
+	if err := ipc.SetAbortFlag(sessionID); err != nil {
+		t.Fatalf("Failed to set abort flag: %v", err)
+	}
 
 	status, exitCode, err := runReviewPhase(cfg)
 	if err == nil {

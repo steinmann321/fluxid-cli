@@ -22,14 +22,16 @@ var (
 )
 
 // getReportPath returns the file path for storing a session's report.
-// Reports are stored in /tmp/fluxid-reports/<session-id>.yaml.
+// Reports are stored in <temp-dir>/fluxid-reports/<session-id>.yaml
+// where <temp-dir> is os.TempDir() (e.g., /tmp on Unix, %TEMP% on Windows).
 func getReportPath(sessionID string) string {
 	dir := filepath.Join(os.TempDir(), "fluxid-reports")
 	return filepath.Join(dir, sessionID+".yaml")
 }
 
 // WriteReport stores a report for the given session ID.
-// Reports are stored as YAML files in /tmp/fluxid-reports/.
+// Reports are stored as YAML files in <temp-dir>/fluxid-reports/
+// where <temp-dir> is os.TempDir() (e.g., /tmp on Unix, %TEMP% on Windows).
 func WriteReport(sessionID string, reportYAML string) error {
 	if sessionID == "" {
 		return errSessionIDEmpty
@@ -74,7 +76,8 @@ func ReadReport(sessionID string) (string, error) {
 }
 
 // getAbortFlagPath returns the file path for storing a session's abort flag.
-// Abort flags are stored in /tmp/fluxid-reports/<session-id>.abort.
+// Abort flags are stored in <temp-dir>/fluxid-reports/<session-id>.abort
+// where <temp-dir> is os.TempDir() (e.g., /tmp on Unix, %TEMP% on Windows).
 func getAbortFlagPath(sessionID string) string {
 	dir := filepath.Join(os.TempDir(), "fluxid-reports")
 	return filepath.Join(dir, sessionID+".abort")
@@ -144,7 +147,8 @@ func formatISO8601() string {
 }
 
 // getHistoryPath returns the file path for storing a session's history.
-// History entries are stored in /tmp/fluxid-reports/<session-id>.history.
+// History entries are stored in <temp-dir>/fluxid-reports/<session-id>.history
+// where <temp-dir> is os.TempDir() (e.g., /tmp on Unix, %TEMP% on Windows).
 func getHistoryPath(sessionID string) string {
 	dir := filepath.Join(os.TempDir(), "fluxid-reports")
 	return filepath.Join(dir, sessionID+".history")

@@ -104,10 +104,11 @@ func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write review PASS report before calling runReviewPhase
+	// With immediate checking, report must exist before the phase executes
+	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+		t.Fatalf("Failed to write review report: %v", err)
+	}
 
 	status, exitCode, err := runReviewPhase(cfg)
 	if err != nil {

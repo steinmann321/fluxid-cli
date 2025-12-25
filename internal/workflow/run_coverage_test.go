@@ -16,6 +16,9 @@ import (
 
 // TestRun_AbortAfterImplementPhase tests abort flag check after implement phase completes.
 func TestRun_AbortAfterImplementPhase(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping timing-dependent abort test in short mode")
+	}
 	defer goleak.VerifyNone(t)
 
 	_, cleanup := setupTestDataDir(t)
@@ -36,16 +39,17 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Set abort flag after implement phase runs
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.SetAbortFlag(sessionID)
-	}()
+	// Write implement PASS report before calling Run()
+	// With immediate checking, report must exist before runImplementPhase() executes
+	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+		t.Fatalf("Failed to write implement report: %v", err)
+	}
+
+	// Set abort flag before calling Run()
+	// This will be caught after implement phase completes and before review phase starts
+	if err := ipc.SetAbortFlag(sessionID); err != nil {
+		t.Fatalf("Failed to set abort flag: %v", err)
+	}
 
 	exitCode, err := Run(cfg)
 	if err == nil {
@@ -54,8 +58,6 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 	if exitCode != 130 {
 		t.Errorf("Expected exit code 130 for abort, got %d", exitCode)
 	}
-
-	waitGroup.Wait()
 }
 
 // TestRun_ReviewCycleFAILContinuation tests workflow continuing after FAIL review.

@@ -5,55 +5,36 @@ import (
 	"errors"
 	"fluxid-loop/internal/ipc"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 )
 
-func TestWaitForValidReport_InvalidReportRetries(t *testing.T) {
+func TestWaitForValidReport_InvalidReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
 	sessionID := "test-invalid-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Write invalid report first, then valid one after delay
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-
-	go func() {
-		defer waitGroup.Done()
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, "invalid: yaml: [content")
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write invalid YAML report - should return FAIL immediately
+	_ = ipc.WriteReport(sessionID, "invalid: yaml: [content")
 
 	status, err := waitForValidReport(sessionID, "implement")
 	if err != nil {
-		t.Errorf("Expected no error, got: %v", err)
+		t.Errorf("Expected no error when report invalid (should return FAIL), got: %v", err)
 	}
-	if status != statusPass {
-		t.Errorf("Expected PASS status, got %s", status)
+	if status != statusFail {
+		t.Errorf("Expected FAIL status for invalid report, got %s", status)
 	}
-
-	waitGroup.Wait()
 }
 
-func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
+func TestWaitForValidReport_AbortFlagSet(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-abort-waiting-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "test-abort-flag-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Set abort flag after delay
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-
-	go func() {
-		defer waitGroup.Done()
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.SetAbortFlag(sessionID)
-	}()
+	// Set abort flag before checking report
+	_ = ipc.SetAbortFlag(sessionID)
 
 	_, err := waitForValidReport(sessionID, "implement")
 	if err == nil {
@@ -69,8 +50,6 @@ func TestWaitForValidReport_AbortWhileWaiting(t *testing.T) {
 			t.Errorf("Expected exit code 130, got: %d", abortErr.ExitCode)
 		}
 	}
-
-	waitGroup.Wait()
 }
 
 func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
@@ -93,35 +72,22 @@ func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
 	}
 }
 
-func TestWaitForValidReport_MultipleInvalidThenValid(t *testing.T) {
+func TestWaitForValidReport_MalformedReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-multi-invalid-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "test-malformed-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Write multiple invalid reports, then a valid one
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-
-	go func() {
-		defer waitGroup.Done()
-		<-time.After(30 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, "bad yaml 1")
-		<-time.After(30 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, "bad yaml 2: [[[")
-		<-time.After(30 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write malformed YAML that can't be parsed - should return FAIL
+	_ = ipc.WriteReport(sessionID, "command: test\nstatus: PASS\ninvalid_structure")
 
 	status, err := waitForValidReport(sessionID, "review")
 	if err != nil {
-		t.Errorf("Expected no error, got: %v", err)
+		t.Errorf("Expected no error when report malformed (should return FAIL), got: %v", err)
 	}
-	if status != statusPass {
-		t.Errorf("Expected PASS status, got %s", status)
+	if status != statusFail {
+		t.Errorf("Expected FAIL status for malformed report, got %s", status)
 	}
-
-	waitGroup.Wait()
 }
 
 func TestWaitForValidReport_CheckAbortFlagError(t *testing.T) {

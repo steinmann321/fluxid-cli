@@ -16,6 +16,9 @@ import (
 
 // TestRunImplementPhase_RetryOnFailReport tests the retry loop when implement reports FAIL.
 func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping timing-dependent retry test in short mode")
+	}
 	defer goleak.VerifyNone(t)
 
 	_, cleanup := setupTestDataDir(t)
@@ -63,7 +66,8 @@ func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
 	waitGroup.Wait()
 }
 
-// TestRunImplementPhase_MaxRetriesExceeded tests exceeding max implement retries.
+// TestRunImplementPhase_MaxRetriesExceeded tests that workflow continues when max implement retries are exceeded.
+// The workflow should continue to commit (if enabled) and review phases even when all implement attempts fail.
 func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
@@ -96,11 +100,11 @@ func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 	}()
 
 	exitCode, err := runImplementPhase(cfg)
-	if err == nil {
-		t.Error("Expected error when max retries exceeded")
+	if err != nil {
+		t.Errorf("Expected no error when max retries exceeded (should continue), got: %v", err)
 	}
-	if exitCode != 1 {
-		t.Errorf("Expected exit code 1, got %d", exitCode)
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (continue to next phase), got %d", exitCode)
 	}
 
 	waitGroup.Wait()
@@ -227,14 +231,11 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 		Sources:             map[string]string{},
 	}
 
-	// Set abort flag while waiting for implement report
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
-		<-time.After(50 * time.Millisecond)
-		_ = ipc.SetAbortFlag(sessionID)
-	}()
+	// Set abort flag before calling runImplementPhase
+	// With immediate report checking, abort must be set before the phase runs
+	if err := ipc.SetAbortFlag(sessionID); err != nil {
+		t.Fatalf("Failed to set abort flag: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err == nil {
@@ -243,6 +244,4 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 	if exitCode != 130 {
 		t.Errorf("Expected exit code 130, got %d", exitCode)
 	}
-
-	waitGroup.Wait()
 }

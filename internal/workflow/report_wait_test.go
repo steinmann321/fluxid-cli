@@ -2,7 +2,6 @@
 package workflow
 
 import (
-	"errors"
 	"fluxid-loop/internal/ipc"
 	"fmt"
 	"testing"
@@ -11,34 +10,18 @@ import (
 	"go.uber.org/goleak"
 )
 
-func TestWaitForValidReport_Timeout(t *testing.T) {
+func TestWaitForValidReport_NoReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
-	sessionID := "test-timeout-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "test-no-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
-	// Save original values and restore after test
-	origMaxAttempts := reportMaxAttempts
-	origPollInterval := reportPollInterval
-	defer func() {
-		reportMaxAttempts = origMaxAttempts
-		reportPollInterval = origPollInterval
-	}()
-
-	// Set short timeout for testing (3 attempts * 100ms = 300ms)
-	reportMaxAttempts = 3
-	reportPollInterval = 100 * time.Millisecond
-
-	// Don't write any report - let it timeout
+	// Don't write any report - should return FAIL immediately
 	status, err := waitForValidReport(sessionID, "implement")
-	if err == nil {
-		t.Error("Expected timeout error, got nil")
+	if err != nil {
+		t.Errorf("Expected no error when report missing (should return FAIL), got: %v", err)
 	}
-	if status != "" {
-		t.Errorf("Expected empty status on timeout, got %s", status)
-	}
-	// Verify it's the timeout error
-	if !errors.Is(err, errReportTimeout) {
-		t.Errorf("Expected errReportTimeout, got: %v", err)
+	if status != statusFail {
+		t.Errorf("Expected status FAIL when no report exists, got: %s", status)
 	}
 }
 
@@ -112,113 +95,10 @@ next_steps:
 	}
 }
 
-// testRetryScenario tests waitForValidReport with an initial invalid report followed by a valid one.
-func testRetryScenario(t *testing.T, sessionID, initialReport, validReport, expectedStatus, command string) {
-	t.Helper()
-
-	_, cleanup := setupTestDataDir(t)
-	defer cleanup()
-
-	// Write initial invalid/malformed report
-	if err := ipc.WriteReport(sessionID, initialReport); err != nil {
-		t.Fatalf("Failed to write report: %v", err)
-	}
-
-	// Use a channel with timeout to prevent hanging
-	type result struct {
-		status string
-		err    error
-	}
-	done := make(chan result, 1)
-	defer close(done)
-	started := make(chan struct{})
-
-	// Start waitForValidReport in background
-	go func() {
-		close(started) // Signal that goroutine is starting
-		status, err := waitForValidReport(sessionID, command)
-		done <- result{status, err}
-	}()
-
-	// Wait for the goroutine to start, then write the valid report immediately
-	// This ensures waitForValidReport has started before we overwrite the invalid report
-	<-started
-
-	// Write valid report without artificial delay
-	// waitForValidReport will retry and eventually see this valid report
-	if err := ipc.WriteReport(sessionID, validReport); err != nil {
-		t.Fatalf("Failed to write valid report: %v", err)
-	}
-
-	// Use very long timeout to accommodate race detector slowness
-	// waitForValidReport sleeps 2s between retries, which becomes 20-40s under race detector
-	// Multiple retries could take several minutes with race detector
-	select {
-	case res := <-done:
-		if res.err != nil {
-			t.Errorf("Expected no error, got: %v", res.err)
-		}
-		if res.status != expectedStatus {
-			t.Errorf("Expected status %s, got: %s", expectedStatus, res.status)
-		}
-	case <-time.After(5 * time.Minute):
-		t.Fatal("Test timed out waiting for report")
-	}
-}
-
-//nolint:paralleltest // Cannot use t.Parallel with t.Setenv
-func TestWaitForValidReport_InvalidThenValid(t *testing.T) {
-	// Skip when race detector is enabled - this test verifies retry behavior
-	// which involves 2s sleeps that become 20-40s under race detector
-	if testing.Short() {
-		t.Skip("Skipping retry test in short mode (incompatible with race detector)")
-	}
-	// Test waitForValidReport retrying on invalid report
-	invalidReport := `invalid: yaml without status`
-	validReport := `command: test-implement
-artifact: test-artifact
-timestamp: 2025-12-13T10:00:00Z
-status: PASS
-summary: Test passed eventually
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-next_steps:
-  - Continue
-`
-	testRetryScenario(t, "test-wait-report-retry", invalidReport, validReport, statusPass, "test")
-}
-
-//nolint:paralleltest // Cannot use t.Parallel with t.Setenv
-func TestWaitForValidReport_MalformedYAML(t *testing.T) {
-	t.Skip("TODO: Fix test - timing issues with report writes and reads")
-	// Skip when race detector is enabled - this test verifies retry behavior
-	// which involves 2s sleeps that become 20-40s under race detector
-	if testing.Short() {
-		t.Skip("Skipping retry test in short mode (incompatible with race detector)")
-	}
-	// Test waitForValidReport with malformed YAML that later becomes valid
-	malformedYAML := `command: test
-status: {{{invalid yaml`
-	validReport := `command: test-implement
-artifact: test-artifact
-timestamp: 2025-12-13T10:00:00Z
-status: FAIL
-summary: Test failed after retry
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-next_steps:
-  - Fix issues
-`
-	testRetryScenario(t, "test-malformed-yaml", malformedYAML, validReport, statusFail, "implement")
-}
+// NOTE: Tests for retry behavior (testRetryScenario, TestWaitForValidReport_InvalidThenValid,
+// TestWaitForValidReport_MalformedYAML) have been removed as waitForValidReport() no longer
+// polls/retries. It checks the report immediately and returns FAIL for invalid/missing reports.
+// Invalid report handling is already tested by TestWaitForValidReport_InvalidReport.
 
 func TestWaitForValidReport_ReadError(t *testing.T) {
 	defer goleak.VerifyNone(t)

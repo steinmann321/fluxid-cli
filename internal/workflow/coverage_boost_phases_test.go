@@ -45,6 +45,7 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Test functions intentionally similar for different test scenarios
 func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 	sessionID := "test-retries-" + time.Now().Format("20060102150405.000000")
 	dataDir := t.TempDir()
@@ -82,6 +83,7 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Test functions intentionally similar for different test scenarios
 func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 	sessionID := "test-all-fail-" + time.Now().Format("20060102150405.000000")
 	dataDir := t.TempDir()
@@ -111,11 +113,11 @@ func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 	}
 
 	exitCode, err := runImplementPhase(cfg)
-	if err == nil {
-		t.Error("Expected error when all retries fail")
+	if err != nil {
+		t.Errorf("Expected no error when retries exhausted (should continue), got: %v", err)
 	}
-	if exitCode != 1 {
-		t.Errorf("Expected exit code 1, got %d", exitCode)
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (continue to next phase), got %d", exitCode)
 	}
 }
 

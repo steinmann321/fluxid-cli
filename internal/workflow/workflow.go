@@ -18,10 +18,8 @@ import (
 var (
 	errWorkflowAborted      = errors.New("workflow aborted by user request")
 	errImplementPhaseFailed = errors.New("implement phase failed")
-	errImplementMaxRetries  = errors.New("implement phase failed after max retries")
 	errCommitPhaseFailed    = errors.New("commit phase failed")
 	errReviewPhaseFailed    = errors.New("review phase failed")
-	errReportTimeout        = errors.New("timeout waiting for report")
 )
 
 const (
@@ -33,14 +31,6 @@ const (
 	reviewPrompt    = "Review the implementation and report status."
 
 	exitCodeInterrupted = 130 // Exit code for SIGINT/SIGTERM user interrupt
-)
-
-// Configurable polling parameters (can be overridden in tests for faster execution).
-//
-//nolint:gochecknoglobals // Test-configurable timeouts require package-level mutability
-var (
-	reportPollInterval = 2 * time.Second // Time between report polling attempts
-	reportMaxAttempts  = 150             // Maximum polling attempts (150 * 2s = 5 minutes)
 )
 
 // AbortError represents a workflow abort with specific exit code.
@@ -136,7 +126,10 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		log.Printf("Implement report status is FAIL, retrying... (%d/%d)", retry+1, cfg.MaxImplementRetries)
 	}
 
-	return 1, fmt.Errorf("%d retries: %w", cfg.MaxImplementRetries, errImplementMaxRetries)
+	// All retries exhausted, but continue to commit/review phases
+	retries := cfg.MaxImplementRetries
+	log.Printf("Implement phase retries exhausted (%d/%d), continuing to next phase", retries, retries)
+	return 0, nil
 }
 
 func checkAbortBeforeImplement(sessionID string) (int, error) {
@@ -265,63 +258,52 @@ func buildClaudeCommand(config types.Config, prompt string) *exec.Cmd {
 	return exec.CommandContext(context.Background(), config.Agent, args...)
 }
 
-// waitForValidReport waits for a valid report with PASS or FAIL status.
-// Returns the status ("PASS" or "FAIL") once a valid report is found.
-// Retries based on reportPollInterval if report is missing or invalid, up to reportMaxAttempts.
+// checkReportStatus checks for a valid report immediately after agent exits.
+// Since the agent writes reports synchronously via 'fluxid ipc write-report',
+// the report either exists or it doesn't when the agent process completes.
+// Returns the status ("PASS" or "FAIL") or treats missing/invalid reports as FAIL.
 func waitForValidReport(sessionID string, phase string) (string, error) {
-	attempts := 0
-
-	for {
-		attempts++
-		if attempts > reportMaxAttempts {
-			totalSeconds := int(reportPollInterval.Seconds()) * reportMaxAttempts
-			return "", fmt.Errorf("%s report after %d seconds: %w", phase, totalSeconds, errReportTimeout)
-		}
-
-		// Check for abort flag
-		aborted, err := ipc.CheckAbortFlag(sessionID)
-		if err != nil {
-			log.Printf("Warning: failed to check abort flag while waiting for %s report: %v", phase, err)
-		}
-		if aborted {
-			return "", &AbortError{
-				ExitCode: exitCodeInterrupted,
-				Message:  fmt.Sprintf("workflow aborted while waiting for %s report", phase),
-			}
-		}
-
-		// Read report from IPC storage
-		reportYAML, err := ipc.ReadReport(sessionID)
-		if err != nil {
-			return "", fmt.Errorf("failed to read report: %w", err)
-		}
-
-		// If no report exists, wait and retry
-		if reportYAML == "" {
-			log.Printf("Waiting for %s report... (no report found yet)", phase)
-			time.Sleep(reportPollInterval)
-			continue
-		}
-
-		// Validate report
-		if err := ipc.ValidateReport(reportYAML); err != nil {
-			log.Printf("Invalid %s report (retrying): %v", phase, err)
-			time.Sleep(reportPollInterval)
-			continue
-		}
-
-		// Parse report to extract status
-		var report ipc.Report
-		if err := yaml.Unmarshal([]byte(reportYAML), &report); err != nil {
-			log.Printf("Failed to parse %s report (retrying): %v", phase, err)
-			time.Sleep(reportPollInterval)
-			continue
-		}
-
-		// Valid report found
-		log.Printf("Valid %s report received with status: %s", phase, report.Status)
-		return report.Status, nil
+	// Check for abort flag
+	aborted, err := ipc.CheckAbortFlag(sessionID)
+	if err != nil {
+		log.Printf("Warning: failed to check abort flag while checking %s report: %v", phase, err)
 	}
+	if aborted {
+		return "", &AbortError{
+			ExitCode: exitCodeInterrupted,
+			Message:  fmt.Sprintf("workflow aborted while checking %s report", phase),
+		}
+	}
+
+	// Read report from IPC storage
+	reportYAML, err := ipc.ReadReport(sessionID)
+	if err != nil {
+		return "", fmt.Errorf("failed to read report: %w", err)
+	}
+
+	// If no report exists, treat as FAIL
+	// Agent either didn't write one, or the IPC write command failed
+	if reportYAML == "" {
+		log.Printf("No %s report found - agent did not write report", phase)
+		return statusFail, nil
+	}
+
+	// Validate report
+	if err := ipc.ValidateReport(reportYAML); err != nil {
+		log.Printf("Invalid %s report (treating as FAIL): %v", phase, err)
+		return statusFail, nil
+	}
+
+	// Parse report to extract status
+	var report ipc.Report
+	if err := yaml.Unmarshal([]byte(reportYAML), &report); err != nil {
+		log.Printf("Failed to parse %s report (treating as FAIL): %v", phase, err)
+		return statusFail, nil
+	}
+
+	// Valid report found
+	log.Printf("Valid %s report received with status: %s", phase, report.Status)
+	return report.Status, nil
 }
 
 // RunSimulation simulates the workflow execution without spawning agent processes.
