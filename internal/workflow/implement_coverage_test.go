@@ -31,11 +31,9 @@ func TestRunImplementPhase_RetryOnFailReport(t *testing.T) {
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 3,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Return FAIL reports to trigger retries
@@ -81,11 +79,9 @@ func TestRunImplementPhase_MaxRetriesExceeded(t *testing.T) {
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Always return FAIL to exceed retries
@@ -124,11 +120,9 @@ func TestRunImplementPhase_WithCommitEnabled(t *testing.T) {
 		Agent:               testAgentTrue,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Provide PASS report for implement phase
@@ -163,11 +157,9 @@ func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
 		Agent:               testAgentFalse, // Will fail on commit phase
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// No report needed since commit will fail before waiting
@@ -193,11 +185,9 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 		Agent:               testAgentFalse,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Since agent fails, we won't get to report checking
@@ -224,11 +214,9 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Set abort flag before calling runImplementPhase

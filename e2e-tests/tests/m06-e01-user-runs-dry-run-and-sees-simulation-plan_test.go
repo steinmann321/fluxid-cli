@@ -18,8 +18,16 @@ func TestM06E01DryRunSimulationBasic(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -63,8 +71,16 @@ func TestM06E01DryRunShowsPhasesAndIterations(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -107,8 +123,16 @@ func TestM06E01DryRunNoAgentProcessSpawned(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -136,7 +160,7 @@ func TestM06E01DryRunNoAgentProcessSpawned(t *testing.T) {
 	}
 }
 
-// TestM06E01DryRunWithCommitPhase validates commit phase appears when enabled.
+// TestM06E01DryRunWithCommitPhase validates commit phase always appears in v2.0.
 func TestM06E01DryRunWithCommitPhase(t *testing.T) {
 	t.Parallel()
 
@@ -144,57 +168,31 @@ func TestM06E01DryRunWithCommitPhase(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	// Test with commit enabled via config
-	t.Run("commit enabled", func(t *testing.T) {
-		t.Parallel()
-		// Create temp directory with project config that enables commit
-		tmpDir := t.TempDir()
-		configDir := setupConfigDir(t, tmpDir)
-		configPath := filepath.Join(configDir, "config.yaml")
-		writeRawConfigFile(t, configPath, "commit_enabled: true\n")
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
 
-		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
-		cmd.Dir = tmpDir
-		cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	binPath := filepath.Join(root, "bin", "fluxid")
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stdout
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
 
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("fluxid --fluxid-dry-run failed: %v\nOutput:\n%s", err, stdout.String())
-		}
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("fluxid --fluxid-dry-run failed: %v\nOutput:\n%s", err, stdout.String())
+	}
 
-		output := stdout.String()
+	output := stdout.String()
 
-		// Verify commit phase appears
-		if !strings.Contains(output, "Phase: commit") {
-			t.Errorf("Expected commit phase in simulation with commit enabled:\n%s", output)
-		}
-	})
-
-	// Test with commit disabled
-	t.Run("commit disabled", func(t *testing.T) {
-		t.Parallel()
-		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--fluxid-no-commit", "--claude")
-
-		var stdout bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stdout
-
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("fluxid --fluxid-dry-run --fluxid-no-commit failed: %v\nOutput:\n%s", err, stdout.String())
-		}
-
-		output := stdout.String()
-
-		// Verify commit phase does NOT appear
-		if strings.Contains(output, "Phase: commit") {
-			t.Errorf("Commit phase should not appear when disabled:\n%s", output)
-		}
-	})
+	// Verify commit phase appears (commits always enabled in v2.0)
+	if !strings.Contains(output, "Phase: commit") {
+		t.Errorf("Expected commit phase in simulation (always enabled in v2.0):\n%s", output)
+	}
 }
 
 // TestM06E01DryRunWithConfigValues validates dry-run uses resolved configuration.
@@ -205,12 +203,20 @@ func TestM06E01DryRunWithConfigValues(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath,
 		"--fluxid-dry-run",
-		"--fluxid-iterations", "5",
-		"--fluxid-implement-retries", "2",
+		"--fluxid-iterations=5",
+		"--fluxid-implement-retries=2",
 		"--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -243,7 +249,7 @@ func TestM06E01DryRunWithInvalidConfigFails(t *testing.T) {
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath,
 		"--fluxid-dry-run",
-		"--fluxid-iterations", "0", // Invalid: must be >= 1
+		"--fluxid-iterations=0", // Invalid: must be >= 1
 		"--claude")
 
 	var stderr bytes.Buffer

@@ -1,4 +1,4 @@
-//nolint:paralleltest // Tests manipulate environment
+//nolint:paralleltest,goconst // Tests manipulate environment, repeated config strings
 package command
 
 import (
@@ -28,14 +28,14 @@ max_review_cycles: 10
 			t.Fatal(err)
 		}
 
-		home, _, _, exitCode := loadAllConfigs()
+		home, _, exitCode := loadAllConfigs()
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0, got %d", exitCode)
 		}
 		if home == nil {
 			t.Error("Expected home config to be loaded")
 		}
-		// Project and env configs can be nil if no project config or env vars are set
+		// Project config can be nil if no project config is set
 	})
 
 	t.Run("home config load error", func(t *testing.T) {
@@ -43,7 +43,7 @@ max_review_cycles: 10
 		t.Setenv("HOME", "/dev/null/invalid/path/no/way/this/exists")
 		t.Setenv("XDG_CONFIG_HOME", "/dev/null/invalid")
 
-		_, _, _, exitCode := loadAllConfigs()
+		_, _, exitCode := loadAllConfigs()
 		if exitCode != 1 {
 			t.Errorf("Expected exit code 1 for home config error, got %d", exitCode)
 		}
@@ -64,14 +64,14 @@ max_review_cycles: 10
 			t.Fatal(err)
 		}
 
-		home, _, _, exitCode := loadAllConfigs()
+		home, _, exitCode := loadAllConfigs()
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0, got %d", exitCode)
 		}
 		if home == nil {
 			t.Error("Expected home config to be loaded")
 		}
-		// Project and env configs can be nil if no project config or env vars are set
+		// Project config can be nil if no project config is set
 	})
 }
 
@@ -147,12 +147,29 @@ func TestLoadAndResolveConfig(t *testing.T) {
 		t.Setenv("XDG_CONFIG_HOME", tmpDir)
 		t.Setenv("XDG_DATA_HOME", tmpDir)
 
-		// Create valid config in .fluxid directory
+		// Create valid config in .fluxid directory with commands section
 		configDir := filepath.Join(tmpDir, ".fluxid")
 		if err := os.MkdirAll(configDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte("agent: claude\n"), 0o644); err != nil {
+		configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+		if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create command files
+		if err := os.WriteFile(filepath.Join(configDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(configDir, "review.md"), []byte("# Review"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(configDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 

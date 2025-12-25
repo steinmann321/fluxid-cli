@@ -27,11 +27,9 @@ func TestRun_SingleCycleSuccess(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Start goroutine to write reports after a brief delay
@@ -61,11 +59,9 @@ func TestRun_AbortBeforeImplement(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Set abort flag before starting
@@ -96,11 +92,9 @@ func TestRun_MultipleReviewCycles(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	failReport := `command: "test"
@@ -156,11 +150,9 @@ func TestRun_WithAgentArgs(t *testing.T) {
 		AgentArgs:           []string{"-n", "test"},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	go func() {
@@ -190,11 +182,9 @@ func TestRun_ReadReportFailure(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	_, err := Run(cfg)

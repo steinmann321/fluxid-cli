@@ -1,3 +1,4 @@
+//nolint:goconst // Test file with repeated config strings
 package main
 
 import (
@@ -7,6 +8,8 @@ import (
 
 // TestMain_SuccessfulExecution tests the happy path where command.Execute() returns 0
 // and main() exits with code 0.
+//
+//nolint:dupl // Test functions intentionally similar for different test scenarios
 func TestMain_SuccessfulExecution(t *testing.T) {
 	// Save original os.Exit and restore after test
 	originalExit := osExit
@@ -16,6 +19,28 @@ func TestMain_SuccessfulExecution(t *testing.T) {
 	// Set up minimal environment for successful execution
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
+
+	// Create config with commands section
+	configDir := tmpDir + "/.fluxid"
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
+		if err := os.WriteFile(configDir+"/"+file, []byte("# Command"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	// Simulate dry-run mode to avoid actual agent execution
 	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude"}
@@ -85,6 +110,8 @@ func TestMain_HelpShortFlag(t *testing.T) {
 }
 
 // TestMain_DryRunMode tests that dry-run mode executes successfully.
+//
+//nolint:dupl // Test functions intentionally similar for different test scenarios
 func TestMain_DryRunMode(t *testing.T) {
 	// Save original os.Exit and restore after test
 	originalExit := osExit
@@ -94,6 +121,28 @@ func TestMain_DryRunMode(t *testing.T) {
 	// Set up environment
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
+
+	// Create config with commands section
+	configDir := tmpDir + "/.fluxid"
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
+		if err := os.WriteFile(configDir+"/"+file, []byte("# Command"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	// Set dry-run mode with valid agent
 	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude"}
@@ -120,9 +169,31 @@ func TestMain_SuccessfulExecutionWithIterations(t *testing.T) {
 	// Set up environment
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
-	// Set dry-run mode with custom iterations
-	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--fluxid-iterations", "3"}
+	// Create config with commands section
+	configDir := tmpDir + "/.fluxid"
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
+		if err := os.WriteFile(configDir+"/"+file, []byte("# Command"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Set dry-run mode with custom iterations using equals syntax
+	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--fluxid-iterations=3"}
 
 	// Reset exit code
 	exitCode = -1

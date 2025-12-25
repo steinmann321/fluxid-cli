@@ -200,15 +200,10 @@ func TestM06E04UnreadableCommandFile(t *testing.T) {
 	configDir := setupConfigDir(t, tmpDir)
 	configPath := filepath.Join(configDir, "config.yaml")
 
-	commandsDir := filepath.Join(configDir, "commands")
-	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create commands directory: %v", err)
-	}
-
 	// Create files but make implement unreadable
-	implementPath := filepath.Join(commandsDir, "implement.md")
-	reviewPath := filepath.Join(commandsDir, "review.md")
-	commitPath := filepath.Join(commandsDir, "commit.md")
+	implementPath := filepath.Join(configDir, "implement.md")
+	reviewPath := filepath.Join(configDir, "review.md")
+	commitPath := filepath.Join(configDir, "commit.md")
 
 	if err := os.WriteFile(implementPath, []byte("# Implement"), 0o644); err != nil {
 		t.Fatalf("Failed to create implement file: %v", err)
@@ -264,20 +259,15 @@ func TestM06E04DirectoryAsCommandFile(t *testing.T) {
 	configDir := setupConfigDir(t, tmpDir)
 	configPath := filepath.Join(configDir, "config.yaml")
 
-	commandsDir := filepath.Join(configDir, "commands")
-	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create commands directory: %v", err)
-	}
-
-	// Create a subdirectory as "implement.md"
-	implementDir := filepath.Join(commandsDir, "implement.md")
+	// Create a subdirectory as "implement.md" (where file should be)
+	implementDir := filepath.Join(configDir, "implement.md")
 	if err := os.Mkdir(implementDir, 0o755); err != nil {
 		t.Fatalf("Failed to create implement directory: %v", err)
 	}
 
 	// Create real files for review and commit
-	reviewPath := filepath.Join(commandsDir, "review.md")
-	commitPath := filepath.Join(commandsDir, "commit.md")
+	reviewPath := filepath.Join(configDir, "review.md")
+	commitPath := filepath.Join(configDir, "commit.md")
 	if err := os.WriteFile(reviewPath, []byte("# Review"), 0o644); err != nil {
 		t.Fatalf("Failed to create review file: %v", err)
 	}
@@ -348,8 +338,8 @@ func TestM06E04ErrorGuidance(t *testing.T) {
 
 	stderrOutput := stderr.String()
 
-	// Verify error includes the full expected path
-	expectedPath := filepath.Join(configDir, "commands", "implement.md")
+	// Verify error includes the full expected path (resolved relative to config dir)
+	expectedPath := filepath.Join(configDir, "implement.md")
 	if !strings.Contains(stderrOutput, expectedPath) {
 		t.Errorf("Expected full path %q in error message, got:\n%s", expectedPath, stderrOutput)
 	}

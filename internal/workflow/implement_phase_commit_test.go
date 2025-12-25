@@ -24,12 +24,10 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -60,12 +58,10 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Write report in background to simulate agent behavior
@@ -114,12 +110,10 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -131,30 +125,4 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 	}
 }
 
-func TestExecuteCommitIfEnabled_Disabled(t *testing.T) {
-	// Test that commit is skipped when disabled
-	sessionID := "test-commit-disabled-" + time.Now().Format("20060102150405.000000")
-	_, cleanup := setupTestDataDir(t)
-	defer cleanup()
-
-	cfg := types.Config{
-		SessionID:           sessionID,
-		Agent:               "true",
-		MaxReviewCycles:     1,
-		MaxImplementRetries: 1,
-		CommitEnabled:       false, // Disabled
-		DryRun:              false,
-		CommandFiles:        nil,
-		AgentArgs:           []string{},
-		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
-	}
-
-	exitCode, err := executeCommitIfEnabled(cfg)
-	if err != nil {
-		t.Errorf("Expected no error when commit disabled, got: %v", err)
-	}
-	if exitCode != 0 {
-		t.Errorf("Expected exit code 0, got %d", exitCode)
-	}
-}
+// TestExecuteCommitIfEnabled_Disabled removed - commits are always enabled in v2.0

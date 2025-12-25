@@ -7,6 +7,8 @@ import (
 
 // verifyConfigLine checks that a line containing fieldPrefix also contains sourcePattern.
 // This handles file paths in source strings like "source: home (/path/to/config.yaml)".
+//
+//nolint:unparam // sourcePattern parameter maintained for API flexibility
 func verifyConfigLine(t *testing.T, output, fieldPrefix, sourcePattern string) {
 	t.Helper()
 	lines := strings.Split(output, "\n")
@@ -18,13 +20,14 @@ func verifyConfigLine(t *testing.T, output, fieldPrefix, sourcePattern string) {
 	t.Errorf("Expected line containing %q and %q, got:\n%s", fieldPrefix, sourcePattern, output)
 }
 
-// verifyAgentArgsAndSource is a helper to verify agent arguments and source in test output.
+// verifyAgentArgsAndSource is a helper to verify agent arguments in test output.
 // This reduces duplication in M06 tests for JSON and YAML validation.
+// v2.0: source tracking removed (Phase 9).
 func verifyAgentArgsAndSource(
 	t *testing.T,
 	agentArgs []string,
-	agent, agentSource string,
-	expectedAgent, expectedSource string,
+	agent string,
+	expectedAgent string,
 ) {
 	t.Helper()
 
@@ -42,20 +45,14 @@ func verifyAgentArgsAndSource(
 	if agent != expectedAgent {
 		t.Errorf("Expected agent %q, got: %q", expectedAgent, agent)
 	}
-
-	// Verify source is as expected
-	if agentSource != expectedSource {
-		t.Errorf("Expected agent_source %q, got: %q", expectedSource, agentSource)
-	}
 }
 
 // verifyConfigValues checks that max review cycles and implement retries match expected values.
+// v2.0: source tracking removed (Phase 9).
 func verifyConfigValues(
 	t *testing.T,
 	maxReviewCycles, maxImplementRetries int,
-	reviewCyclesSource, implementRetriesSource string,
 	expectedReviewCycles, expectedImplementRetries int,
-	expectedSource string,
 ) {
 	t.Helper()
 
@@ -64,13 +61,6 @@ func verifyConfigValues(
 	}
 	if maxImplementRetries != expectedImplementRetries {
 		t.Errorf("Expected max_implement_retries to be %d, got: %d", expectedImplementRetries, maxImplementRetries)
-	}
-
-	if reviewCyclesSource != expectedSource {
-		t.Errorf("Expected review_cycles_source to be %q, got: %q", expectedSource, reviewCyclesSource)
-	}
-	if implementRetriesSource != expectedSource {
-		t.Errorf("Expected implement_retries_source to be %q, got: %q", expectedSource, implementRetriesSource)
 	}
 }
 

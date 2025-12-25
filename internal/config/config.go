@@ -3,6 +3,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,14 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Configuration source constants.
-const (
-	SourceDefault = "default"
-	SourceHome    = "home"
-	SourceProject = "project"
-	SourceEnv     = "env"
-	SourceCLI     = "cli"
-)
+// Configuration source constants removed in v2.0 - source tracking no longer supported
 
 // Commands represents command file paths configuration.
 type Commands struct {
@@ -31,7 +25,6 @@ type HomeConfig struct {
 	Agent            *string   `yaml:"agent"`
 	ImplementRetries *int      `yaml:"implement_retries"`
 	Iterations       *int      `yaml:"iterations"`
-	CommitEnabled    *bool     `yaml:"commit_enabled"`
 	Commands         *Commands `yaml:"commands"`
 }
 
@@ -41,7 +34,6 @@ type ProjectConfig struct {
 	Agent            *string   `yaml:"agent"`
 	ImplementRetries *int      `yaml:"implement_retries"`
 	Iterations       *int      `yaml:"iterations"`
-	CommitEnabled    *bool     `yaml:"commit_enabled"`
 	Commands         *Commands `yaml:"commands"`
 }
 
@@ -52,16 +44,12 @@ type ResolvedCommandFiles struct {
 	CommitPath    string
 }
 
-// ResolvedConfig contains the final configuration values with source tracking.
+// ResolvedConfig contains the final configuration values.
 type ResolvedConfig struct {
 	Agent            string
 	ImplementRetries int
 	Iterations       int
-	CommitEnabled    bool
 	CommandFiles     *ResolvedCommandFiles
-
-	// Source tracking: "default" or "home"
-	Sources map[string]string
 }
 
 // Defaults for configuration values.
@@ -69,7 +57,6 @@ const (
 	DefaultAgent            = "claude"
 	DefaultImplementRetries = 3
 	DefaultIterations       = 20
-	DefaultCommitEnabled    = false
 )
 
 // GetHomeConfigPath returns the path to the home config file.
@@ -161,129 +148,169 @@ func LoadProjectConfig() (*ProjectConfig, error) {
 	return &projectConfig, nil
 }
 
-// resolveField resolves a configuration field with precedence: CLI > env > project > home > default.
-// For project and home sources, file paths are included in the source string.
+// LoadDefaultConfig loads default configuration from project and/or home config files.
+// At least one config file must exist. Returns error if neither exists.
+// Load order: Project config (.fluxid/config.yaml) → User config (~/.fluxid/config.yaml)
+// Fails fast on invalid YAML - does not fall back to user config if project config is invalid.
+func LoadDefaultConfig() (*ProjectConfig, *HomeConfig, error) {
+	// Try to load project config first
+	projectConfig, err := LoadProjectConfig()
+	if err != nil {
+		// Fail fast on project config error (invalid YAML or validation failure)
+		return nil, nil, err
+	}
+
+	// Try to load home config
+	homeConfig, err := LoadHomeConfig()
+	if err != nil {
+		// Fail fast on home config error (invalid YAML or validation failure)
+		return nil, nil, err
+	}
+
+	// At least one config must exist
+	if projectConfig == nil && homeConfig == nil {
+		//nolint:err113 // Configuration error with clear message, sentinel error not needed
+		return nil, nil, errors.New("at least one default config must exist: ~/.fluxid/config.yaml or .fluxid/config.yaml")
+	}
+
+	return projectConfig, homeConfig, nil
+}
+
+// CustomConfig represents a custom config file loaded via --config flag.
+// Structurally identical to HomeConfig/ProjectConfig but semantically distinct.
+type CustomConfig struct {
+	Agent            *string   `yaml:"agent"`
+	ImplementRetries *int      `yaml:"implement_retries"`
+	Iterations       *int      `yaml:"iterations"`
+	Commands         *Commands `yaml:"commands"`
+}
+
+// LoadCustomConfig reads and parses a custom config file from the given path.
+// The path can be relative or absolute.
+func LoadCustomConfig(configPath string) (*CustomConfig, string, error) {
+	// Convert to absolute path if needed
+	absPath, err := filepath.Abs(configPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to resolve config path %s: %w", configPath, err)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		//nolint:err113 // Dynamic error message includes file path for better diagnostics
+		return nil, "", fmt.Errorf("config file not found: %s", absPath)
+	}
+
+	// #nosec G304 -- configPath comes from CLI flag, user-controlled
+	data, err := os.ReadFile(absPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read config file %s: %w", absPath, err)
+	}
+
+	var customConfig CustomConfig
+	if err := yaml.Unmarshal(data, &customConfig); err != nil {
+		return nil, "", fmt.Errorf("failed to parse config file %s: %w", absPath, err)
+	}
+
+	// Validate the loaded config
+	if err := validateCustomConfig(&customConfig); err != nil {
+		return nil, "", fmt.Errorf("invalid config in %s: %w", absPath, err)
+	}
+
+	// Return config and its directory for path resolution
+	configDir := filepath.Dir(absPath)
+	return &customConfig, configDir, nil
+}
+
+// validateCustomConfig validates the custom config values.
+func validateCustomConfig(cfg *CustomConfig) error {
+	if cfg.ImplementRetries != nil && *cfg.ImplementRetries < 1 {
+		return fmt.Errorf("got %d: %w", *cfg.ImplementRetries, errValidationImplementRetries)
+	}
+
+	if cfg.Iterations != nil && *cfg.Iterations < 1 {
+		return fmt.Errorf("got %d: %w", *cfg.Iterations, errValidationIterations)
+	}
+
+	if cfg.Agent != nil {
+		if err := validateAgent(*cfg.Agent); err != nil {
+			return err
+		}
+	}
+
+	// Validate commands structure if provided
+	if err := validateCommands(cfg.Commands); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// resolveField resolves a configuration field with precedence: CLI > project > home > default.
+//
+//nolint:ireturn // Generic function intentionally returns type parameter
 func resolveField[T any](
-	fieldName string,
 	cliValue *T,
-	envValue *T,
 	projectValue *T,
 	homeValue *T,
 	defaultValue T,
-	sources map[string]string,
-	projectConfigPath string,
-	homeConfigPath string,
 ) T {
 	switch {
 	case cliValue != nil:
-		sources[fieldName] = SourceCLI
 		return *cliValue
-	case envValue != nil:
-		sources[fieldName] = SourceEnv
-		return *envValue
 	case projectValue != nil:
-		if projectConfigPath != "" {
-			sources[fieldName] = fmt.Sprintf("%s (%s)", SourceProject, projectConfigPath)
-		} else {
-			sources[fieldName] = SourceProject
-		}
 		return *projectValue
 	case homeValue != nil:
-		if homeConfigPath != "" {
-			sources[fieldName] = fmt.Sprintf("%s (%s)", SourceHome, homeConfigPath)
-		} else {
-			sources[fieldName] = SourceHome
-		}
 		return *homeValue
 	default:
-		sources[fieldName] = SourceDefault
 		return defaultValue
 	}
 }
 
-// Resolve merges project, home, env config with defaults and tracks sources.
-// Precedence: CLI > env > project > home > defaults.
+// Resolve merges project and home config with defaults.
+// Precedence: CLI > project > home > defaults.
 // CLI overrides can be provided as non-nil values and will take precedence.
 func Resolve(
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
-	envConfig *EnvConfig,
 	cliAgent *string,
 	cliIterations, cliImplementRetries *int,
-	cliCommitEnabled *bool,
 ) *ResolvedConfig {
 	resolved := &ResolvedConfig{
 		Agent:            DefaultAgent,
 		ImplementRetries: DefaultImplementRetries,
 		Iterations:       DefaultIterations,
-		CommitEnabled:    DefaultCommitEnabled,
 		CommandFiles:     nil,
-		Sources:          make(map[string]string),
 	}
 
-	// Get config file paths for display in source strings
-	projectConfigPath, homeConfigPath := getConfigPaths(projectConfig, homeConfig)
-
 	// Extract all config values
-	agentValues := extractAgentValues(envConfig, projectConfig, homeConfig)
-	retriesValues := extractRetriesValues(envConfig, projectConfig, homeConfig)
-	iterationsValues := extractIterationsValues(envConfig, projectConfig, homeConfig)
-	commitValues := extractCommitValues(envConfig, projectConfig, homeConfig)
+	agentValues := extractAgentValues(projectConfig, homeConfig)
+	retriesValues := extractRetriesValues(projectConfig, homeConfig)
+	iterationsValues := extractIterationsValues(projectConfig, homeConfig)
 
 	// Resolve each field using the helper
 	resolved.Agent = resolveField(
-		"agent", cliAgent, agentValues.env, agentValues.project, agentValues.home,
-		DefaultAgent, resolved.Sources, projectConfigPath, homeConfigPath,
+		cliAgent, agentValues.project, agentValues.home, DefaultAgent,
 	)
 	resolved.ImplementRetries = resolveField(
-		"implement_retries", cliImplementRetries, retriesValues.env,
-		retriesValues.project, retriesValues.home, DefaultImplementRetries, resolved.Sources,
-		projectConfigPath, homeConfigPath,
+		cliImplementRetries, retriesValues.project, retriesValues.home, DefaultImplementRetries,
 	)
 	resolved.Iterations = resolveField(
-		"iterations", cliIterations, iterationsValues.env, iterationsValues.project,
-		iterationsValues.home, DefaultIterations, resolved.Sources,
-		projectConfigPath, homeConfigPath,
-	)
-	resolved.CommitEnabled = resolveField(
-		"commit_enabled", cliCommitEnabled, commitValues.env,
-		commitValues.project, commitValues.home, DefaultCommitEnabled, resolved.Sources,
-		projectConfigPath, homeConfigPath,
+		cliIterations, iterationsValues.project, iterationsValues.home, DefaultIterations,
 	)
 
 	return resolved
 }
 
-func getConfigPaths(projectConfig *ProjectConfig, homeConfig *HomeConfig) (string, string) {
-	var projectConfigPath, homeConfigPath string
-	if projectConfig != nil {
-		if path, err := GetProjectConfigPath(); err == nil {
-			projectConfigPath = path
-		}
-	}
-	if homeConfig != nil {
-		if path, err := GetHomeConfigPath(); err == nil {
-			homeConfigPath = path
-		}
-	}
-	return projectConfigPath, homeConfigPath
-}
-
 type configValues[T any] struct {
-	env     *T
 	project *T
 	home    *T
 }
 
 func extractAgentValues(
-	envConfig *EnvConfig,
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
 ) configValues[string] {
 	var values configValues[string]
-	if envConfig != nil {
-		values.env = envConfig.Agent
-	}
 	if projectConfig != nil {
 		values.project = projectConfig.Agent
 	}
@@ -294,14 +321,10 @@ func extractAgentValues(
 }
 
 func extractRetriesValues(
-	envConfig *EnvConfig,
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
 ) configValues[int] {
 	var values configValues[int]
-	if envConfig != nil {
-		values.env = envConfig.ImplementRetries
-	}
 	if projectConfig != nil {
 		values.project = projectConfig.ImplementRetries
 	}
@@ -312,37 +335,15 @@ func extractRetriesValues(
 }
 
 func extractIterationsValues(
-	envConfig *EnvConfig,
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
 ) configValues[int] {
 	var values configValues[int]
-	if envConfig != nil {
-		values.env = envConfig.Iterations
-	}
 	if projectConfig != nil {
 		values.project = projectConfig.Iterations
 	}
 	if homeConfig != nil {
 		values.home = homeConfig.Iterations
-	}
-	return values
-}
-
-func extractCommitValues(
-	envConfig *EnvConfig,
-	projectConfig *ProjectConfig,
-	homeConfig *HomeConfig,
-) configValues[bool] {
-	var values configValues[bool]
-	if envConfig != nil {
-		values.env = envConfig.CommitEnabled
-	}
-	if projectConfig != nil {
-		values.project = projectConfig.CommitEnabled
-	}
-	if homeConfig != nil {
-		values.home = homeConfig.CommitEnabled
 	}
 	return values
 }

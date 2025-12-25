@@ -13,30 +13,42 @@ import (
 //nolint:paralleltest,usetesting,funlen // Cannot run in parallel or use t.Chdir - test uses
 func TestResolveCommandFiles(t *testing.T) {
 	// Cannot run in parallel because we need to change working directory
-
 	// Create temporary directories and files for testing
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")
 	projectDir := filepath.Join(tmpDir, "project")
-	homeCommandsDir := filepath.Join(homeDir, ".fluxid", "commands")
-	projectCommandsDir := filepath.Join(projectDir, ".fluxid", "commands")
+	// Paths are relative to .fluxid/ directory (not .fluxid/commands/)
+	homeFluxidDir := filepath.Join(homeDir, ".fluxid")
+	projectFluxidDir := filepath.Join(projectDir, ".fluxid")
 
-	if err := os.MkdirAll(homeCommandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create home commands dir: %v", err)
+	if err := os.MkdirAll(homeFluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create home .fluxid dir: %v", err)
 	}
-	if err := os.MkdirAll(projectCommandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create project commands dir: %v", err)
+	if err := os.MkdirAll(projectFluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create project .fluxid dir: %v", err)
 	}
 
-	// Create test command files
-	homeImpl := filepath.Join(homeCommandsDir, "implement.sh")
-	homeRev := filepath.Join(homeCommandsDir, "review.sh")
-	homeCommit := filepath.Join(homeCommandsDir, "commit.sh")
-	projImpl := filepath.Join(projectCommandsDir, "implement.sh")
-	projRev := filepath.Join(projectCommandsDir, "review.sh")
-	projCommit := filepath.Join(projectCommandsDir, "commit.sh")
+	// Create test command files directly in .fluxid/ directory
+	homeImpl := filepath.Join(homeFluxidDir, "implement.sh")
+	homeRev := filepath.Join(homeFluxidDir, "review.sh")
+	homeCommit := filepath.Join(homeFluxidDir, "commit.sh")
+	projImpl := filepath.Join(projectFluxidDir, "implement.sh")
+	projRev := filepath.Join(projectFluxidDir, "review.sh")
+	projCommit := filepath.Join(projectFluxidDir, "commit.sh")
 
-	for _, f := range []string{homeImpl, homeRev, homeCommit, projImpl, projRev, projCommit} {
+	// Create subdirectory for testing subdirectory path resolution
+	projectScriptsDir := filepath.Join(projectFluxidDir, "scripts")
+	if err := os.MkdirAll(projectScriptsDir, 0o755); err != nil {
+		t.Fatalf("Failed to create scripts dir: %v", err)
+	}
+	projScriptImpl := filepath.Join(projectScriptsDir, "implement.sh")
+	projScriptRev := filepath.Join(projectScriptsDir, "review.sh")
+	projScriptCommit := filepath.Join(projectScriptsDir, "commit.sh")
+
+	for _, f := range []string{
+		homeImpl, homeRev, homeCommit, projImpl, projRev, projCommit,
+		projScriptImpl, projScriptRev, projScriptCommit,
+	} {
 		if err := os.WriteFile(f, []byte("#!/bin/bash\necho test"), 0o644); err != nil {
 			t.Fatalf("Failed to create test file %s: %v", f, err)
 		}
@@ -47,7 +59,6 @@ func TestResolveCommandFiles(t *testing.T) {
 	t.Cleanup(func() {
 		_ = os.Chdir(origWd)
 	})
-
 	tests := []struct {
 		name          string
 		projectConfig *ProjectConfig
@@ -59,18 +70,20 @@ func TestResolveCommandFiles(t *testing.T) {
 		errMsg        string
 	}{
 		{
-			name:          "nil configs",
+			name:          "nil configs - error required",
 			projectConfig: nil,
 			homeConfig:    nil,
-			wantNil:       true,
-			wantErr:       false,
+			wantNil:       false,
+			wantErr:       true,
+			errMsg:        "commands section is required",
 		},
 		{
-			name:          "configs with no commands",
+			name:          "configs with no commands - error required",
 			projectConfig: &ProjectConfig{},
 			homeConfig:    &HomeConfig{},
-			wantNil:       true,
-			wantErr:       false,
+			wantNil:       false,
+			wantErr:       true,
+			errMsg:        "commands section is required",
 		},
 		{
 			name: "project commands resolved successfully",
@@ -93,6 +106,20 @@ func TestResolveCommandFiles(t *testing.T) {
 					Implement: strPtr("implement.sh"),
 					Review:    strPtr("review.sh"),
 					Commit:    strPtr("commit.sh"),
+				},
+			},
+			setupWd:   projectDir,
+			setupHome: homeDir,
+			wantNil:   false,
+			wantErr:   false,
+		},
+		{
+			name: "project commands with subdirectory paths",
+			projectConfig: &ProjectConfig{
+				Commands: &Commands{
+					Implement: strPtr("scripts/implement.sh"),
+					Review:    strPtr("scripts/review.sh"),
+					Commit:    strPtr("scripts/commit.sh"),
 				},
 			},
 			setupWd:   projectDir,
@@ -134,12 +161,10 @@ func TestResolveCommandFiles(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Cannot run in parallel because resolveCommandFiles uses os.Getwd()
-
 			// Set up environment if needed
 			setupTestEnv(t, testCase.setupWd, testCase.setupHome)
 
 			result, err := ResolveCommandFiles(testCase.projectConfig, testCase.homeConfig)
-
 			checkResolveError(t, err, testCase.wantErr, testCase.errMsg)
 			checkResolveResult(t, result, testCase.wantNil, testCase.wantErr)
 		})

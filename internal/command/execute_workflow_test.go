@@ -18,11 +18,9 @@ func TestExecuteWorkflowWithJSONFormat(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              true,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatJSON,
-		Sources:             map[string]string{},
 	}
 
 	exitCode := executeWorkflow(cfg)
@@ -41,11 +39,9 @@ func TestExecuteWorkflowWithYAMLFormat(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              true,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatYAML,
-		Sources:             map[string]string{},
 	}
 
 	exitCode := executeWorkflow(cfg)
@@ -64,11 +60,9 @@ func TestExecuteWorkflowWithTextFormat(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              true,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode := executeWorkflow(cfg)
@@ -87,11 +81,9 @@ func TestExecuteWorkflowDryRunMode(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              true,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode := executeWorkflow(cfg)
@@ -111,11 +103,9 @@ func TestExecuteWorkflowWithInvalidAgent(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// This will fail when trying to run the workflow

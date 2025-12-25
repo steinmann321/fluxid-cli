@@ -10,17 +10,12 @@ import (
 
 func buildInitializationStatus(cfg types.Config) output.InitializationStatus {
 	status := output.InitializationStatus{
-		SessionID:              cfg.SessionID,
-		Agent:                  cfg.Agent,
-		AgentSource:            cfg.Sources["agent"],
-		MaxReviewCycles:        cfg.MaxReviewCycles,
-		ReviewCyclesSource:     cfg.Sources["iterations"],
-		MaxImplementRetries:    cfg.MaxImplementRetries,
-		ImplementRetriesSource: cfg.Sources["implement_retries"],
-		CommitEnabled:          cfg.CommitEnabled,
-		CommitEnabledSource:    cfg.Sources["commit_enabled"],
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           cfg.SessionID,
+		Agent:               cfg.Agent,
+		MaxReviewCycles:     cfg.MaxReviewCycles,
+		MaxImplementRetries: cfg.MaxImplementRetries,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	if cfg.CommandFiles != nil {

@@ -22,20 +22,12 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 	tests := []struct {
 		name       string
 		agent      string
-		setupEnv   func() []string
 		wantError  string
 		errorCheck func(t *testing.T, errMsg string)
 	}{
 		{
-			name:  "codex not in PATH",
-			agent: "codex",
-			setupEnv: func() []string {
-				homeDir, _ := os.UserHomeDir()
-				return []string{
-					"PATH=/usr/bin:/bin",
-					"HOME=" + homeDir,
-				}
-			},
+			name:      "codex not in PATH",
+			agent:     "codex",
 			wantError: "not found in PATH",
 			errorCheck: func(t *testing.T, errMsg string) { //nolint:thelper // Test table validation func
 				if !strings.Contains(errMsg, "codex") {
@@ -47,15 +39,8 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 			},
 		},
 		{
-			name:  "opencode not in PATH",
-			agent: "opencode",
-			setupEnv: func() []string {
-				homeDir, _ := os.UserHomeDir()
-				return []string{
-					"PATH=/usr/bin:/bin",
-					"HOME=" + homeDir,
-				}
-			},
+			name:      "opencode not in PATH",
+			agent:     "opencode",
 			wantError: "not found in PATH",
 			errorCheck: func(t *testing.T, errMsg string) { //nolint:thelper // Test table validation func
 				if !strings.Contains(errMsg, "opencode") {
@@ -69,9 +54,16 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
+			// v2.0: Create temporary home with config and command files
+			tmpHome := t.TempDir()
+			setupConfigWithCommands(t, tmpHome, "claude")
+
 			binPath := filepath.Join(root, "bin", "fluxid")
 			cmd := exec.CommandContext(t.Context(), binPath, "--"+testCase.agent)
-			cmd.Env = testCase.setupEnv()
+			cmd.Env = []string{
+				"PATH=/usr/bin:/bin",
+				"HOME=" + tmpHome,
+			}
 
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr
@@ -102,6 +94,7 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 }
 
 // TestM05E05NoChildProcessSpawnedOnError validates that no agent process is spawned on error conditions.
+// v2.0: environment variable support removed (Phase 7).
 //
 //nolint:funlen // E2E test with process spawning validation
 func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
@@ -111,38 +104,19 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 	buildFluxid(t, root)
 
 	tests := []struct {
-		name     string
-		args     []string
-		setupEnv func() []string
+		name      string
+		args      []string
+		needsHome bool
 	}{
 		{
-			name: "multiple agent flags",
-			args: []string{"--claude", "--codex"},
-			setupEnv: func() []string {
-				return append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
-			},
+			name:      "multiple agent flags",
+			args:      []string{"--claude", "--codex"},
+			needsHome: false,
 		},
 		{
-			name: "unsupported agent via env",
-			args: []string{},
-			setupEnv: func() []string {
-				return append(
-					os.Environ(),
-					"FLUXID_AGENT=invalid",
-					"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
-				)
-			},
-		},
-		{
-			name: "agent not in PATH",
-			args: []string{"--codex"},
-			setupEnv: func() []string {
-				homeDir, _ := os.UserHomeDir()
-				return []string{
-					"PATH=/usr/bin:/bin",
-					"HOME=" + homeDir,
-				}
-			},
+			name:      "agent not in PATH",
+			args:      []string{"--codex"},
+			needsHome: true,
 		},
 	}
 
@@ -150,9 +124,22 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
+			var cmdEnv []string
+			if testCase.needsHome {
+				// v2.0: Create temporary home with config and command files
+				tmpHome := t.TempDir()
+				setupConfigWithCommands(t, tmpHome, "claude")
+				cmdEnv = []string{
+					"PATH=/usr/bin:/bin",
+					"HOME=" + tmpHome,
+				}
+			} else {
+				cmdEnv = append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
+			}
+
 			binPath := filepath.Join(root, "bin", "fluxid")
 			cmd := exec.CommandContext(t.Context(), binPath, testCase.args...)
-			cmd.Env = testCase.setupEnv()
+			cmd.Env = cmdEnv
 
 			var stderr bytes.Buffer
 			var stdout bytes.Buffer
@@ -188,6 +175,7 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 }
 
 // TestM05E05ErrorMessagesAreConciseAndActionable validates that all error messages include helpful guidance.
+// v2.0: environment variable support removed (Phase 7).
 //
 //nolint:funlen // E2E test with error message validation
 func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
@@ -199,40 +187,20 @@ func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
-		setupEnv    func() []string
+		needsHome   bool
 		wantInError []string
 	}{
 		{
-			name: "multiple flags error message quality",
-			args: []string{"--claude", "--codex"},
-			setupEnv: func() []string {
-				return append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
-			},
+			name:        "multiple flags error message quality",
+			args:        []string{"--claude", "--codex"},
+			needsHome:   false,
 			wantInError: []string{"multiple", "agent", "--claude", "--codex", "--opencode"},
 		},
 		{
-			name: "PATH error message quality",
-			args: []string{"--codex"},
-			setupEnv: func() []string {
-				homeDir, _ := os.UserHomeDir()
-				return []string{
-					"PATH=/usr/bin:/bin",
-					"HOME=" + homeDir,
-				}
-			},
+			name:        "PATH error message quality",
+			args:        []string{"--codex"},
+			needsHome:   true,
 			wantInError: []string{"not found", "PATH", "which", "codex"},
-		},
-		{
-			name: "unsupported agent error message quality",
-			args: []string{},
-			setupEnv: func() []string {
-				return append(
-					os.Environ(),
-					"FLUXID_AGENT=foobar",
-					"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
-				)
-			},
-			wantInError: []string{"unsupported", "foobar", "claude", "codex", "opencode"},
 		},
 	}
 
@@ -240,9 +208,22 @@ func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
+			var cmdEnv []string
+			if testCase.needsHome {
+				// v2.0: Create temporary home with config and command files
+				tmpHome := t.TempDir()
+				setupConfigWithCommands(t, tmpHome, "claude")
+				cmdEnv = []string{
+					"PATH=/usr/bin:/bin",
+					"HOME=" + tmpHome,
+				}
+			} else {
+				cmdEnv = append(os.Environ(), "PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"))
+			}
+
 			binPath := filepath.Join(root, "bin", "fluxid")
 			cmd := exec.CommandContext(t.Context(), binPath, testCase.args...)
-			cmd.Env = testCase.setupEnv()
+			cmd.Env = cmdEnv
 
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr

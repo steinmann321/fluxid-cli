@@ -22,14 +22,19 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
+	// v2.0: Create temporary home with config and command files
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	sessionID := "test-abort-signal-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
+	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3")
 	cmd.Env = append(os.Environ(),
+		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
@@ -84,14 +89,19 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
+	// v2.0: Create temporary home with config and command files
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	sessionID := "test-forced-exit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(10 * time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "1")
+	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=1")
 	cmd.Env = append(os.Environ(),
+		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
@@ -150,14 +160,19 @@ func TestM03E05AbortViaIPCCommand(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
+	// v2.0: Create temporary home with config and command files
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	sessionID := "test-ipc-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
+	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3")
 	cmd.Env = append(os.Environ(),
+		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
@@ -215,14 +230,19 @@ func TestM03E05AbortMessageContent(t *testing.T) {
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
 
+	// v2.0: Create temporary home with config and command files
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	sessionID := "test-abort-messages-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations", "3", "--fluxid-implement-retries", "3")
+	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3")
 	cmd.Env = append(os.Environ(),
+		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"FLUXID_SESSION_ID="+sessionID,
 	)

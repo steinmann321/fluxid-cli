@@ -15,9 +15,7 @@ type Config struct {
 	SessionID           string
 	MaxReviewCycles     int
 	MaxImplementRetries int
-	CommitEnabled       bool
 	DryRun              bool
 	CommandFiles        *config.ResolvedCommandFiles
 	OutputFormat        output.Format
-	Sources             map[string]string
 }

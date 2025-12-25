@@ -16,12 +16,10 @@ func TestRunCommitPhase(t *testing.T) {
 		Agent:               "nonexistent-agent",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -44,12 +42,10 @@ func TestRunReviewPhase(t *testing.T) {
 		Agent:               "nonexistent-agent",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
@@ -75,12 +71,10 @@ func TestRunPhase_ExitCodeExtraction(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runPhase(cfg, "test-phase", "test prompt")
@@ -103,12 +97,10 @@ func TestRunPhase_Success(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runPhase(cfg, "test-phase", "test prompt")
@@ -127,12 +119,10 @@ func TestRunCommitPhase_CommitDisabled(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -151,12 +141,10 @@ func TestRunReviewPhase_NonZeroExitCode(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
@@ -178,12 +166,10 @@ func TestRunCommitPhase_Success(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)

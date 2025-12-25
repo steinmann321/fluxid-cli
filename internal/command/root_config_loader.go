@@ -18,15 +18,13 @@ func loadAndResolveConfig() (types.Config, int) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
-		Sources:             nil,
 	}
 
 	// Load all configuration sources
-	homeConfig, projectConfig, envConfig, exitCode := loadAllConfigs()
+	homeConfig, projectConfig, exitCode := loadAllConfigs()
 	if exitCode != 0 {
 		return emptyConfig, exitCode
 	}
@@ -38,11 +36,11 @@ func loadAndResolveConfig() (types.Config, int) {
 		return emptyConfig, 1
 	}
 
-	// Resolve configuration with precedence: CLI > env > project > home > defaults
+	// Resolve configuration with precedence: CLI > project > home > defaults
 	resolved := config.Resolve(
-		projectConfig, homeConfig, envConfig,
+		projectConfig, homeConfig,
 		args.CLIAgent,
-		args.CLIIterations, args.CLIImplementRetries, args.CLICommitEnabled,
+		args.CLIIterations, args.CLIImplementRetries,
 	)
 
 	// Resolve and validate command files if configured
@@ -70,26 +68,20 @@ func loadAndResolveConfig() (types.Config, int) {
 	return cfg, 0
 }
 
-func loadAllConfigs() (*config.HomeConfig, *config.ProjectConfig, *config.EnvConfig, int) {
+func loadAllConfigs() (*config.HomeConfig, *config.ProjectConfig, int) {
 	homeConfig, err := config.LoadHomeConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading home configuration: %v\n", err)
-		return nil, nil, nil, 1
+		return nil, nil, 1
 	}
 
 	projectConfig, err := config.LoadProjectConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading project configuration: %v\n", err)
-		return nil, nil, nil, 1
+		return nil, nil, 1
 	}
 
-	envConfig, err := config.LoadEnvConfig(osEnv{})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading environment configuration: %v\n", err)
-		return nil, nil, nil, 1
-	}
-
-	return homeConfig, projectConfig, envConfig, 0
+	return homeConfig, projectConfig, 0
 }
 
 func validateAgent(agent string) int {
@@ -143,10 +135,8 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		SessionID:           sessionID,
 		MaxReviewCycles:     resolved.Iterations,
 		MaxImplementRetries: resolved.ImplementRetries,
-		CommitEnabled:       resolved.CommitEnabled,
 		DryRun:              dryRun,
 		CommandFiles:        resolved.CommandFiles,
 		OutputFormat:        outputFormat,
-		Sources:             resolved.Sources,
 	}, nil
 }

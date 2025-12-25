@@ -20,7 +20,7 @@ func TestM01E01UserRunsWorkflowToCompletion(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "1")
+	output := runFluxidWithClaude(t, root, "--fluxid-iterations=1")
 
 	verifyInitialization(t, output)
 	verifyPhaseExecution(t, output)
@@ -35,6 +35,10 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	sessionIDs := make(map[string]bool)
 	uuidV4Pattern := `([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})`
 	sessionIDPattern := regexp.MustCompile(`Session ID: ` + uuidV4Pattern)
@@ -42,8 +46,11 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 	// Run fluxid 3 times and collect session IDs
 	for runIndex := 0; runIndex < 3; runIndex++ {
 		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
-		cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+			"HOME="+tmpHome,
+		)
 
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
@@ -97,9 +104,16 @@ func TestM01E01WithoutClaudeFlag(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root) // Create stub claude since it's the default agent
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-iterations", "1")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-iterations=1")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -120,11 +134,6 @@ func TestM01E01WithoutClaudeFlag(t *testing.T) {
 		t.Errorf("Expected default agent 'claude' to be used, got: %s", output)
 	}
 
-	// Verify source is default or home (depending on whether ~/.fluxid/config.yaml exists)
-	if !strings.Contains(output, "source: default") && !strings.Contains(output, "source: home") {
-		t.Errorf("Expected source to be 'default' or 'home', got: %s", output)
-	}
-
 	// Verify workflow completes successfully
 	if !strings.Contains(output, "Status: SUCCESS") {
 		t.Errorf("Expected successful completion with default agent, got: %s", output)
@@ -140,9 +149,16 @@ func TestM01E01SessionIDPropagation(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -225,10 +241,17 @@ func isValidUUIDv4(uuid string) bool {
 func runFluxidWithClaude(t *testing.T, root string, args ...string) string {
 	t.Helper()
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmdArgs := append([]string{"--claude"}, args...)
 	cmd := exec.CommandContext(t.Context(), binPath, cmdArgs...)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout

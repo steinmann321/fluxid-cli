@@ -24,12 +24,10 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	_, exitCode, err := runReviewPhase(cfg)
@@ -59,12 +57,10 @@ func TestRunReviewPhase_Success(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Use channel-based coordination instead of arbitrary sleep

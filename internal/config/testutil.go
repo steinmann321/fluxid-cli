@@ -10,10 +10,6 @@ func intPtr(i int) *int {
 	return &i
 }
 
-func boolPtr(b bool) *bool {
-	return &b
-}
-
 func equalHomeConfig(actual, expected *HomeConfig) bool {
 	if actual == nil && expected == nil {
 		return true
@@ -24,8 +20,7 @@ func equalHomeConfig(actual, expected *HomeConfig) bool {
 
 	return equalStrPtr(actual.Agent, expected.Agent) &&
 		equalIntPtr(actual.Iterations, expected.Iterations) &&
-		equalIntPtr(actual.ImplementRetries, expected.ImplementRetries) &&
-		equalBoolPtr(actual.CommitEnabled, expected.CommitEnabled)
+		equalIntPtr(actual.ImplementRetries, expected.ImplementRetries)
 }
 
 func equalProjectConfig(actual, expected *ProjectConfig) bool {
@@ -38,8 +33,7 @@ func equalProjectConfig(actual, expected *ProjectConfig) bool {
 
 	return equalStrPtr(actual.Agent, expected.Agent) &&
 		equalIntPtr(actual.Iterations, expected.Iterations) &&
-		equalIntPtr(actual.ImplementRetries, expected.ImplementRetries) &&
-		equalBoolPtr(actual.CommitEnabled, expected.CommitEnabled)
+		equalIntPtr(actual.ImplementRetries, expected.ImplementRetries)
 }
 
 func equalStrPtr(actual, expected *string) bool {
@@ -53,16 +47,6 @@ func equalStrPtr(actual, expected *string) bool {
 }
 
 func equalIntPtr(actual, expected *int) bool {
-	if actual == nil && expected == nil {
-		return true
-	}
-	if actual == nil || expected == nil {
-		return false
-	}
-	return *actual == *expected
-}
-
-func equalBoolPtr(actual, expected *bool) bool {
 	if actual == nil && expected == nil {
 		return true
 	}

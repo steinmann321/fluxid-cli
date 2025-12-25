@@ -39,11 +39,9 @@ func TestRunImplementPhase_AbortBeforeRetry(t *testing.T) {
 		Agent:               "false", // Fails immediately
 		AgentArgs:           []string{},
 		MaxImplementRetries: 3,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Set abort flag before running
@@ -93,11 +91,9 @@ func TestRun_MaxCyclesExceeded(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Always return FAIL reports to exceed max cycles
@@ -143,11 +139,9 @@ func TestRun_ImplementPhaseAbort(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Set abort flag to trigger abort
@@ -178,11 +172,9 @@ func TestRunReviewPhase_Abort(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Set abort flag before calling runReviewPhase
@@ -214,11 +206,9 @@ func TestRunImplementPhase_Abort(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Set abort flag before implement phase
@@ -247,11 +237,9 @@ func TestRunReviewPhase_AgentCommandFail(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	_, exitCode, err := runReviewPhase(cfg)

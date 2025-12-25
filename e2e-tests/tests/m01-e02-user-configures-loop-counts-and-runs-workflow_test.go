@@ -22,9 +22,9 @@ func TestM01E02ConfigureLoopCounts(t *testing.T) {
 	createStubClaude(t, root)
 
 	output := runFluxidWithClaude(t, root,
-		"--fluxid-iterations", "5",
-		"--fluxid-implement-retries", "2",
-		"--fluxid-no-commit")
+		"--fluxid-iterations=5",
+		"--fluxid-implement-retries=2",
+	)
 
 	// Verify initialization displays overrides
 	if !strings.Contains(output, "Max Review Cycles: 5") {
@@ -58,7 +58,7 @@ func TestM01E02InvalidIterationsZero(t *testing.T) {
 	buildFluxid(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "0")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=0")
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -93,7 +93,7 @@ func TestM01E02InvalidIterationsNegative(t *testing.T) {
 	buildFluxid(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "-1")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=-1")
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -124,7 +124,7 @@ func TestM01E02InvalidIterationsNonInteger(t *testing.T) {
 	buildFluxid(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "abc")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=abc")
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -155,7 +155,7 @@ func TestM01E02InvalidRetriesZero(t *testing.T) {
 	buildFluxid(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-implement-retries", "0")
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-implement-retries=0")
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -187,7 +187,7 @@ func TestM01E02DefaultsAppliedWhenFlagsOmitted(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root, "--fluxid-no-commit")
+	output := runFluxidWithClaude(t, root)
 
 	// Verify defaults are shown
 	if !strings.Contains(output, "Max Review Cycles: 20") {
@@ -208,7 +208,7 @@ func TestM01E02PartialOverride(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	output := runFluxidWithClaude(t, root, "--fluxid-iterations", "7", "--fluxid-no-commit")
+	output := runFluxidWithClaude(t, root, "--fluxid-iterations=7")
 
 	// Verify custom iteration count
 	if !strings.Contains(output, "Max Review Cycles: 7") {
@@ -231,9 +231,9 @@ func TestM01E02SuccessfulCompletion(t *testing.T) {
 	createStubClaude(t, root)
 
 	output := runFluxidWithClaude(t, root,
-		"--fluxid-iterations", "5",
-		"--fluxid-implement-retries", "2",
-		"--fluxid-no-commit")
+		"--fluxid-iterations=5",
+		"--fluxid-implement-retries=2",
+	)
 
 	// Verify completion summary
 	if !strings.Contains(output, "=== Workflow Completion Summary ===") {
@@ -256,13 +256,20 @@ func TestM01E02ClaudeArgsPassthroughWithOverrides(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath,
 		"--claude",
-		"--fluxid-iterations", "5",
-		"--fluxid-implement-retries", "2",
+		"--fluxid-iterations=5",
+		"--fluxid-implement-retries=2",
 		"--custom-arg", "value")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout

@@ -8,17 +8,12 @@ import (
 func TestPrintInitializationStatus_TextFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
-		SessionID:              "test-session",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-session",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	exitCode := printInitializationStatus(status, output.FormatText)
@@ -30,17 +25,12 @@ func TestPrintInitializationStatus_TextFormat(t *testing.T) {
 func TestPrintInitializationStatus_JSONFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
-		SessionID:              "test-session",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-session",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	exitCode := printInitializationStatus(status, output.FormatJSON)
@@ -52,17 +42,12 @@ func TestPrintInitializationStatus_JSONFormat(t *testing.T) {
 func TestPrintInitializationStatus_YAMLFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
-		SessionID:              "test-session",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-session",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	exitCode := printInitializationStatus(status, output.FormatYAML)
@@ -74,17 +59,12 @@ func TestPrintInitializationStatus_YAMLFormat(t *testing.T) {
 func TestPrintInitializationStatus_DefaultFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
-		SessionID:              "test-session",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-session",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	// Test with an invalid/unknown format to trigger the default case

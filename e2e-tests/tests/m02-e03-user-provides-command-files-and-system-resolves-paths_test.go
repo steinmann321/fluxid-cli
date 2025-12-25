@@ -19,15 +19,14 @@ func TestM02E03CommandFilesResolvedFromHome(t *testing.T) {
 	// Create temporary home directory with command files
 	tmpHome := t.TempDir()
 	fluxidDir := filepath.Join(tmpHome, ".fluxid")
-	commandsDir := filepath.Join(fluxidDir, "commands")
-	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create commands dir: %v", err)
+	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create fluxid dir: %v", err)
 	}
 
-	// Create command files
-	implementFile := filepath.Join(commandsDir, "implement.md")
-	reviewFile := filepath.Join(commandsDir, "review.md")
-	commitFile := filepath.Join(commandsDir, "commit.md")
+	// Create command files in the config directory (relative paths resolve from here)
+	implementFile := filepath.Join(fluxidDir, "implement.md")
+	reviewFile := filepath.Join(fluxidDir, "review.md")
+	commitFile := filepath.Join(fluxidDir, "commit.md")
 
 	if err := os.WriteFile(implementFile, []byte("# Implement Command"), 0o644); err != nil {
 		t.Fatalf("Failed to write implement file: %v", err)
@@ -85,15 +84,14 @@ func TestM02E03ProjectCommandFilesOverrideHome(t *testing.T) {
 	// Create temporary home directory with command files
 	tmpHome := t.TempDir()
 	homeFluxidDir := filepath.Join(tmpHome, ".fluxid")
-	homeCommandsDir := filepath.Join(homeFluxidDir, "commands")
-	if err := os.MkdirAll(homeCommandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create home commands dir: %v", err)
+	if err := os.MkdirAll(homeFluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create home fluxid dir: %v", err)
 	}
 
-	// Create home command files
-	homeImplementFile := filepath.Join(homeCommandsDir, "home-implement.md")
-	homeReviewFile := filepath.Join(homeCommandsDir, "home-review.md")
-	homeCommitFile := filepath.Join(homeCommandsDir, "home-commit.md")
+	// Create home command files in the config directory (relative paths resolve from here)
+	homeImplementFile := filepath.Join(homeFluxidDir, "home-implement.md")
+	homeReviewFile := filepath.Join(homeFluxidDir, "home-review.md")
+	homeCommitFile := filepath.Join(homeFluxidDir, "home-commit.md")
 
 	if err := os.WriteFile(homeImplementFile, []byte("# Home Implement"), 0o644); err != nil {
 		t.Fatalf("Failed to write home implement file: %v", err)
@@ -120,15 +118,14 @@ commands:
 	// Create temporary project directory with command files
 	tmpProjectDir := t.TempDir()
 	projectFluxidDir := filepath.Join(tmpProjectDir, ".fluxid")
-	projectCommandsDir := filepath.Join(projectFluxidDir, "commands")
-	if err := os.MkdirAll(projectCommandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create project commands dir: %v", err)
+	if err := os.MkdirAll(projectFluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create project fluxid dir: %v", err)
 	}
 
-	// Create project command files
-	projectImplementFile := filepath.Join(projectCommandsDir, "project-implement.md")
-	projectReviewFile := filepath.Join(projectCommandsDir, "project-review.md")
-	projectCommitFile := filepath.Join(projectCommandsDir, "project-commit.md")
+	// Create project command files in the config directory (relative paths resolve from here)
+	projectImplementFile := filepath.Join(projectFluxidDir, "project-implement.md")
+	projectReviewFile := filepath.Join(projectFluxidDir, "project-review.md")
+	projectCommitFile := filepath.Join(projectFluxidDir, "project-commit.md")
 
 	if err := os.WriteFile(projectImplementFile, []byte("# Project Implement"), 0o644); err != nil {
 		t.Fatalf("Failed to write project implement file: %v", err)
@@ -262,10 +259,28 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	// Create temporary home directory without command files
+	// v2.0: Commands section is required, so create minimal config
 	tmpHome := t.TempDir()
+	homeFluxidDir := filepath.Join(tmpHome, ".fluxid")
+	if err := os.MkdirAll(homeFluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create home fluxid dir: %v", err)
+	}
 
-	// Run fluxid without any command files in dry-run mode (only need init status)
+	// Create minimal v2.0 config with commands section and command files
+	configContent := `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	configPath := filepath.Join(homeFluxidDir, "config.yaml")
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		t.Fatalf("Failed to write config: %v", err)
+	}
+
+	// Create command files
+	createCommandFiles(t, homeFluxidDir)
+
+	// Run fluxid in dry-run mode
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify fluxid runs successfully
@@ -273,9 +288,9 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 		t.Errorf("Expected initialization header, got:\n%s", output)
 	}
 
-	// Verify "Command Files:" section does NOT appear
-	if strings.Contains(output, "Command Files:") {
-		t.Errorf("Command Files section should not appear when no commands configured, got:\n%s", output)
+	// v2.0: Command Files section should appear since commands are required
+	if !strings.Contains(output, "Command Files:") {
+		t.Errorf("Command Files section should appear in v2.0, got:\n%s", output)
 	}
 }
 
@@ -292,19 +307,18 @@ func TestM02E03AbsolutePathsDisplayed(t *testing.T) {
 	// Create temporary home directory with command files
 	tmpHome := t.TempDir()
 	fluxidDir := filepath.Join(tmpHome, ".fluxid")
-	commandsDir := filepath.Join(fluxidDir, "commands")
-	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create commands dir: %v", err)
+	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
+		t.Fatalf("Failed to create fluxid dir: %v", err)
 	}
 
-	// Create command files
-	if err := os.WriteFile(filepath.Join(commandsDir, "impl.md"), []byte("# Impl"), 0o644); err != nil {
+	// Create command files in the config directory (relative paths resolve from here)
+	if err := os.WriteFile(filepath.Join(fluxidDir, "impl.md"), []byte("# Impl"), 0o644); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(commandsDir, "rev.md"), []byte("# Rev"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(fluxidDir, "rev.md"), []byte("# Rev"), 0o644); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(commandsDir, "com.md"), []byte("# Com"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(fluxidDir, "com.md"), []byte("# Com"), 0o644); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
 
@@ -323,7 +337,7 @@ func TestM02E03AbsolutePathsDisplayed(t *testing.T) {
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify absolute paths are displayed (should contain tmpHome path)
-	expectedPath := filepath.Join(commandsDir, "impl.md")
+	expectedPath := filepath.Join(fluxidDir, "impl.md")
 	if !strings.Contains(output, expectedPath) {
 		t.Errorf("Expected absolute path %s in output, got:\n%s", expectedPath, output)
 	}

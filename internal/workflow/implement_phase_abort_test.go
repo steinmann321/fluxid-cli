@@ -32,12 +32,10 @@ func TestRunImplementPhase_WithAbort(t *testing.T) {
 		Agent:               "echo",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)

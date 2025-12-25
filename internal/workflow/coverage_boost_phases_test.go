@@ -28,12 +28,10 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 		Agent:               testAgentEcho,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -45,7 +43,6 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 	}
 }
 
-//nolint:dupl // Test functions intentionally similar for different test scenarios
 func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 	sessionID := "test-retries-" + time.Now().Format("20060102150405.000000")
 	dataDir := t.TempDir()
@@ -60,12 +57,10 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Pre-write PASS report before workflow starts
@@ -83,7 +78,6 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 	}
 }
 
-//nolint:dupl // Test functions intentionally similar for different test scenarios
 func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 	sessionID := "test-all-fail-" + time.Now().Format("20060102150405.000000")
 	dataDir := t.TempDir()
@@ -98,12 +92,10 @@ func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Pre-write FAIL report before workflow starts
@@ -135,12 +127,10 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -166,12 +156,10 @@ func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
 		Agent:               "nonexistent-agent-12345",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -192,12 +180,10 @@ func TestRunCommitPhase_Disabled(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false, // Disabled
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -218,12 +204,10 @@ func TestRunCommitPhase_Enabled(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)

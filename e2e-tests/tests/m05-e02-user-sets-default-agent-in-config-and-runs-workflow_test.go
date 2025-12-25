@@ -12,7 +12,7 @@ func TestM05E02AgentFromHomeConfig(t *testing.T) {
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-	createStubClaude(t, root)
+	createStubClaude(t, root) // Creates stubs for all agents
 
 	tmpHome := t.TempDir()
 	homeConfigDir := setupConfigDir(t, tmpHome)
@@ -20,12 +20,13 @@ func TestM05E02AgentFromHomeConfig(t *testing.T) {
 	writeConfigFile(t, homeConfigPath, "codex")
 
 	// Use minimal iterations for fast test execution
-	output, err := runFluxidWithConfig(t, root, "", tmpHome, nil, []string{"--fluxid-iterations", "1"})
+	output, err := runFluxidWithConfig(t, root, "", tmpHome, nil, []string{"--fluxid-iterations=1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
 
-	verifyAgentAndSource(t, output, "codex", "home", homeConfigPath)
+	// v2.0: source tracking removed (Phase 9), just verify agent selection
+	verifyAgent(t, output, "codex")
 	verifyWorkflowSuccess(t, output)
 }
 
@@ -35,7 +36,7 @@ func TestM05E02AgentFromProjectConfig(t *testing.T) {
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-	createStubClaude(t, root)
+	createStubClaude(t, root) // Creates stubs for all agents
 
 	tmpDir := t.TempDir()
 	projectConfigDir := setupConfigDir(t, tmpDir)
@@ -43,12 +44,13 @@ func TestM05E02AgentFromProjectConfig(t *testing.T) {
 	writeConfigFile(t, projectConfigPath, "opencode")
 
 	// Use minimal iterations for fast test execution
-	output, err := runFluxidWithConfig(t, root, tmpDir, "", nil, []string{"--fluxid-iterations", "1"})
+	output, err := runFluxidWithConfig(t, root, tmpDir, "", nil, []string{"--fluxid-iterations=1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
 
-	verifyAgentAndSource(t, output, "opencode", "project", projectConfigPath)
+	// v2.0: source tracking removed (Phase 9), just verify agent selection
+	verifyAgent(t, output, "opencode")
 	verifyWorkflowSuccess(t, output)
 }
 
@@ -58,7 +60,7 @@ func TestM05E02ProjectOverridesHome(t *testing.T) {
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-	createStubClaude(t, root)
+	createStubClaude(t, root) // Creates stubs for all agents
 
 	tmpHome := t.TempDir()
 	homeConfigDir := setupConfigDir(t, tmpHome)
@@ -75,63 +77,47 @@ func TestM05E02ProjectOverridesHome(t *testing.T) {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
 
-	verifyAgentAndSource(t, output, "codex", "project", projectConfigPath)
+	// v2.0: source tracking removed (Phase 9), just verify agent selection
+	verifyAgent(t, output, "codex")
 }
 
-// TestM05E02PrecedenceChain validates full precedence: CLI > env > project > home > default.
-//
-//nolint:funlen // E2E test with config precedence validation
+// TestM05E02PrecedenceChain validates full precedence: CLI > project > home > default.
+// v2.0: environment variable support removed (Phase 7).
 func TestM05E02PrecedenceChain(t *testing.T) {
 	t.Parallel()
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
+	// createStubClaude creates stubs for all agents (claude, codex, opencode, project-agent)
 	createStubClaude(t, root)
 
 	tests := []struct {
-		name           string
-		homeAgent      string
-		projectAgent   string
-		envAgent       string
-		cliAgent       string
-		expectedAgent  string
-		expectedSource string
+		name          string
+		homeAgent     string
+		projectAgent  string
+		cliAgent      string
+		expectedAgent string
 	}{
 		{
-			name:           "CLI beats all",
-			homeAgent:      "claude",
-			projectAgent:   "codex",
-			envAgent:       "opencode",
-			cliAgent:       "--claude",
-			expectedAgent:  "claude",
-			expectedSource: "source: cli",
+			name:          "CLI beats all",
+			homeAgent:     "codex",
+			projectAgent:  "opencode",
+			cliAgent:      "--claude",
+			expectedAgent: "claude",
 		},
 		{
-			name:           "env beats project and home",
-			homeAgent:      "claude",
-			projectAgent:   "codex",
-			envAgent:       "opencode",
-			cliAgent:       "",
-			expectedAgent:  "opencode",
-			expectedSource: "source: env",
+			name:          "project beats home",
+			homeAgent:     "claude",
+			projectAgent:  "codex",
+			cliAgent:      "",
+			expectedAgent: "codex",
 		},
 		{
-			name:           "project beats home",
-			homeAgent:      "claude",
-			projectAgent:   "codex",
-			envAgent:       "",
-			cliAgent:       "",
-			expectedAgent:  "codex",
-			expectedSource: "source: project",
-		},
-		{
-			name:           "home beats default",
-			homeAgent:      "opencode",
-			projectAgent:   "",
-			envAgent:       "",
-			cliAgent:       "",
-			expectedAgent:  "opencode",
-			expectedSource: "source: home",
+			name:          "home beats default",
+			homeAgent:     "opencode",
+			projectAgent:  "",
+			cliAgent:      "",
+			expectedAgent: "opencode",
 		},
 	}
 
@@ -141,19 +127,18 @@ func TestM05E02PrecedenceChain(t *testing.T) {
 
 			tmpHome := setupTestHome(t, testCase.homeAgent)
 			tmpDir := setupTestProject(t, testCase.projectAgent)
-			env := buildTestEnv(testCase.envAgent)
 			args := buildTestArgs(testCase.cliAgent)
 
 			// Add dry-run flag to args (only need to verify agent selection)
 			args = append(args, "--fluxid-dry-run")
 
-			output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, env, args)
+			output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, args)
 			if err != nil {
 				t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 			}
 
+			// v2.0: source tracking removed (Phase 9), just verify agent selection
 			verifyAgent(t, output, testCase.expectedAgent)
-			verifySource(t, output, testCase.expectedSource)
 		})
 	}
 }
@@ -191,14 +176,28 @@ func TestM05E02NoConfigUsesDefault(t *testing.T) {
 	tmpHome := t.TempDir()
 	tmpDir := t.TempDir()
 
+	// Need to create a minimal config with commands section for v2.0
+	// The agent will use the default (claude) since no agent is specified in config
+	configDir := setupConfigDir(t, tmpDir)
+	configPath := filepath.Join(configDir, "config.yaml")
+	configContent := `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	writeRawConfigFile(t, configPath, configContent)
+
+	// Create command files
+	createCommandFiles(t, configDir)
+
 	// Use minimal iterations for fast test execution
-	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, []string{"--fluxid-iterations", "1"})
+	output, err := runFluxidWithConfig(t, root, tmpDir, tmpHome, nil, []string{"--fluxid-iterations=1"})
 	if err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, output)
 	}
 
+	// v2.0: source tracking removed (Phase 9), just verify agent selection
 	verifyAgent(t, output, "claude")
-	verifySource(t, output, "source: default")
 	verifyWorkflowSuccess(t, output)
 }
 
@@ -224,12 +223,7 @@ func setupTestProject(t *testing.T, agent string) string {
 	return tmpDir
 }
 
-func buildTestEnv(envAgent string) []string {
-	if envAgent != "" {
-		return []string{"FLUXID_AGENT=" + envAgent}
-	}
-	return nil
-}
+// buildTestEnv removed in v2.0 (Phase 7: environment variable support removed)
 
 func buildTestArgs(cliAgent string) []string {
 	if cliAgent != "" {
@@ -246,21 +240,7 @@ func verifyAgent(t *testing.T, output, expectedAgent string) {
 	}
 }
 
-func verifySource(t *testing.T, output, expectedSource string) {
-	t.Helper()
-	if !strings.Contains(output, expectedSource) {
-		t.Errorf("Expected %s, got:\n%s", expectedSource, output)
-	}
-}
-
-func verifyAgentAndSource(t *testing.T, output, agent, source, configPath string) {
-	t.Helper()
-	verifyAgent(t, output, agent)
-	verifySource(t, output, "source: "+source)
-	if !strings.Contains(output, configPath) {
-		t.Errorf("Expected config path %s in output, got:\n%s", configPath, output)
-	}
-}
+// verifySource and verifyAgentAndSource removed in v2.0 (Phase 9: source tracking removed)
 
 func verifyWorkflowSuccess(t *testing.T, output string) {
 	t.Helper()

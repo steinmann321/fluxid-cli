@@ -54,9 +54,16 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
+			// v2.0: Create temporary home with config and command files
+			tmpHome := t.TempDir()
+			setupConfigWithCommands(t, tmpHome, "claude")
+
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, testCase.flag, "--fluxid-iterations", "1")
-			cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+			cmd := exec.CommandContext(t.Context(), binPath, testCase.flag, "--fluxid-iterations=1")
+			cmd.Env = append(os.Environ(),
+				fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+				"HOME="+tmpHome,
+			)
 
 			var stdout bytes.Buffer
 			cmd.Stdout = &stdout
@@ -68,15 +75,11 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 
 			output := stdout.String()
 
+			// v2.0: source tracking removed (Phase 9)
 			// Verify agent is shown in initialization
 			expectedAgent := "Agent: " + testCase.wantAgent
 			if !strings.Contains(output, expectedAgent) {
 				t.Errorf("Expected agent %s in output, got:\n%s", testCase.wantAgent, output)
-			}
-
-			// Verify source is CLI
-			if !strings.Contains(output, "source: cli") {
-				t.Errorf("Expected source: cli in output, got:\n%s", output)
 			}
 
 			// Verify workflow completion
@@ -133,14 +136,21 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
+			// v2.0: Create temporary home with config and command files
+			tmpHome := t.TempDir()
+			setupConfigWithCommands(t, tmpHome, "claude")
+
 			binPath := filepath.Join(root, "bin", "fluxid")
 			args := testCase.args
 			// Add minimal iterations for tests that run workflows (success cases).
 			if !testCase.expectError {
-				args = append(args, "--fluxid-iterations", "1")
+				args = append(args, "--fluxid-iterations=1")
 			}
 			cmd := exec.CommandContext(t.Context(), binPath, args...)
-			cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+			cmd.Env = append(os.Environ(),
+				fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+				"HOME="+tmpHome,
+			)
 
 			var stderr bytes.Buffer
 			cmd.Stderr = &stderr
@@ -172,6 +182,8 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 }
 
 // TestM05E01AgentBinaryPathResolution validates PATH resolution and executability.
+//
+//nolint:funlen // E2E test with PATH resolution validation
 func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 	t.Parallel()
 
@@ -182,9 +194,16 @@ func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 	t.Run("agent found in PATH", func(t *testing.T) {
 		t.Parallel()
 
+		// v2.0: Create temporary home with config and command files
+		tmpHome := t.TempDir()
+		setupConfigWithCommands(t, tmpHome, "claude")
+
 		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--codex", "--fluxid-iterations", "1")
-		cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+		cmd := exec.CommandContext(t.Context(), binPath, "--codex", "--fluxid-iterations=1")
+		cmd.Env = append(os.Environ(),
+			fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+			"HOME="+tmpHome,
+		)
 
 		var stdout bytes.Buffer
 		cmd.Stdout = &stdout
@@ -203,14 +222,17 @@ func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 	t.Run("agent not in PATH", func(t *testing.T) {
 		t.Parallel()
 
+		// v2.0: Create temporary home with config and command files
+		tmpHome := t.TempDir()
+		setupConfigWithCommands(t, tmpHome, "claude")
+
 		binPath := filepath.Join(root, "bin", "fluxid")
 		cmd := exec.CommandContext(t.Context(), binPath, "--codex")
 
-		// Set minimal PATH that doesn't include our stubs, but preserve HOME
-		homeDir, _ := os.UserHomeDir()
+		// Set minimal PATH that doesn't include our stubs
 		cmd.Env = []string{
 			"PATH=/usr/bin:/bin",
-			"HOME=" + homeDir,
+			"HOME=" + tmpHome,
 		}
 
 		var stderr bytes.Buffer
@@ -257,9 +279,16 @@ func TestM05E01OrchestrationMatchesBaseline(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// v2.0: Create temporary home with config and command files
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--opencode", "--fluxid-iterations", "1")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd := exec.CommandContext(t.Context(), binPath, "--opencode", "--fluxid-iterations=1")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout

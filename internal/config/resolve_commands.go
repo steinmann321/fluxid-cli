@@ -11,6 +11,7 @@ var (
 	errCommandRequired       = errors.New("command is required but not specified")
 	errCommandFileNotFound   = errors.New("command file not found")
 	errCommandNotRegularFile = errors.New("command file is not a regular file")
+	errCommandsRequired      = errors.New("commands section is required in at least one config file")
 )
 
 // ResolveCommandFiles resolves command file paths with validation.
@@ -20,8 +21,8 @@ func ResolveCommandFiles(projectConfig *ProjectConfig, homeConfig *HomeConfig) (
 }
 
 // resolveCommandFiles resolves command file paths with project-first precedence.
-// Returns nil if no command files are configured (not an error).
-// Returns error if command files are configured but cannot be resolved or validated.
+// Commands section is REQUIRED in at least one config file.
+// Returns error if command files are not configured or cannot be resolved or validated.
 func resolveCommandFiles(projectConfig *ProjectConfig, homeConfig *HomeConfig) (*ResolvedCommandFiles, error) {
 	// Determine which config to use for commands (project takes precedence)
 	cmds, baseDir, err := selectCommandsConfig(projectConfig, homeConfig)
@@ -29,10 +30,9 @@ func resolveCommandFiles(projectConfig *ProjectConfig, homeConfig *HomeConfig) (
 		return nil, err
 	}
 
-	// If no commands configured, return nil (not an error)
+	// Commands section is required - no defaults
 	if cmds == nil {
-		//nolint:nilnil // Valid: no commands configured is not an error, return nil to indicate "no command files"
-		return nil, nil
+		return nil, errCommandsRequired
 	}
 
 	// Resolve and validate all three command files
@@ -56,7 +56,8 @@ func tryProjectCommands(projectConfig *ProjectConfig) (*Commands, string, error)
 			if err != nil {
 				return nil, "", fmt.Errorf("failed to get current directory: %w", err)
 			}
-			baseDir := filepath.Join(cwd, ".fluxid", "commands")
+			// Paths are relative to .fluxid/ directory (where config.yaml lives)
+			baseDir := filepath.Join(cwd, ".fluxid")
 			return projectConfig.Commands, baseDir, nil
 		}
 	}
@@ -70,7 +71,8 @@ func tryHomeCommands(homeConfig *HomeConfig) (*Commands, string, error) {
 			if err != nil {
 				return nil, "", fmt.Errorf("failed to get home directory: %w", err)
 			}
-			baseDir := filepath.Join(homeDir, ".fluxid", "commands")
+			// Paths are relative to ~/.fluxid/ directory (where config.yaml lives)
+			baseDir := filepath.Join(homeDir, ".fluxid")
 			return homeConfig.Commands, baseDir, nil
 		}
 	}

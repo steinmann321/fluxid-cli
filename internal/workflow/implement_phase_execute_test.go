@@ -24,11 +24,9 @@ func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := executeImplementPhase(cfg, 1)

@@ -39,6 +39,9 @@ func TestImplementRetriesExhaustedContinuesToReview(t *testing.T) {
 		t.Fatalf("Failed to create reports dir: %v", err)
 	}
 
+	// Create config with commands section (using claude as default, will be overridden by --agent flag)
+	setupConfigWithCommands(t, homeDir, "claude")
+
 	t.Cleanup(func() {
 		_ = os.RemoveAll(reportsDir)
 	})
@@ -46,10 +49,16 @@ func TestImplementRetriesExhaustedContinuesToReview(t *testing.T) {
 	sessionID := fmt.Sprintf("test-impl-exhaust-%d", time.Now().UnixNano())
 
 	// Build fluxid binary
-	fluxidBin := buildFluxidForE2E(t)
+	root := getProjectRoot(t)
+	buildFluxid(t, root)
+	fluxidBin := filepath.Join(root, "bin", "fluxid")
 
-	// Create mock agent script that succeeds (we'll control via reports)
-	agentScript := filepath.Join(tmpDir, "mock-agent.sh")
+	// v2.0: Create mock agent in bin directory with valid agent name
+	binDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("Failed to create bin dir: %v", err)
+	}
+	agentScript := filepath.Join(binDir, "codex")
 	agentContent := `#!/bin/bash
 echo "Mock agent executing..."
 exit 0
@@ -115,15 +124,15 @@ issues:
 		}
 	}()
 
-	// Run fluxid workflow
+	// v2.0: Run fluxid workflow with --codex flag
 	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin,
-		"--fluxid-iterations", "1",
-		"--fluxid-implement-retries", "2",
-		"--fluxid-no-commit",
-		"--agent", agentScript,
+		"--fluxid-iterations=1",
+		"--fluxid-implement-retries=2",
+		"--codex",
 	)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
+		"PATH="+binDir+":"+os.Getenv("PATH"),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
 	cmd.Dir = projectDir
@@ -152,7 +161,7 @@ issues:
 	}
 
 	// Verify workflow completed successfully
-	if !strings.Contains(outputStr, "Workflow completed successfully") {
+	if !strings.Contains(outputStr, "Status: SUCCESS") {
 		t.Error("Expected workflow to complete successfully")
 	}
 
@@ -183,6 +192,9 @@ func TestImplementRetriesExhaustedWithCommitEnabled(t *testing.T) {
 		t.Fatalf("Failed to create reports dir: %v", err)
 	}
 
+	// Create config with commands section (using claude as default, will be overridden by --agent flag)
+	setupConfigWithCommands(t, homeDir, "claude")
+
 	t.Cleanup(func() {
 		_ = os.RemoveAll(reportsDir)
 	})
@@ -190,10 +202,16 @@ func TestImplementRetriesExhaustedWithCommitEnabled(t *testing.T) {
 	sessionID := fmt.Sprintf("test-impl-exhaust-commit-%d", time.Now().UnixNano())
 
 	// Build fluxid binary
-	fluxidBin := buildFluxidForE2E(t)
+	root := getProjectRoot(t)
+	buildFluxid(t, root)
+	fluxidBin := filepath.Join(root, "bin", "fluxid")
 
-	// Create mock agent script
-	agentScript := filepath.Join(tmpDir, "mock-agent.sh")
+	// v2.0: Create mock agent in bin directory with valid agent name
+	binDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("Failed to create bin dir: %v", err)
+	}
+	agentScript := filepath.Join(binDir, "codex")
 	agentContent := `#!/bin/bash
 echo "Mock agent executing..."
 exit 0
@@ -254,15 +272,15 @@ issues:
 		}
 	}()
 
-	// Run with commit enabled
+	// v2.0: Run fluxid workflow with --codex flag
 	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin,
-		"--fluxid-iterations", "1",
-		"--fluxid-implement-retries", "2",
-		"--fluxid-commit", // Enable commit phase
-		"--agent", agentScript,
+		"--fluxid-iterations=1",
+		"--fluxid-implement-retries=2",
+		"--codex",
 	)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
+		"PATH="+binDir+":"+os.Getenv("PATH"),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
 	cmd.Dir = projectDir
@@ -296,33 +314,9 @@ issues:
 	}
 
 	// Verify workflow completed
-	if !strings.Contains(outputStr, "Workflow completed successfully") {
+	if !strings.Contains(outputStr, "Status: SUCCESS") {
 		t.Error("Expected workflow to complete successfully")
 	}
 
 	waitGroup.Wait()
-}
-
-// Helper to build fluxid binary for e2e tests.
-func buildFluxidForE2E(t *testing.T) string {
-	t.Helper()
-
-	tmpDir := t.TempDir()
-	binPath := filepath.Join(tmpDir, "fluxid")
-
-	projectRoot, err := filepath.Abs("../..")
-	if err != nil {
-		t.Fatalf("Failed to get project root: %v", err)
-	}
-
-	fluxidPath := filepath.Join(projectRoot, "cmd", "fluxid")
-	cmd := exec.CommandContext(testCtx(30*time.Second), "go", "build", "-o", binPath, fluxidPath)
-	cmd.Dir = projectRoot
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Failed to build fluxid: %v\nOutput: %s", err, output)
-	}
-
-	return binPath
 }

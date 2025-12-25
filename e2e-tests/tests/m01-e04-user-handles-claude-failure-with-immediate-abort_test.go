@@ -20,9 +20,16 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	buildFluxid(t, root)
 	createFailingClaudeStub(t, root, 2)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var output bytes.Buffer
 	cmd.Stdout = &output
@@ -86,9 +93,16 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 	buildFluxid(t, root)
 	createFailingClaudeStub(t, root, 3)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var output bytes.Buffer
 	cmd.Stdout = &output
@@ -165,9 +179,16 @@ func runPhaseFailureTest(t *testing.T, failOnInvoke, expectedExitCode int) {
 	buildFluxid(t, root)
 	createConditionalFailingClaudeStub(t, root, failOnInvoke, expectedExitCode)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations", "1")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var output bytes.Buffer
 	cmd.Stdout = &output

@@ -59,35 +59,36 @@ func TestExecute_ProjectConfigLoadError(t *testing.T) {
 	}
 }
 
-func TestExecute_AgentFromEnv(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	t.Setenv("HOME", tmpDir)
-	t.Setenv("FLUXID_AGENT", "echo")
-
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--dry-run"}
-
-	exitCode := Execute()
-	if exitCode != 0 {
-		t.Errorf("Expected exit code 0 with agent from env, got %d", exitCode)
-	}
-}
+// TestExecute_AgentFromEnv removed - environment variable support removed in v2.0
 
 func TestExecute_ConfigPrecedence(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 
-	// Create home config with valid supported agent
+	// Create home config with valid supported agent and commands
 	configDir := filepath.Join(tmpDir, ".fluxid")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := "agent: claude\nmax_review_cycles: 5\n"
+	configContent := `agent: claude
+max_review_cycles: 5
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
 	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	if err := os.WriteFile(filepath.Join(configDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "review.md"), []byte("# Review"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -102,35 +103,79 @@ func TestExecute_ConfigPrecedence(t *testing.T) {
 	}
 }
 
+//nolint:dupl // Test functions intentionally similar for different output formats
 func TestExecute_OutputFormatJSON(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 
+	// Create config with commands section
+	configDir := filepath.Join(tmpDir, ".fluxid")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
+		if err := os.WriteFile(filepath.Join(configDir, file), []byte("# Command"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--dry-run", "--output", "json", "echo", "test"}
+	os.Args = []string{"fluxid", "--dry-run", "--output=json", "claude", "test"}
 
 	exitCode := Execute()
 	if exitCode != 0 {
-		t.Errorf("Expected exit code 0 for --output json, got %d", exitCode)
+		t.Errorf("Expected exit code 0 for --output=json, got %d", exitCode)
 	}
 }
 
+//nolint:dupl // Test functions intentionally similar for different output formats
 func TestExecute_OutputFormatYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 
+	// Create config with commands section
+	configDir := filepath.Join(tmpDir, ".fluxid")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
+		if err := os.WriteFile(filepath.Join(configDir, file), []byte("# Command"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--dry-run", "--output", "yaml", "echo", "test"}
+	os.Args = []string{"fluxid", "--dry-run", "--output=yaml", "claude", "test"}
 
 	exitCode := Execute()
 	if exitCode != 0 {
-		t.Errorf("Expected exit code 0 for --output yaml, got %d", exitCode)
+		t.Errorf("Expected exit code 0 for --output=yaml, got %d", exitCode)
 	}
 }
 
@@ -142,7 +187,7 @@ func TestExecute_InvalidOutputFormat(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--dry-run", "--output", "invalid-format", "echo", "test"}
+	os.Args = []string{"fluxid", "--dry-run", "--output=invalid-format", "echo", "test"}
 
 	exitCode := Execute()
 	if exitCode == 0 {
@@ -150,23 +195,7 @@ func TestExecute_InvalidOutputFormat(t *testing.T) {
 	}
 }
 
-func TestExecute_EnvConfigError(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", tmpDir)
-	t.Setenv("HOME", tmpDir)
-	// Set invalid iterations value in environment
-	t.Setenv("FLUXID_ITERATIONS", "invalid-not-a-number")
-
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--dry-run", "echo"}
-
-	exitCode := Execute()
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code for env config error")
-	}
-}
+// TestExecute_EnvConfigError removed - environment variable support removed in v2.0
 
 func TestExecute_HomeConfigLoadError(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -201,6 +230,31 @@ func TestExecute_CustomSessionID(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	customSessionID := "custom-session-id-123"
 	t.Setenv("FLUXID_SESSION_ID", customSessionID)
+
+	// Create config with commands section
+	configDir := filepath.Join(tmpDir, ".fluxid")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configContent := `agent: claude
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create command files
+	if err := os.WriteFile(filepath.Join(configDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "review.md"), []byte("# Review"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()

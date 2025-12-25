@@ -15,8 +15,7 @@ func printHelp(w io.Writer, text string) {
 // printUsage prints the usage information for the fluxid CLI.
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  fluxid --claude [--fluxid-iterations N] [--fluxid-implement-retries R]\n")
-	fmt.Fprintf(os.Stderr, "         [--fluxid-no-commit] [claude-args]\n")
+	fmt.Fprintf(os.Stderr, "  fluxid --claude [--fluxid-iterations N] [--fluxid-implement-retries R] [claude-args]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid --write-history <message> [--help]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid ipc get-report-schema [--help]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid ipc write-report [--session ID] [--help]\n")
@@ -37,8 +36,6 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  --claude                      Enable workflow mode (required for workflow)\n")
 	fmt.Fprintf(os.Stderr, "  --fluxid-iterations N         Set max review cycles (default: 20)\n")
 	fmt.Fprintf(os.Stderr, "  --fluxid-implement-retries R  Set max implement retries (default: 3)\n")
-	fmt.Fprintf(os.Stderr, "  --fluxid-commit-enabled       Enable commit phase\n")
-	fmt.Fprintf(os.Stderr, "  --fluxid-no-commit            Disable commit phase\n")
 	fmt.Fprintf(os.Stderr, "  --fluxid-dry-run              Run simulation without executing agent\n")
 	fmt.Fprintf(os.Stderr, "  --fluxid-output {text|json|yaml}  Set initialization output format\n")
 	fmt.Fprintf(os.Stderr, "  --session ID                  Specify session ID (overrides FLUXID_SESSION_ID)\n")

@@ -110,8 +110,8 @@ func runImplementPhase(cfg types.Config) (int, error) {
 			continue
 		}
 
-		// Run commit phase if enabled
-		if exitCode, err := executeCommitIfEnabled(cfg); err != nil {
+		// Run commit phase
+		if exitCode, err := executeCommit(cfg); err != nil {
 			return exitCode, err
 		}
 
@@ -157,11 +157,8 @@ func executeImplementPhase(cfg types.Config, retry int) (int, error) {
 	return 0, nil
 }
 
-func executeCommitIfEnabled(cfg types.Config) (int, error) {
-	if cfg.CommitEnabled {
-		return runCommitPhase(cfg)
-	}
-	return 0, nil
+func executeCommit(cfg types.Config) (int, error) {
+	return runCommitPhase(cfg)
 }
 
 func checkImplementReportStatus(sessionID string, _ int) (int, error) {
@@ -328,13 +325,11 @@ func RunSimulation(cfg types.Config) int {
 	log.Printf("  Command file: %s", commandFile)
 	log.Println()
 
-	// Simulate commit phase if enabled
-	if cfg.CommitEnabled {
-		commandFile := getCommandFilePath(cfg, "commit")
-		log.Printf("Would execute: Iteration %d, Retry %d, Phase: commit", reviewCycle, retry)
-		log.Printf("  Command file: %s", commandFile)
-		log.Println()
-	}
+	// Simulate commit phase
+	commandFile = getCommandFilePath(cfg, "commit")
+	log.Printf("Would execute: Iteration %d, Retry %d, Phase: commit", reviewCycle, retry)
+	log.Printf("  Command file: %s", commandFile)
+	log.Println()
 
 	// Simulate synthetic PASS report for implement
 	log.Printf("Synthetic implement report: PASS")

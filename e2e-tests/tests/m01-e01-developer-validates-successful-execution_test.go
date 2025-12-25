@@ -13,10 +13,15 @@ import (
 	"time"
 )
 
-const minimalHomeConfig = `agent: echo
+// v2.0: commit_enabled removed (Phase 10), commands section required (Phase 4)
+// v2.0: only claude, codex, and opencode are valid agents.
+const minimalHomeConfig = `agent: claude
 iterations: 1
 implement_retries: 1
-commit_enabled: false
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
 `
 
 // extractExitCode extracts the exit code from an error using errors.As.
@@ -33,12 +38,17 @@ func extractExitCode(err error) int {
 
 // TestMain_SuccessfulExecutionWithDryRun validates that the CLI executes successfully
 // in dry-run mode and exits with code 0.
+//
+//nolint:funlen // E2E test with dry-run validation
 func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 	t.Parallel()
 	start := time.Now()
 
 	// Build the binary
-	binaryPath := buildFluxidBinary(t)
+	root := getProjectRoot(t)
+	buildFluxid(t, root)
+	createStubClaude(t, root)
+	binaryPath := filepath.Join(root, "bin", "fluxid")
 
 	// Setup test environment with minimal configuration
 	tmpDir := t.TempDir()
@@ -52,8 +62,9 @@ func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 		t.Fatalf("Failed to create project dir: %v", err)
 	}
 
-	// Create minimal home config to prevent validation errors
-	homeConfigPath := filepath.Join(homeDir, ".config", "fluxid", "config.yaml")
+	// v2.0: Create minimal home config to prevent validation errors
+	// Use ~/.fluxid/config.yaml (not ~/.config/fluxid/config.yaml)
+	homeConfigPath := filepath.Join(homeDir, ".fluxid", "config.yaml")
 	if err := os.MkdirAll(filepath.Dir(homeConfigPath), 0o755); err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
 	}
@@ -62,6 +73,10 @@ func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 		t.Fatalf("Failed to write home config: %v", err)
 	}
 
+	// v2.0: Create command files in config directory
+	homeConfigDir := filepath.Dir(homeConfigPath)
+	createCommandFiles(t, homeConfigDir)
+
 	// Execute fluxid with --fluxid-dry-run flag
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
@@ -69,8 +84,7 @@ func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 	cmd.Dir = projectDir
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
-		"XDG_CONFIG_HOME="+filepath.Join(homeDir, ".config"),
-		"XDG_DATA_HOME="+filepath.Join(homeDir, ".local", "share"),
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout, stderr bytes.Buffer
@@ -151,7 +165,7 @@ func TestMain_ShortHelpFlag(t *testing.T) {
 
 // TestMain_OutputFormats validates that different output formats work correctly.
 //
-//nolint:funlen // E2E test validating multiple output formats with extensive checks
+//nolint:funlen,gocognit,cyclop // E2E test validating multiple output formats with extensive checks
 func TestMain_OutputFormats(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -195,19 +209,59 @@ func TestMain_OutputFormats(t *testing.T) {
 				t.Fatalf("Failed to create project dir: %v", err)
 			}
 
-			// Create minimal home config
+			// Create minimal home config with v2.0 commands section
 			homeConfigPath := filepath.Join(homeDir, ".config", "fluxid", "config.yaml")
-			if err := os.MkdirAll(filepath.Dir(homeConfigPath), 0o755); err != nil {
+			homeConfigDir := filepath.Dir(homeConfigPath)
+			if err := os.MkdirAll(homeConfigDir, 0o755); err != nil {
 				t.Fatalf("Failed to create config dir: %v", err)
 			}
 
 			homeConfig := `agent: echo
 iterations: 1
 implement_retries: 1
-commit_enabled: false
+commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
 `
 			if err := os.WriteFile(homeConfigPath, []byte(homeConfig), 0o644); err != nil {
 				t.Fatalf("Failed to write home config: %v", err)
+			}
+
+			// Create command files in home config dir
+			commandFiles := map[string]string{
+				"implement.md": "# Implement\nImplement the required changes.",
+				"review.md":    "# Review\nReview the implementation.",
+				"commit.md":    "# Commit\nCreate a commit with changes.",
+			}
+			for filename, content := range commandFiles {
+				path := filepath.Join(homeConfigDir, filename)
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+					t.Fatalf("Failed to write command file %s: %v", filename, err)
+				}
+			}
+
+			// Create project config with commands section (v2.0 requirement)
+			projectConfigDir := filepath.Join(projectDir, ".fluxid")
+			if err := os.MkdirAll(projectConfigDir, 0o755); err != nil {
+				t.Fatalf("Failed to create project config dir: %v", err)
+			}
+			projectConfigPath := filepath.Join(projectConfigDir, "config.yaml")
+			projectConfig := `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+			if err := os.WriteFile(projectConfigPath, []byte(projectConfig), 0o644); err != nil {
+				t.Fatalf("Failed to write project config: %v", err)
+			}
+
+			// Create command files in project config dir
+			for filename, content := range commandFiles {
+				path := filepath.Join(projectConfigDir, filename)
+				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+					t.Fatalf("Failed to write project command file %s: %v", filename, err)
+				}
 			}
 
 			// Build command arguments
@@ -271,8 +325,9 @@ func TestMain_ExecutionSpeed(t *testing.T) {
 		t.Fatalf("Failed to create project dir: %v", err)
 	}
 
-	// Create minimal home config
-	homeConfigPath := filepath.Join(homeDir, ".config", "fluxid", "config.yaml")
+	// v2.0: Create minimal home config
+	// Use ~/.fluxid/config.yaml (not ~/.config/fluxid/config.yaml)
+	homeConfigPath := filepath.Join(homeDir, ".fluxid", "config.yaml")
 	if err := os.MkdirAll(filepath.Dir(homeConfigPath), 0o755); err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
 	}
@@ -280,6 +335,10 @@ func TestMain_ExecutionSpeed(t *testing.T) {
 	if err := os.WriteFile(homeConfigPath, []byte(minimalHomeConfig), 0o644); err != nil {
 		t.Fatalf("Failed to write home config: %v", err)
 	}
+
+	// v2.0: Create command files in config directory
+	homeConfigDir := filepath.Dir(homeConfigPath)
+	createCommandFiles(t, homeConfigDir)
 
 	// Run the test 3 times to ensure consistent performance
 	for iteration := 0; iteration < 3; iteration++ {
@@ -289,11 +348,7 @@ func TestMain_ExecutionSpeed(t *testing.T) {
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binaryPath, "--fluxid-dry-run", "--claude")
 		cmd.Dir = projectDir
-		cmd.Env = append(os.Environ(),
-			"HOME="+homeDir,
-			"XDG_CONFIG_HOME="+filepath.Join(homeDir, ".config"),
-			"XDG_DATA_HOME="+filepath.Join(homeDir, ".local", "share"),
-		)
+		cmd.Env = append(os.Environ(), "HOME="+homeDir)
 
 		var stdout, stderr bytes.Buffer
 		cmd.Stdout = &stdout

@@ -12,9 +12,7 @@ func TestBuildFinalConfigWithInvalidOutputFormat(t *testing.T) {
 		Agent:            "claude",
 		Iterations:       20,
 		ImplementRetries: 3,
-		CommitEnabled:    true,
 		CommandFiles:     &config.ResolvedCommandFiles{},
-		Sources:          map[string]string{},
 	}
 
 	invalidFormat := "invalid-format"
@@ -24,7 +22,6 @@ func TestBuildFinalConfigWithInvalidOutputFormat(t *testing.T) {
 		CLIDryRun:           boolPtr(false),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 	}
 
 	_, err := buildFinalConfig(resolved, args)
@@ -38,9 +35,7 @@ func TestBuildFinalConfigWithDryRun(t *testing.T) {
 		Agent:            "claude",
 		Iterations:       20,
 		ImplementRetries: 3,
-		CommitEnabled:    true,
 		CommandFiles:     &config.ResolvedCommandFiles{},
-		Sources:          map[string]string{},
 	}
 
 	args := &CLIArgs{
@@ -49,7 +44,6 @@ func TestBuildFinalConfigWithDryRun(t *testing.T) {
 		CLIDryRun:           boolPtr(true),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 	}
 
 	cfg, err := buildFinalConfig(resolved, args)
@@ -67,9 +61,7 @@ func TestBuildFinalConfigWithSessionID(t *testing.T) {
 		Agent:            "claude",
 		Iterations:       20,
 		ImplementRetries: 3,
-		CommitEnabled:    true,
 		CommandFiles:     &config.ResolvedCommandFiles{},
-		Sources:          map[string]string{},
 	}
 
 	args := &CLIArgs{
@@ -78,7 +70,6 @@ func TestBuildFinalConfigWithSessionID(t *testing.T) {
 		CLIDryRun:           boolPtr(false),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 	}
 
 	// Test with FLUXID_SESSION_ID set
@@ -99,9 +90,7 @@ func TestBuildFinalConfigWithJSONFormat(t *testing.T) {
 		Agent:            "claude",
 		Iterations:       20,
 		ImplementRetries: 3,
-		CommitEnabled:    true,
 		CommandFiles:     &config.ResolvedCommandFiles{},
-		Sources:          map[string]string{},
 	}
 
 	jsonFormat := testFormatJSON
@@ -111,7 +100,6 @@ func TestBuildFinalConfigWithJSONFormat(t *testing.T) {
 		CLIDryRun:           boolPtr(false),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 	}
 
 	cfg, err := buildFinalConfig(resolved, args)
@@ -129,9 +117,7 @@ func TestBuildFinalConfigWithYAMLFormat(t *testing.T) {
 		Agent:            "claude",
 		Iterations:       20,
 		ImplementRetries: 3,
-		CommitEnabled:    true,
 		CommandFiles:     &config.ResolvedCommandFiles{},
-		Sources:          map[string]string{},
 	}
 
 	yamlFormat := "yaml"
@@ -141,7 +127,6 @@ func TestBuildFinalConfigWithYAMLFormat(t *testing.T) {
 		CLIDryRun:           boolPtr(false),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 	}
 
 	cfg, err := buildFinalConfig(resolved, args)

@@ -1,3 +1,4 @@
+//nolint:goconst // Test file with repeated config strings
 package tests
 
 import (
@@ -18,16 +19,15 @@ func TestM02E01HomeConfigApplied(t *testing.T) {
 	configContent := `agent: claude
 implement_retries: 5
 iterations: 10
-commit_enabled: false
 `
 	tmpHome := setupHomeWithConfig(t, configContent)
 	output := runFluxidWithHome(t, root, tmpHome)
 
-	// Verify home config values are applied
-	verifyConfigLine(t, output, "Agent: claude", "source: home")
-	verifyConfigLine(t, output, "Max Review Cycles: 10", "source: home")
-	verifyConfigLine(t, output, "Max Implement Retries: 5", "source: home")
-	verifyConfigLine(t, output, "Commit Enabled: false", "source: home")
+	// v2.0: source tracking removed (Phase 9), just verify values
+	verifyConfigLine(t, output, "Agent: claude", "")
+	verifyConfigLine(t, output, "Max Review Cycles: 10", "")
+	verifyConfigLine(t, output, "Max Implement Retries: 5", "")
+	// v2.0: commit_enabled removed (Phase 10 - commits always enabled)
 }
 
 // TestM02E01DefaultsWhenNoHomeConfig validates that defaults are used when
@@ -39,17 +39,25 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	// Create temporary home directory WITHOUT config file
+	// Create temporary home with minimal v2.0 config (need commands section)
 	tmpHome := t.TempDir()
+	fluxidDir := createHomeConfigDir(t, tmpHome)
+	// Create minimal config with only commands section (other values will use defaults)
+	minimalConfig := `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	writeHomeConfig(t, fluxidDir, minimalConfig)
 
 	// Run fluxid with custom HOME
 	output := runFluxidWithHome(t, root, tmpHome)
 
-	// Verify defaults are applied with correct sources
-	verifyConfigLine(t, output, "Agent: claude", "source: default")
-	verifyConfigLine(t, output, "Max Review Cycles: 20", "source: default")
-	verifyConfigLine(t, output, "Max Implement Retries: 3", "source: default")
-	verifyConfigLine(t, output, "Commit Enabled: false", "source: default")
+	// v2.0: source tracking removed (Phase 9), just verify default values
+	verifyConfigLine(t, output, "Agent: claude", "")
+	verifyConfigLine(t, output, "Max Review Cycles: 20", "")
+	verifyConfigLine(t, output, "Max Implement Retries: 3", "")
+	// v2.0: commit_enabled removed (Phase 10 - commits always enabled)
 }
 
 // TestM02E01PartialHomeConfig validates that partial config files work correctly,
@@ -66,11 +74,12 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, configContent)
 	output := runFluxidWithHome(t, root, tmpHome)
 
+	// v2.0: source tracking removed (Phase 9)
 	// Verify partial override: iterations from home, others from defaults
-	verifyConfigLine(t, output, "Max Review Cycles: 15", "source: home")
-	verifyConfigLine(t, output, "Agent: claude", "source: default")
-	verifyConfigLine(t, output, "Max Implement Retries: 3", "source: default")
-	verifyConfigLine(t, output, "Commit Enabled: false", "source: default")
+	verifyConfigLine(t, output, "Max Review Cycles: 15", "")
+	verifyConfigLine(t, output, "Agent: claude", "")
+	verifyConfigLine(t, output, "Max Implement Retries: 3", "")
+	// v2.0: commit_enabled removed (Phase 10 - commits always enabled)
 }
 
 // TestM02E01InvalidTypeInConfig validates that invalid types are rejected with
@@ -132,12 +141,13 @@ func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
 
 	tmpHome := setupHomeWithConfig(t, basicHomeConfig)
 	output := runFluxidWithHomeAndArgs(t, root, tmpHome,
-		"--fluxid-iterations", "25",
-		"--fluxid-implement-retries", "7")
+		"--fluxid-iterations=25",
+		"--fluxid-implement-retries=7")
 
+	// v2.0: source tracking removed (Phase 9)
 	// Verify CLI overrides home config
-	verifyConfigLine(t, output, "Max Review Cycles: 25", "source: cli")
-	verifyConfigLine(t, output, "Max Implement Retries: 7", "source: cli")
+	verifyConfigLine(t, output, "Max Review Cycles: 25", "")
+	verifyConfigLine(t, output, "Max Implement Retries: 7", "")
 }
 
 // TestM02E01InitializationStatusFormat validates that the initialization status
@@ -149,7 +159,15 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with minimal v2.0 config (need commands section)
 	tmpHome := t.TempDir()
+	fluxidDir := createHomeConfigDir(t, tmpHome)
+	minimalConfig := `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	writeHomeConfig(t, fluxidDir, minimalConfig)
 	output := runFluxidWithHome(t, root, tmpHome)
 
 	// Verify initialization header
@@ -157,24 +175,19 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 		t.Errorf("Missing initialization header")
 	}
 
-	// Verify all required fields are present with source indicators
+	// v2.0: source tracking removed (Phase 9), commit_enabled removed (Phase 10)
+	// Verify all required fields are present
 	requiredFields := []string{
 		"Agent:",
 		"Session ID:",
 		"Max Review Cycles:",
 		"Max Implement Retries:",
-		"Commit Enabled:",
 	}
 
 	for _, field := range requiredFields {
 		if !strings.Contains(output, field) {
 			t.Errorf("Missing required field: %s", field)
 		}
-	}
-
-	// Verify source indicators are present
-	if !strings.Contains(output, "(source: default)") && !strings.Contains(output, "(source: home)") {
-		t.Errorf("Missing source indicators in output")
 	}
 
 	// Verify initialization appears BEFORE workflow execution

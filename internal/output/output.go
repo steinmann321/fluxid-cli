@@ -40,17 +40,12 @@ func ValidateFormat(format string) error {
 // InitializationStatus represents the initialization status output.
 // This is used by the Config type in the command package.
 type InitializationStatus struct {
-	SessionID              string            `json:"session_id" yaml:"session_id"`
-	Agent                  string            `json:"agent" yaml:"agent"`
-	AgentSource            string            `json:"agent_source" yaml:"agent_source"`
-	MaxReviewCycles        int               `json:"max_review_cycles" yaml:"max_review_cycles"`
-	ReviewCyclesSource     string            `json:"review_cycles_source" yaml:"review_cycles_source"`
-	MaxImplementRetries    int               `json:"max_implement_retries" yaml:"max_implement_retries"`
-	ImplementRetriesSource string            `json:"implement_retries_source" yaml:"implement_retries_source"`
-	CommitEnabled          bool              `json:"commit_enabled" yaml:"commit_enabled"`
-	CommitEnabledSource    string            `json:"commit_enabled_source" yaml:"commit_enabled_source"`
-	CommandFiles           *CommandFilesJSON `json:"command_files,omitempty" yaml:"command_files,omitempty"`
-	AgentArgs              []string          `json:"agent_args,omitempty" yaml:"agent_args,omitempty"`
+	SessionID           string            `json:"session_id" yaml:"session_id"`
+	Agent               string            `json:"agent" yaml:"agent"`
+	MaxReviewCycles     int               `json:"max_review_cycles" yaml:"max_review_cycles"`
+	MaxImplementRetries int               `json:"max_implement_retries" yaml:"max_implement_retries"`
+	CommandFiles        *CommandFilesJSON `json:"command_files,omitempty" yaml:"command_files,omitempty"`
+	AgentArgs           []string          `json:"agent_args,omitempty" yaml:"agent_args,omitempty"`
 }
 
 // CommandFilesJSON represents command file paths in JSON/YAML output.
@@ -101,26 +96,10 @@ func PrintText(status InitializationStatus) {
 // PrintTextToWriter outputs initialization status as human-readable text to the provided writer.
 func PrintTextToWriter(writer io.Writer, status InitializationStatus) {
 	_, _ = fmt.Fprintf(writer, "=== fluxid Workflow Initialization ===\n")
-	_, _ = fmt.Fprintf(writer, "Agent: %s (source: %s)\n", status.Agent, status.AgentSource)
+	_, _ = fmt.Fprintf(writer, "Agent: %s\n", status.Agent)
 	_, _ = fmt.Fprintf(writer, "Session ID: %s\n", status.SessionID)
-	_, _ = fmt.Fprintf(
-		writer,
-		"Max Review Cycles: %d (source: %s)\n",
-		status.MaxReviewCycles,
-		status.ReviewCyclesSource,
-	)
-	_, _ = fmt.Fprintf(
-		writer,
-		"Max Implement Retries: %d (source: %s)\n",
-		status.MaxImplementRetries,
-		status.ImplementRetriesSource,
-	)
-	_, _ = fmt.Fprintf(
-		writer,
-		"Commit Enabled: %v (source: %s)\n",
-		status.CommitEnabled,
-		status.CommitEnabledSource,
-	)
+	_, _ = fmt.Fprintf(writer, "Max Review Cycles: %d\n", status.MaxReviewCycles)
+	_, _ = fmt.Fprintf(writer, "Max Implement Retries: %d\n", status.MaxImplementRetries)
 
 	if status.CommandFiles != nil {
 		_, _ = fmt.Fprintf(writer, "\n")

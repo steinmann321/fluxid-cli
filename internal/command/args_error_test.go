@@ -11,7 +11,7 @@ func TestParseArgsIterationsNegative(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-iterations", "-5", "--claude"}
+	os.Args = []string{"fluxid", "--fluxid-iterations=-5", "--claude"}
 	_, err := ParseArgs()
 
 	if err == nil {
@@ -27,7 +27,7 @@ func TestParseArgsIterationsZero(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-iterations", "0", "--claude"}
+	os.Args = []string{"fluxid", "--fluxid-iterations=0", "--claude"}
 	_, err := ParseArgs()
 
 	if err == nil {
@@ -43,7 +43,7 @@ func TestParseArgsImplementRetriesNegative(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-implement-retries", "-3", "--claude"}
+	os.Args = []string{"fluxid", "--fluxid-implement-retries=-3", "--claude"}
 	_, err := ParseArgs()
 
 	if err == nil {
@@ -59,11 +59,15 @@ func TestParseArgsIterationsInvalid(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-iterations", "not-a-number", "--claude"}
+	os.Args = []string{"fluxid", "--fluxid-iterations=not-a-number", "--claude"}
 	_, err := ParseArgs()
 
 	if err == nil {
 		t.Error("Expected error for invalid iterations value")
+	}
+
+	if !strings.Contains(err.Error(), "requires a valid integer") {
+		t.Errorf("Expected error about valid integer, got: %v", err)
 	}
 }
 
@@ -71,46 +75,18 @@ func TestParseArgsImplementRetriesInvalid(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-implement-retries", "invalid", "--claude"}
+	os.Args = []string{"fluxid", "--fluxid-implement-retries=invalid", "--claude"}
 	_, err := ParseArgs()
 
 	if err == nil {
 		t.Error("Expected error for invalid implement retries value")
 	}
-}
 
-func TestParseArgsIterationsMissing(t *testing.T) {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--fluxid-iterations"}
-	_, err := ParseArgs()
-
-	if err == nil {
-		t.Error("Expected error for missing iterations value")
+	if !strings.Contains(err.Error(), "requires a valid integer") {
+		t.Errorf("Expected error about valid integer, got: %v", err)
 	}
 }
 
-func TestParseArgsImplementRetriesMissing(t *testing.T) {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--fluxid-implement-retries"}
-	_, err := ParseArgs()
-
-	if err == nil {
-		t.Error("Expected error for missing implement retries value")
-	}
-}
-
-func TestParseArgsOutputFormatMissing(t *testing.T) {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--fluxid-output"}
-	_, err := ParseArgs()
-
-	if err == nil {
-		t.Error("Expected error for missing output format value")
-	}
-}
+// TestParseArgsIterationsMissing removed - space syntax rejection is tested in args_equals_syntax_test.go
+// TestParseArgsImplementRetriesMissing removed - space syntax rejection is tested in args_equals_syntax_test.go
+// TestParseArgsOutputFormatMissing removed - space syntax rejection is tested in args_equals_syntax_test.go

@@ -15,12 +15,19 @@ import (
 func testAgentArgsPassthrough(t *testing.T, root, agentFlag, argsLabel string, customArgs []string) {
 	t.Helper()
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	args := append([]string{agentFlag}, customArgs...)
-	args = append(args, "--fluxid-iterations", "1")
+	args = append(args, "--fluxid-iterations=1")
 	// #nosec G204 -- Test helper with controlled test inputs
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -46,6 +53,8 @@ func testAgentArgsPassthrough(t *testing.T, root, agentFlag, argsLabel string, c
 }
 
 // runFluxidWithConfig runs fluxid with custom home, working dir, env, and CLI args.
+//
+//nolint:unparam // env parameter maintained for API consistency
 func runFluxidWithConfig(t *testing.T, root, workDir, homeDir string, env []string, args []string) (string, error) {
 	t.Helper()
 
@@ -79,12 +88,21 @@ func runFluxidWithOutputFormat(
 ) string {
 	t.Helper()
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	args := []string{"--fluxid-output", format, "--fluxid-dry-run", "--claude"}
+	// v2.0: equals syntax only (Phase 8)
+	args := []string{"--fluxid-output=" + format, "--fluxid-dry-run", "--claude"}
 	args = append(args, extraArgs...)
 
 	// #nosec G204 -- Test helper with controlled test inputs
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -105,9 +123,17 @@ func runFluxidWithOutputFormat(
 func runFluxidDefaultFormat(t *testing.T, root string) string {
 	t.Helper()
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	// #nosec G204 -- Test helper with controlled test inputs
 	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

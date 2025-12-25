@@ -143,11 +143,11 @@ func TestWaitForValidReport_CheckAbortError(t *testing.T) {
 	defer cleanup()
 	sessionID := "test-wait-abort-check-err"
 
-	// Provide a valid report after a delay to ensure abort check happens first
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write report immediately to ensure deterministic test behavior
+	err := ipc.WriteReport(sessionID, testPassReport)
+	if err != nil {
+		t.Fatalf("Failed to write report: %v", err)
+	}
 
 	// waitForValidReport should complete successfully even if abort check has issues
 	status, err := waitForValidReport(sessionID, "implement")

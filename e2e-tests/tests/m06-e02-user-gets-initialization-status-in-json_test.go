@@ -3,6 +3,8 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -15,18 +17,14 @@ const (
 )
 
 // InitializationStatusJSON represents the JSON output structure.
+// v2.0: source tracking removed (Phase 9), commit_enabled removed (Phase 10).
 type InitializationStatusJSON struct {
-	SessionID              string            `json:"session_id"`
-	Agent                  string            `json:"agent"`
-	AgentSource            string            `json:"agent_source"`
-	MaxReviewCycles        int               `json:"max_review_cycles"`
-	ReviewCyclesSource     string            `json:"review_cycles_source"`
-	MaxImplementRetries    int               `json:"max_implement_retries"`
-	ImplementRetriesSource string            `json:"implement_retries_source"`
-	CommitEnabled          bool              `json:"commit_enabled"`
-	CommitEnabledSource    string            `json:"commit_enabled_source"`
-	CommandFiles           *CommandFilesJSON `json:"command_files,omitempty"`
-	AgentArgs              []string          `json:"agent_args,omitempty"`
+	SessionID           string            `json:"session_id"`
+	Agent               string            `json:"agent"`
+	MaxReviewCycles     int               `json:"max_review_cycles"`
+	MaxImplementRetries int               `json:"max_implement_retries"`
+	CommandFiles        *CommandFilesJSON `json:"command_files,omitempty"`
+	AgentArgs           []string          `json:"agent_args,omitempty"`
 }
 
 // CommandFilesJSON represents command file paths in JSON output.
@@ -37,8 +35,6 @@ type CommandFilesJSON struct {
 }
 
 // TestM06E02JSONOutputBasic validates basic JSON output functionality.
-//
-//nolint:cyclop // E2E test with JSON parsing and field validation
 func TestM06E02JSONOutputBasic(t *testing.T) {
 	t.Parallel()
 
@@ -46,8 +42,16 @@ func TestM06E02JSONOutputBasic(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output", "json", "--fluxid-dry-run", "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output=json", "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -67,6 +71,7 @@ func TestM06E02JSONOutputBasic(t *testing.T) {
 		t.Fatalf("Failed to parse JSON output: %v\nOutput:\n%s", err, output)
 	}
 
+	// v2.0: source tracking removed (Phase 9), commit_enabled removed (Phase 10)
 	// Verify required fields are present
 	if status.SessionID == "" {
 		t.Errorf("Expected session_id to be non-empty, got: %q", status.SessionID)
@@ -74,23 +79,11 @@ func TestM06E02JSONOutputBasic(t *testing.T) {
 	if status.Agent != agentClaude {
 		t.Errorf("Expected agent to be 'claude', got: %q", status.Agent)
 	}
-	if status.AgentSource == "" {
-		t.Errorf("Expected agent_source to be non-empty, got: %q", status.AgentSource)
-	}
 	if status.MaxReviewCycles <= 0 {
 		t.Errorf("Expected max_review_cycles to be positive, got: %d", status.MaxReviewCycles)
 	}
-	if status.ReviewCyclesSource == "" {
-		t.Errorf("Expected review_cycles_source to be non-empty, got: %q", status.ReviewCyclesSource)
-	}
 	if status.MaxImplementRetries <= 0 {
 		t.Errorf("Expected max_implement_retries to be positive, got: %d", status.MaxImplementRetries)
-	}
-	if status.ImplementRetriesSource == "" {
-		t.Errorf("Expected implement_retries_source to be non-empty, got: %q", status.ImplementRetriesSource)
-	}
-	if status.CommitEnabledSource == "" {
-		t.Errorf("Expected commit_enabled_source to be non-empty, got: %q", status.CommitEnabledSource)
 	}
 }
 
@@ -103,19 +96,19 @@ func TestM06E02JSONOutputWithConfig(t *testing.T) {
 	createStubClaude(t, root)
 
 	output := runFluxidWithOutputFormat(t, root, "json",
-		"--fluxid-iterations", "5",
-		"--fluxid-implement-retries", "2")
+		"--fluxid-iterations=5",
+		"--fluxid-implement-retries=2")
 
 	var status InitializationStatusJSON
 	if err := json.Unmarshal([]byte(output), &status); err != nil {
 		t.Fatalf("Failed to parse JSON output: %v\nOutput:\n%s", err, output)
 	}
 
+	// v2.0: source tracking removed (Phase 9)
 	// Verify configured values using helper
 	verifyConfigValues(t,
 		status.MaxReviewCycles, status.MaxImplementRetries,
-		status.ReviewCyclesSource, status.ImplementRetriesSource,
-		5, 2, sourceTypeCLI)
+		5, 2)
 }
 
 // TestM06E02DefaultFormatIsText validates that default output format is text.
@@ -135,6 +128,8 @@ func TestM06E02DefaultFormatIsText(t *testing.T) {
 }
 
 // TestM06E02UnknownFormatRejected validates that unknown format values are rejected.
+//
+//nolint:dupl // Test functions intentionally similar for different error cases
 func TestM06E02UnknownFormatRejected(t *testing.T) {
 	t.Parallel()
 
@@ -142,8 +137,16 @@ func TestM06E02UnknownFormatRejected(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output", "xml", "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output=xml", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -208,6 +211,7 @@ func TestM06E02JSONOutputStructure(t *testing.T) {
 		t.Fatalf("Failed to parse JSON output: %v\nOutput:\n%s", err, output)
 	}
 
-	// Verify agent args and source using helper
-	verifyAgentArgsAndSource(t, status.AgentArgs, status.Agent, status.AgentSource, agentClaude, sourceTypeCLI)
+	// v2.0: source tracking removed (Phase 9)
+	// Verify agent args using helper
+	verifyAgentArgsAndSource(t, status.AgentArgs, status.Agent, agentClaude)
 }

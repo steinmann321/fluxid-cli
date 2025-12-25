@@ -25,12 +25,10 @@ func TestRunSimulation(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 2,
-		CommitEnabled:       true,
 		DryRun:              true,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode := RunSimulation(cfg)
@@ -61,59 +59,7 @@ func TestRunSimulation(t *testing.T) {
 	}
 }
 
-func TestRunSimulation_NoCommit(t *testing.T) {
-	// Test simulation without commit phase
-	var buf bytes.Buffer
-	originalOutput := log.Writer()
-	log.SetOutput(&buf)
-	defer log.SetOutput(originalOutput)
-
-	cfg := types.Config{
-		SessionID:           "test-sim-no-commit",
-		Agent:               "claude",
-		MaxReviewCycles:     1,
-		MaxImplementRetries: 1,
-		CommitEnabled:       false,
-		DryRun:              true,
-		CommandFiles:        nil,
-		AgentArgs:           []string{},
-		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
-	}
-
-	exitCode := RunSimulation(cfg)
-	if exitCode != 0 {
-		t.Errorf("Expected exit code 0, got %d", exitCode)
-	}
-
-	output := buf.String()
-
-	// Verify simulation output doesn't contain commit phase
-	if strings.Contains(output, "Phase: commit") {
-		t.Errorf("Expected simulation without commit phase, but found commit in output:\n%s", output)
-	}
-
-	// But should contain implement and review
-	if !strings.Contains(output, "Phase: implement") {
-		t.Error("Expected simulation to contain implement phase")
-	}
-	if !strings.Contains(output, "Phase: review") {
-		t.Error("Expected simulation to contain review phase")
-	}
-
-	// Should contain synthetic PASS reports
-	if !strings.Contains(output, "Synthetic implement report: PASS") {
-		t.Error("Expected simulation to contain synthetic implement PASS report")
-	}
-	if !strings.Contains(output, "Synthetic review report: PASS") {
-		t.Error("Expected simulation to contain synthetic review PASS report")
-	}
-
-	// Should show completion message
-	if !strings.Contains(output, "Simulated workflow completed successfully") {
-		t.Error("Expected simulation to show completion message")
-	}
-}
+// TestRunSimulation_NoCommit removed - commit phase is always enabled in v2.0
 
 func TestGetCommandFilePath_NoCommandFiles(t *testing.T) {
 	cfg := types.Config{
@@ -122,11 +68,9 @@ func TestGetCommandFilePath_NoCommandFiles(t *testing.T) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	result := getCommandFilePath(cfg, "implement")
@@ -142,7 +86,6 @@ func TestGetCommandFilePath_WithCommandFiles(t *testing.T) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "/path/to/implement.md",
@@ -150,7 +93,6 @@ func TestGetCommandFilePath_WithCommandFiles(t *testing.T) {
 			CommitPath:    "/path/to/commit.md",
 		},
 		OutputFormat: output.FormatText,
-		Sources:      map[string]string{},
 	}
 
 	tests := []struct {
@@ -180,7 +122,6 @@ func TestGetCommandFilePath_PartialCommandFiles(t *testing.T) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "/path/to/implement.md",
@@ -188,7 +129,6 @@ func TestGetCommandFilePath_PartialCommandFiles(t *testing.T) {
 			CommitPath:    "",
 		},
 		OutputFormat: output.FormatText,
-		Sources:      map[string]string{},
 	}
 
 	// Test that we fall back to built-in prompt for missing command files

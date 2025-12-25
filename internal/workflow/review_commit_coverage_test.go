@@ -21,14 +21,12 @@ func TestRunCommitPhase_AgentFailure(t *testing.T) {
 	sessionID := "test-commit-fail-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
-		SessionID:     sessionID,
-		Agent:         testAgentFalse,
-		AgentArgs:     []string{},
-		CommitEnabled: true,
-		DryRun:        false,
-		CommandFiles:  &config.ResolvedCommandFiles{},
-		OutputFormat:  output.FormatText,
-		Sources:       map[string]string{},
+		SessionID:    sessionID,
+		Agent:        testAgentFalse,
+		AgentArgs:    []string{},
+		DryRun:       false,
+		CommandFiles: &config.ResolvedCommandFiles{},
+		OutputFormat: output.FormatText,
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -48,14 +46,12 @@ func TestRunCommitPhase_AgentFailsZeroExit(t *testing.T) {
 	sessionID := "test-commit-fail-zeroexit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 
 	cfg := types.Config{
-		SessionID:     sessionID,
-		Agent:         "/nonexistent/command/path", // Will fail to execute
-		AgentArgs:     []string{},
-		CommitEnabled: true,
-		DryRun:        false,
-		CommandFiles:  &config.ResolvedCommandFiles{},
-		OutputFormat:  output.FormatText,
-		Sources:       map[string]string{},
+		SessionID:    sessionID,
+		Agent:        "/nonexistent/command/path", // Will fail to execute
+		AgentArgs:    []string{},
+		DryRun:       false,
+		CommandFiles: &config.ResolvedCommandFiles{},
+		OutputFormat: output.FormatText,
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -80,7 +76,6 @@ func TestRunReviewPhase_AgentNonZeroExit(t *testing.T) {
 		DryRun:       false,
 		CommandFiles: &config.ResolvedCommandFiles{},
 		OutputFormat: output.FormatText,
-		Sources:      map[string]string{},
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
@@ -109,7 +104,6 @@ func TestRunReviewPhase_AgentFailsZeroExit(t *testing.T) {
 		DryRun:       false,
 		CommandFiles: &config.ResolvedCommandFiles{},
 		OutputFormat: output.FormatText,
-		Sources:      map[string]string{},
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
@@ -138,7 +132,6 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 		DryRun:       false,
 		CommandFiles: &config.ResolvedCommandFiles{},
 		OutputFormat: output.FormatText,
-		Sources:      map[string]string{},
 	}
 
 	// Set abort flag before calling runReviewPhase

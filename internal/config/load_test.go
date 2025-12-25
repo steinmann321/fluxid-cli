@@ -37,7 +37,6 @@ func TestLoadHomeConfig(t *testing.T) {
 					Agent:            strPtr("claude"),
 					Iterations:       intPtr(10),
 					ImplementRetries: intPtr(5),
-					CommitEnabled:    boolPtr(false),
 				}
 
 				data, _ := yaml.Marshal(config)
@@ -49,7 +48,6 @@ func TestLoadHomeConfig(t *testing.T) {
 				Agent:            strPtr("claude"),
 				Iterations:       intPtr(10),
 				ImplementRetries: intPtr(5),
-				CommitEnabled:    boolPtr(false),
 			},
 			wantErr: false,
 		},
@@ -135,7 +133,7 @@ func TestLoadHomeConfig(t *testing.T) {
 	}
 }
 
-//nolint:cyclop,funlen // Unit test with table-driven tests for project config scenarios
+//nolint:cyclop,funlen // Unit test with table-driven tests for default config scenarios
 func TestLoadProjectConfig(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -163,7 +161,6 @@ func TestLoadProjectConfig(t *testing.T) {
 					Agent:            strPtr("codex"),
 					Iterations:       intPtr(15),
 					ImplementRetries: intPtr(7),
-					CommitEnabled:    boolPtr(true),
 				}
 
 				data, _ := yaml.Marshal(config)
@@ -175,7 +172,6 @@ func TestLoadProjectConfig(t *testing.T) {
 				Agent:            strPtr("codex"),
 				Iterations:       intPtr(15),
 				ImplementRetries: intPtr(7),
-				CommitEnabled:    boolPtr(true),
 			},
 			wantErr: false,
 		},
@@ -241,5 +237,33 @@ func TestLoadProjectConfig(t *testing.T) {
 				t.Errorf("LoadProjectConfig() = %+v, want %+v", got, testCase.wantConfig)
 			}
 		})
+	}
+}
+
+func TestGetHomeConfigPath(t *testing.T) {
+	t.Parallel()
+	path, err := GetHomeConfigPath()
+	if err != nil {
+		t.Errorf("GetHomeConfigPath() unexpected error: %v", err)
+	}
+	if path == "" {
+		t.Error("GetHomeConfigPath() returned empty path")
+	}
+	if !filepath.IsAbs(path) {
+		t.Errorf("GetHomeConfigPath() returned non-absolute path: %s", path)
+	}
+}
+
+func TestGetProjectConfigPath(t *testing.T) {
+	t.Parallel()
+	path, err := GetProjectConfigPath()
+	if err != nil {
+		t.Errorf("GetProjectConfigPath() unexpected error: %v", err)
+	}
+	if path == "" {
+		t.Error("GetProjectConfigPath() returned empty path")
+	}
+	if !filepath.IsAbs(path) {
+		t.Errorf("GetProjectConfigPath() returned non-absolute path: %s", path)
 	}
 }

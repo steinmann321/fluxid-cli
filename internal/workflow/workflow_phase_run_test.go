@@ -27,11 +27,9 @@ func TestRunImplementPhase_Success(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	go func() {
@@ -62,11 +60,9 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	go func() {
@@ -97,11 +93,9 @@ func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Write review PASS report before calling runReviewPhase
@@ -134,11 +128,9 @@ func TestRunCommitPhase_SuccessViaRun(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       true,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -168,11 +160,9 @@ func TestRunImplementPhase_WithCommandFile(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        cmdFiles,
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	go func() {

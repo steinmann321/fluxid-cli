@@ -1,3 +1,4 @@
+//nolint:gocritic // Test helper with string concatenation
 package tests
 
 import (
@@ -6,10 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 // Common test configuration constants.
+// v2.0: commit_enabled removed (Phase 10 - commits always enabled).
 const (
 	basicHomeConfig = `iterations: 10
 implement_retries: 5
@@ -17,7 +20,6 @@ implement_retries: 5
 	fullHomeConfig = `agent: claude
 implement_retries: 5
 iterations: 10
-commit_enabled: false
 `
 )
 
@@ -33,13 +35,26 @@ func createHomeConfigDir(t *testing.T, homeDir string) string {
 }
 
 // writeHomeConfig writes a config.yaml file to ~/.fluxid/config.yaml.
+// v2.0: Automatically adds commands section and creates command files if not present.
 func writeHomeConfig(t *testing.T, fluxidDir, content string) {
 	t.Helper()
+
+	// v2.0: Ensure commands section is present
+	if !strings.Contains(content, "commands:") {
+		content = content + `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	}
 
 	configPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
+
+	// v2.0: Create command files
+	createCommandFiles(t, fluxidDir)
 }
 
 // runFluxidWithHome runs fluxid with a custom HOME directory and returns stdout.
@@ -146,29 +161,9 @@ func runFluxidInDir(t *testing.T, root, homeDir, workDir string) {
 }
 
 // runFluxidInDirWithOutput runs fluxid in a specific working directory and returns output.
-func runFluxidInDirWithOutput(t *testing.T, root, homeDir, workDir string) string {
-	t.Helper()
-
-	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath)
-	cmd.Dir = workDir
-	cmd.Env = append(os.Environ(),
-		"HOME="+homeDir,
-		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
-	)
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stdout
-
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
-	}
-
-	return stdout.String()
-}
 
 // createProjectWithConfig creates a temporary project dir with .fluxid/config.yaml content.
+// v2.0: Automatically adds commands section and creates command files if not present.
 func createProjectWithConfig(t *testing.T, content string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -176,10 +171,24 @@ func createProjectWithConfig(t *testing.T, content string) string {
 	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
 		t.Fatalf("Failed to create project .fluxid dir: %v", err)
 	}
+
+	// v2.0: Ensure commands section is present
+	if !strings.Contains(content, "commands:") {
+		content = content + `commands:
+  implement: implement.md
+  review: review.md
+  commit: commit.md
+`
+	}
+
 	cfgPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
 		t.Fatalf("Failed to write project config: %v", err)
 	}
+
+	// v2.0: Create command files
+	createCommandFiles(t, fluxidDir)
+
 	return dir
 }
 

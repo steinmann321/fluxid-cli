@@ -41,12 +41,10 @@ func TestRunWorkflow_ImmediateAbort(t *testing.T) {
 		Agent:               "echo",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := workflow.Run(cfg)
@@ -74,12 +72,10 @@ func TestRunWorkflow_MultipleReviewCycles(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := workflow.Run(cfg)
@@ -106,12 +102,10 @@ func TestRunWorkflow_ChecksAbortBeforeReview(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := workflow.Run(cfg)
@@ -143,12 +137,10 @@ func TestRunWorkflow_SuccessFirstCycle(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Write reports asynchronously to simulate agent responses
@@ -227,12 +219,10 @@ func TestRunWorkflow_FailThenPass(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Strategy: Write a PASS report before workflow starts

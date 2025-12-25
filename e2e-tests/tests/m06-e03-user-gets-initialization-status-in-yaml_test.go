@@ -2,6 +2,8 @@ package tests
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -16,18 +18,14 @@ const (
 )
 
 // InitializationStatusYAML represents the YAML output structure.
+// v2.0: source tracking removed (Phase 9), commit_enabled removed (Phase 10).
 type InitializationStatusYAML struct {
-	SessionID              string            `yaml:"session_id"`
-	Agent                  string            `yaml:"agent"`
-	AgentSource            string            `yaml:"agent_source"`
-	MaxReviewCycles        int               `yaml:"max_review_cycles"`
-	ReviewCyclesSource     string            `yaml:"review_cycles_source"`
-	MaxImplementRetries    int               `yaml:"max_implement_retries"`
-	ImplementRetriesSource string            `yaml:"implement_retries_source"`
-	CommitEnabled          bool              `yaml:"commit_enabled"`
-	CommitEnabledSource    string            `yaml:"commit_enabled_source"`
-	CommandFiles           *CommandFilesYAML `yaml:"command_files,omitempty"`
-	AgentArgs              []string          `yaml:"agent_args,omitempty"`
+	SessionID           string            `yaml:"session_id"`
+	Agent               string            `yaml:"agent"`
+	MaxReviewCycles     int               `yaml:"max_review_cycles"`
+	MaxImplementRetries int               `yaml:"max_implement_retries"`
+	CommandFiles        *CommandFilesYAML `yaml:"command_files,omitempty"`
+	AgentArgs           []string          `yaml:"agent_args,omitempty"`
 }
 
 // CommandFilesYAML represents command file paths in YAML output.
@@ -38,8 +36,6 @@ type CommandFilesYAML struct {
 }
 
 // TestM06E03YAMLOutputBasic validates basic YAML output functionality.
-//
-//nolint:cyclop // E2E test with YAML parsing and field validation
 func TestM06E03YAMLOutputBasic(t *testing.T) {
 	t.Parallel()
 
@@ -47,8 +43,16 @@ func TestM06E03YAMLOutputBasic(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output", "yaml", "--fluxid-dry-run", "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output=yaml", "--fluxid-dry-run", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -75,23 +79,11 @@ func TestM06E03YAMLOutputBasic(t *testing.T) {
 	if status.Agent != "claude" {
 		t.Errorf("Expected agent to be 'claude', got: %q", status.Agent)
 	}
-	if status.AgentSource == "" {
-		t.Errorf("Expected agent_source to be non-empty, got: %q", status.AgentSource)
-	}
 	if status.MaxReviewCycles <= 0 {
 		t.Errorf("Expected max_review_cycles to be positive, got: %d", status.MaxReviewCycles)
 	}
-	if status.ReviewCyclesSource == "" {
-		t.Errorf("Expected review_cycles_source to be non-empty, got: %q", status.ReviewCyclesSource)
-	}
 	if status.MaxImplementRetries <= 0 {
 		t.Errorf("Expected max_implement_retries to be positive, got: %d", status.MaxImplementRetries)
-	}
-	if status.ImplementRetriesSource == "" {
-		t.Errorf("Expected implement_retries_source to be non-empty, got: %q", status.ImplementRetriesSource)
-	}
-	if status.CommitEnabledSource == "" {
-		t.Errorf("Expected commit_enabled_source to be non-empty, got: %q", status.CommitEnabledSource)
 	}
 }
 
@@ -104,19 +96,19 @@ func TestM06E03YAMLOutputWithConfig(t *testing.T) {
 	createStubClaude(t, root)
 
 	output := runFluxidWithOutputFormat(t, root, "yaml",
-		"--fluxid-iterations", "5",
-		"--fluxid-implement-retries", "2")
+		"--fluxid-iterations=5",
+		"--fluxid-implement-retries=2")
 
 	var status InitializationStatusYAML
 	if err := yaml.Unmarshal([]byte(output), &status); err != nil {
 		t.Fatalf("Failed to parse YAML output: %v\nOutput:\n%s", err, output)
 	}
 
+	// v2.0: source tracking removed (Phase 9)
 	// Verify configured values using helper
 	verifyConfigValues(t,
 		status.MaxReviewCycles, status.MaxImplementRetries,
-		status.ReviewCyclesSource, status.ImplementRetriesSource,
-		5, 2, yamlSourceTypeCLI)
+		5, 2)
 }
 
 // TestM06E03DefaultFormatIsText validates that default output format is text when flag omitted.
@@ -136,6 +128,8 @@ func TestM06E03DefaultFormatIsText(t *testing.T) {
 }
 
 // TestM06E03UnknownFormatRejected validates that unknown format values are rejected.
+//
+//nolint:dupl // Test functions intentionally similar for different error cases
 func TestM06E03UnknownFormatRejected(t *testing.T) {
 	t.Parallel()
 
@@ -143,8 +137,16 @@ func TestM06E03UnknownFormatRejected(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
+	// Create temporary home with v2.0 config
+	tmpHome := t.TempDir()
+	setupConfigWithCommands(t, tmpHome, "claude")
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output", "toml", "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output=toml", "--claude")
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		"HOME="+tmpHome,
+	)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -209,6 +211,7 @@ func TestM06E03YAMLOutputStructure(t *testing.T) {
 		t.Fatalf("Failed to parse YAML output: %v\nOutput:\n%s", err, output)
 	}
 
-	// Verify agent args and source using helper
-	verifyAgentArgsAndSource(t, status.AgentArgs, status.Agent, status.AgentSource, yamlAgentClaude, yamlSourceTypeCLI)
+	// v2.0: source tracking removed (Phase 9)
+	// Verify agent args using helper
+	verifyAgentArgsAndSource(t, status.AgentArgs, status.Agent, yamlAgentClaude)
 }

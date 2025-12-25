@@ -92,39 +92,6 @@ func TestM05E05MultipleAgentFlagsError(t *testing.T) {
 	}
 }
 
-func testEnvVarAgent(t *testing.T, root string) {
-	t.Helper()
-
-	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath)
-	cmd.Env = append(
-		os.Environ(),
-		"FLUXID_AGENT=foo",
-		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
-	)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err == nil {
-		t.Fatal("Expected error for unsupported agent, but succeeded")
-	}
-
-	stderrStr := stderr.String()
-	if !strings.Contains(stderrStr, "unsupported agent") {
-		t.Errorf("Expected error about unsupported agent, got:\n%s", stderrStr)
-	}
-	if !strings.Contains(stderrStr, "foo") {
-		t.Errorf("Expected error to mention invalid agent 'foo', got:\n%s", stderrStr)
-	}
-	hasAllAgents := strings.Contains(stderrStr, "claude") &&
-		strings.Contains(stderrStr, "codex") &&
-		strings.Contains(stderrStr, "opencode")
-	if !hasAllAgents {
-		t.Errorf("Expected error to list supported agents, got:\n%s", stderrStr)
-	}
-}
-
 func testHomeConfigAgent(t *testing.T, root string) {
 	t.Helper()
 
@@ -206,16 +173,12 @@ func testProjectConfigAgent(t *testing.T, root string) {
 }
 
 // TestM05E05UnsupportedAgentError validates clear error for unsupported agent values.
+// v2.0: environment variable support removed (Phase 7).
 func TestM05E05UnsupportedAgentError(t *testing.T) {
 	t.Parallel()
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-
-	t.Run("unsupported agent via environment variable", func(t *testing.T) {
-		t.Parallel()
-		testEnvVarAgent(t, root)
-	})
 
 	t.Run("unsupported agent via home config", func(t *testing.T) {
 		t.Parallel()

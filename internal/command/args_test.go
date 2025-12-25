@@ -1,4 +1,4 @@
-//nolint:paralleltest // CLI argument parsing tests
+//nolint:paralleltest,goconst // CLI argument parsing tests with repeated test strings
 package command
 
 import (
@@ -10,7 +10,7 @@ func TestParseArgsWithNoAgentFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-iterations", "20"}
+	os.Args = []string{"fluxid", "--fluxid-iterations=20"}
 	args, err := ParseArgs()
 	if err != nil {
 		t.Errorf("Expected no error when agent flag is optional, got: %v", err)
@@ -60,10 +60,6 @@ func TestParseArgsWithClaudeOnly(t *testing.T) {
 		t.Errorf("Expected cliImplementRetries=nil, got %v", args.CLIImplementRetries)
 	}
 
-	if args.CLICommitEnabled != nil {
-		t.Errorf("Expected cliCommitEnabled=nil, got %v", args.CLICommitEnabled)
-	}
-
 	if len(args.AgentArgs) != 0 {
 		t.Errorf("Expected empty agentArgs, got %v", args.AgentArgs)
 	}
@@ -76,9 +72,8 @@ func TestParseArgsWithAllFlags(t *testing.T) {
 
 	os.Args = []string{
 		"fluxid", "--claude", "--model", "gpt-4",
-		"--fluxid-iterations", "25",
-		"--fluxid-implement-retries", "8",
-		"--fluxid-no-commit",
+		"--fluxid-iterations=25",
+		"--fluxid-implement-retries=8",
 	}
 	args, err := ParseArgs()
 	if err != nil {
@@ -95,10 +90,6 @@ func TestParseArgsWithAllFlags(t *testing.T) {
 
 	if args.CLIImplementRetries == nil || *args.CLIImplementRetries != 8 {
 		t.Errorf("Expected cliImplementRetries=8, got %v", args.CLIImplementRetries)
-	}
-
-	if args.CLICommitEnabled == nil || *args.CLICommitEnabled != false {
-		t.Errorf("Expected cliCommitEnabled=false, got %v", args.CLICommitEnabled)
 	}
 
 	if len(args.AgentArgs) != 2 || args.AgentArgs[0] != "--model" || args.AgentArgs[1] != "gpt-4" {
@@ -156,19 +147,13 @@ func TestParseArgsOpencodeAgent(t *testing.T) {
 	}
 }
 
-func TestOsEnvGetenvNonexistent(t *testing.T) {
-	env := osEnv{}
-	got := env.Getenv("NONEXISTENT_FLUXID_TEST_VAR_12345")
-	if got != "" {
-		t.Errorf("Expected empty string for nonexistent var, got %v", got)
-	}
-}
+// TestOsEnvGetenvNonexistent removed - environment variable support removed in v2.0
 
 func TestParseArgsWithFluxidOutputFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-output", "json", "--claude"}
+	os.Args = []string{"fluxid", "--fluxid-output=json", "--claude"}
 	args, err := ParseArgs()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -213,7 +198,7 @@ func TestParseArgsWithFluxidIterationsFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-iterations", "5", "claude"}
+	os.Args = []string{"fluxid", "--fluxid-iterations=5", "claude"}
 	args, err := ParseArgs()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -228,7 +213,7 @@ func TestParseArgsWithFluxidImplementRetriesFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-implement-retries", "3", "claude"}
+	os.Args = []string{"fluxid", "--fluxid-implement-retries=3", "claude"}
 	args, err := ParseArgs()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -239,35 +224,8 @@ func TestParseArgsWithFluxidImplementRetriesFlag(t *testing.T) {
 	}
 }
 
-func TestParseArgsWithFluxidCommitEnabledFlag(t *testing.T) {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--fluxid-commit-enabled", "claude"}
-	args, err := ParseArgs()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	if args.CLICommitEnabled == nil || *args.CLICommitEnabled != true {
-		t.Errorf("Expected commit enabled true, got %v", args.CLICommitEnabled)
-	}
-}
-
-func TestParseArgsWithFluxidNoCommitFlag(t *testing.T) {
-	oldArgs := os.Args
-	defer func() { os.Args = oldArgs }()
-
-	os.Args = []string{"fluxid", "--fluxid-no-commit", "claude"}
-	args, err := ParseArgs()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	if args.CLICommitEnabled == nil || *args.CLICommitEnabled != false {
-		t.Errorf("Expected commit enabled false, got %v", args.CLICommitEnabled)
-	}
-}
+// TestParseArgsWithFluxidCommitEnabledFlag removed - commit toggle flags removed in v2.0
+// TestParseArgsWithFluxidNoCommitFlag removed - commit toggle flags removed in v2.0
 
 func TestParseArgsWithFluxidDryRunFlag(t *testing.T) {
 	oldArgs := os.Args

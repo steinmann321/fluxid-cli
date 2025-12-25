@@ -1,3 +1,4 @@
+//nolint:exhaustruct // Test file with partial struct initialization
 package command
 
 import (
@@ -38,13 +39,11 @@ func TestBuildFinalConfig_DefaultValues(t *testing.T) {
 		Agent:            testAgentClaude,
 		Iterations:       3,
 		ImplementRetries: 2,
-		CommitEnabled:    true,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "",
 			ReviewPath:    "",
 			CommitPath:    "",
 		},
-		Sources: map[string]string{},
 	}
 
 	args := &CLIArgs{
@@ -52,7 +51,6 @@ func TestBuildFinalConfig_DefaultValues(t *testing.T) {
 		AgentArgs:           []string{"test", "args"},
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     nil,
 	}
@@ -76,13 +74,11 @@ func TestBuildFinalConfig_WithSessionID(t *testing.T) {
 		Agent:            testAgentClaude,
 		Iterations:       1,
 		ImplementRetries: 1,
-		CommitEnabled:    false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "",
 			ReviewPath:    "",
 			CommitPath:    "",
 		},
-		Sources: map[string]string{},
 	}
 
 	args := &CLIArgs{
@@ -90,7 +86,6 @@ func TestBuildFinalConfig_WithSessionID(t *testing.T) {
 		AgentArgs:           []string{},
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     nil,
 	}
@@ -110,13 +105,11 @@ func TestBuildFinalConfig_WithOutputFormat(t *testing.T) {
 		Agent:            testAgentClaude,
 		Iterations:       1,
 		ImplementRetries: 1,
-		CommitEnabled:    false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "",
 			ReviewPath:    "",
 			CommitPath:    "",
 		},
-		Sources: map[string]string{},
 	}
 
 	outputFormat := testFormatJSON
@@ -125,7 +118,6 @@ func TestBuildFinalConfig_WithOutputFormat(t *testing.T) {
 		AgentArgs:           []string{},
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     &outputFormat,
 	}
@@ -145,13 +137,11 @@ func TestBuildFinalConfig_DryRunOverride(t *testing.T) {
 		Agent:            testAgentClaude,
 		Iterations:       3,
 		ImplementRetries: 2,
-		CommitEnabled:    true,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "",
 			ReviewPath:    "",
 			CommitPath:    "",
 		},
-		Sources: map[string]string{},
 	}
 
 	dryRun := true
@@ -160,7 +150,6 @@ func TestBuildFinalConfig_DryRunOverride(t *testing.T) {
 		AgentArgs:           []string{},
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           &dryRun,
 		CLIOutputFormat:     nil,
 	}
@@ -177,57 +166,8 @@ func TestBuildFinalConfig_DryRunOverride(t *testing.T) {
 	}
 }
 
-func TestParseFluxidFlag_CommitEnabled(t *testing.T) {
-	t.Parallel()
-	args := &CLIArgs{
-		CLIAgent:            nil,
-		AgentArgs:           nil,
-		CLIIterations:       nil,
-		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
-		CLIDryRun:           nil,
-		CLIOutputFormat:     nil,
-	}
-	skip, handled, err := parseFluxidFlag("--fluxid-commit-enabled", 0, args)
-	if err != nil {
-		t.Errorf("Expected no error, got: %v", err)
-	}
-	if !handled {
-		t.Error("Expected flag to be handled")
-	}
-	if skip != 0 {
-		t.Errorf("Expected skip=0, got %d", skip)
-	}
-	if args.CLICommitEnabled == nil || !*args.CLICommitEnabled {
-		t.Error("Expected commit enabled to be true")
-	}
-}
-
-func TestParseFluxidFlag_NoCommit(t *testing.T) {
-	t.Parallel()
-	args := &CLIArgs{
-		CLIAgent:            nil,
-		AgentArgs:           nil,
-		CLIIterations:       nil,
-		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
-		CLIDryRun:           nil,
-		CLIOutputFormat:     nil,
-	}
-	skip, handled, err := parseFluxidFlag("--fluxid-no-commit", 0, args)
-	if err != nil {
-		t.Errorf("Expected no error, got: %v", err)
-	}
-	if !handled {
-		t.Error("Expected flag to be handled")
-	}
-	if skip != 0 {
-		t.Errorf("Expected skip=0, got %d", skip)
-	}
-	if args.CLICommitEnabled == nil || *args.CLICommitEnabled {
-		t.Error("Expected commit enabled to be false")
-	}
-}
+// TestParseFluxidFlag_CommitEnabled removed - commit toggle flags removed in v2.0
+// TestParseFluxidFlag_NoCommit removed - commit toggle flags removed in v2.0
 
 func TestParseFluxidFlag_DryRun(t *testing.T) {
 	t.Parallel()
@@ -236,7 +176,6 @@ func TestParseFluxidFlag_DryRun(t *testing.T) {
 		AgentArgs:           nil,
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     nil,
 	}
@@ -262,7 +201,6 @@ func TestParseFluxidFlag_UnknownFlag(t *testing.T) {
 		AgentArgs:           nil,
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     nil,
 	}
@@ -302,13 +240,11 @@ func TestBuildFinalConfig_UsesResolvedValues(t *testing.T) {
 		Agent:            testAgentClaude,
 		Iterations:       3,
 		ImplementRetries: 2,
-		CommitEnabled:    true,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "",
 			ReviewPath:    "",
 			CommitPath:    "",
 		},
-		Sources: map[string]string{},
 	}
 
 	args := &CLIArgs{
@@ -316,7 +252,6 @@ func TestBuildFinalConfig_UsesResolvedValues(t *testing.T) {
 		AgentArgs:           []string{},
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     nil,
 	}
@@ -330,9 +265,6 @@ func TestBuildFinalConfig_UsesResolvedValues(t *testing.T) {
 	}
 	if cfg.MaxImplementRetries != 2 {
 		t.Errorf("Expected 2 implement retries from resolved, got %d", cfg.MaxImplementRetries)
-	}
-	if !cfg.CommitEnabled {
-		t.Error("Expected CommitEnabled to be true from resolved")
 	}
 }
 
@@ -361,13 +293,11 @@ func TestBuildFinalConfig_InvalidOutputFormat(t *testing.T) {
 		Agent:            testAgentClaude,
 		Iterations:       1,
 		ImplementRetries: 1,
-		CommitEnabled:    false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "",
 			ReviewPath:    "",
 			CommitPath:    "",
 		},
-		Sources: map[string]string{},
 	}
 
 	invalidFormat := "xml"
@@ -376,7 +306,6 @@ func TestBuildFinalConfig_InvalidOutputFormat(t *testing.T) {
 		AgentArgs:           []string{},
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     &invalidFormat,
 	}

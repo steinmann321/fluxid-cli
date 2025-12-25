@@ -50,15 +50,10 @@ func TestPrintText(t *testing.T) {
 	os.Stdout = writePipe
 
 	status := InitializationStatus{
-		SessionID:              "test-session-123",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "config",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "env",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
+		SessionID:           "test-session-123",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
 		CommandFiles: &CommandFilesJSON{
 			Implement: "/path/to/implement.md",
 			Review:    "/path/to/review.md",
@@ -80,11 +75,10 @@ func TestPrintText(t *testing.T) {
 
 	expectedStrings := []string{
 		"=== fluxid Workflow Initialization ===",
-		"Agent: claude (source: cli)",
+		"Agent: claude",
 		"Session ID: test-session-123",
-		"Max Review Cycles: 10 (source: config)",
-		"Max Implement Retries: 3 (source: env)",
-		"Commit Enabled: true (source: default)",
+		"Max Review Cycles: 10",
+		"Max Implement Retries: 3",
 	}
 
 	for _, expected := range expectedStrings {
@@ -105,15 +99,10 @@ func TestPrintJSON(t *testing.T) {
 
 	//nolint:exhaustruct // Optional fields CommandFiles and AgentArgs not needed in test.
 	status := InitializationStatus{
-		SessionID:              "test-session-json",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        5,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    2,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          false,
-		CommitEnabledSource:    "default",
+		SessionID:           "test-session-json",
+		Agent:               "claude",
+		MaxReviewCycles:     5,
+		MaxImplementRetries: 2,
 	}
 
 	err = PrintJSON(status)
@@ -153,15 +142,10 @@ func TestPrintYAML(t *testing.T) {
 
 	//nolint:exhaustruct // Optional fields CommandFiles and AgentArgs not needed in test.
 	status := InitializationStatus{
-		SessionID:              "test-session-yaml",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        5,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    2,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          false,
-		CommitEnabledSource:    "default",
+		SessionID:           "test-session-yaml",
+		Agent:               "claude",
+		MaxReviewCycles:     5,
+		MaxImplementRetries: 2,
 	}
 
 	err = PrintYAML(status)
@@ -195,17 +179,12 @@ func TestPrintJSONToWriter_Success(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
-		SessionID:              "test-json-writer",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-json-writer",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	err := PrintJSONToWriter(&buf, status)
@@ -229,17 +208,12 @@ func TestPrintJSONToWriter_Error(t *testing.T) {
 	failWriter := &failingWriter{}
 
 	status := InitializationStatus{
-		SessionID:              "test",
-		Agent:                  "claude",
-		AgentSource:            "",
-		MaxReviewCycles:        0,
-		ReviewCyclesSource:     "",
-		MaxImplementRetries:    0,
-		ImplementRetriesSource: "",
-		CommitEnabled:          false,
-		CommitEnabledSource:    "",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test",
+		Agent:               "claude",
+		MaxReviewCycles:     0,
+		MaxImplementRetries: 0,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	err := PrintJSONToWriter(failWriter, status)
@@ -256,17 +230,12 @@ func TestPrintYAMLToWriter_Success(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
-		SessionID:              "test-yaml-writer",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-yaml-writer",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	err := PrintYAMLToWriter(&buf, status)
@@ -290,17 +259,12 @@ func TestPrintYAMLToWriter_Error(t *testing.T) {
 	failWriter := &failingWriter{}
 
 	status := InitializationStatus{
-		SessionID:              "test",
-		Agent:                  "claude",
-		AgentSource:            "",
-		MaxReviewCycles:        0,
-		ReviewCyclesSource:     "",
-		MaxImplementRetries:    0,
-		ImplementRetriesSource: "",
-		CommitEnabled:          false,
-		CommitEnabledSource:    "",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test",
+		Agent:               "claude",
+		MaxReviewCycles:     0,
+		MaxImplementRetries: 0,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	err := PrintYAMLToWriter(failWriter, status)
@@ -317,15 +281,10 @@ func TestPrintTextToWriter_WithCommandFiles(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
-		SessionID:              "test-text-writer",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          true,
-		CommitEnabledSource:    "default",
+		SessionID:           "test-text-writer",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
 		CommandFiles: &CommandFilesJSON{
 			Implement: "/path/to/implement.md",
 			Review:    "/path/to/review.md",
@@ -340,7 +299,7 @@ func TestPrintTextToWriter_WithCommandFiles(t *testing.T) {
 
 	expectedStrings := []string{
 		"=== fluxid Workflow Initialization ===",
-		"Agent: claude (source: cli)",
+		"Agent: claude",
 		"Session ID: test-text-writer",
 		"Command Files:",
 		"Implement: /path/to/implement.md",
@@ -361,17 +320,12 @@ func TestPrintTextToWriter_WithoutCommandFiles(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
-		SessionID:              "test-text-no-files",
-		Agent:                  "claude",
-		AgentSource:            "cli",
-		MaxReviewCycles:        10,
-		ReviewCyclesSource:     "default",
-		MaxImplementRetries:    3,
-		ImplementRetriesSource: "default",
-		CommitEnabled:          false,
-		CommitEnabledSource:    "default",
-		CommandFiles:           nil,
-		AgentArgs:              nil,
+		SessionID:           "test-text-no-files",
+		Agent:               "claude",
+		MaxReviewCycles:     10,
+		MaxImplementRetries: 3,
+		CommandFiles:        nil,
+		AgentArgs:           nil,
 	}
 
 	PrintTextToWriter(&buf, status)

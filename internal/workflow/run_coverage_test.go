@@ -32,11 +32,9 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Write implement PASS report before calling Run()
@@ -75,11 +73,9 @@ func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 1,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Return FAIL for first review cycle, PASS for second

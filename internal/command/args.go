@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	errFlagMissingValue   = errors.New("flag requires a value")
 	errMultipleAgentFlags = errors.New(
 		"multiple agent flags specified. Please use only one of: --claude, --codex, or --opencode",
 	)
@@ -22,9 +21,12 @@ type CLIArgs struct {
 	AgentArgs           []string
 	CLIIterations       *int
 	CLIImplementRetries *int
-	CLICommitEnabled    *bool
 	CLIDryRun           *bool
 	CLIOutputFormat     *string
+	CLIConfigPath       *string
+	CLIImplementCommand *string
+	CLIReviewCommand    *string
+	CLICommitCommand    *string
 }
 
 // ParseArgs parses command-line arguments.
@@ -34,9 +36,12 @@ func ParseArgs() (*CLIArgs, error) {
 		AgentArgs:           nil,
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
-		CLICommitEnabled:    nil,
 		CLIDryRun:           nil,
 		CLIOutputFormat:     nil,
+		CLIConfigPath:       nil,
+		CLIImplementCommand: nil,
+		CLIReviewCommand:    nil,
+		CLICommitCommand:    nil,
 	}
 
 	var agentFlagCount int
@@ -81,60 +86,90 @@ func isAgentFlag(arg string) bool {
 	return arg == "--claude" || arg == "--codex" || arg == "--opencode"
 }
 
-func parseFluxidFlag(arg string, index int, args *CLIArgs) (int, bool, error) {
+//nolint:cyclop,funlen,unparam // Flag parsing function with necessary complexity, return value for API consistency
+func parseFluxidFlag(arg string, _ int, args *CLIArgs) (int, bool, error) {
 	// Handle --output=value format
-	if len(arg) > len("--output=") && arg[:len("--output=")] == "--output=" {
+	if len(arg) >= len("--output=") && arg[:len("--output=")] == "--output=" {
 		value := arg[len("--output="):]
 		args.CLIOutputFormat = &value
 		return 0, true, nil
 	}
 
+	// Handle --fluxid-output=value format
+	if len(arg) >= len("--fluxid-output=") && arg[:len("--fluxid-output=")] == "--fluxid-output=" {
+		value := arg[len("--fluxid-output="):]
+		args.CLIOutputFormat = &value
+		return 0, true, nil
+	}
+
+	// Handle --config=value format
+	if len(arg) >= len("--config=") && arg[:len("--config=")] == "--config=" {
+		// Check for multiple --config flags
+		if args.CLIConfigPath != nil {
+			//nolint:err113 // Simple validation error, sentinel error would be overkill
+			return 0, true, errors.New("multiple --config flags not allowed")
+		}
+		value := arg[len("--config="):]
+		args.CLIConfigPath = &value
+		return 0, true, nil
+	}
+
+	// Handle --implement-command=value format
+	if len(arg) >= len("--implement-command=") && arg[:len("--implement-command=")] == "--implement-command=" {
+		value := arg[len("--implement-command="):]
+		args.CLIImplementCommand = &value
+		return 0, true, nil
+	}
+
+	// Handle --review-command=value format
+	if len(arg) >= len("--review-command=") && arg[:len("--review-command=")] == "--review-command=" {
+		value := arg[len("--review-command="):]
+		args.CLIReviewCommand = &value
+		return 0, true, nil
+	}
+
+	// Handle --commit-command=value format
+	if len(arg) >= len("--commit-command=") && arg[:len("--commit-command=")] == "--commit-command=" {
+		value := arg[len("--commit-command="):]
+		args.CLICommitCommand = &value
+		return 0, true, nil
+	}
+
+	// Handle --fluxid-iterations=value format
+	if len(arg) >= len("--fluxid-iterations=") && arg[:len("--fluxid-iterations=")] == "--fluxid-iterations=" {
+		valueStr := arg[len("--fluxid-iterations="):]
+		val, err := parsePositiveInt(valueStr, "--fluxid-iterations")
+		if err != nil {
+			return 0, true, err
+		}
+		args.CLIIterations = &val
+		return 0, true, nil
+	}
+
+	// Handle --fluxid-implement-retries=value format
+	if len(arg) >= len("--fluxid-implement-retries=") &&
+		arg[:len("--fluxid-implement-retries=")] == "--fluxid-implement-retries=" {
+		valueStr := arg[len("--fluxid-implement-retries="):]
+		val, err := parsePositiveInt(valueStr, "--fluxid-implement-retries")
+		if err != nil {
+			return 0, true, err
+		}
+		args.CLIImplementRetries = &val
+		return 0, true, nil
+	}
+
 	switch arg {
-	case "--fluxid-iterations":
-		skip, err := parseIntFlag(index, arg, &args.CLIIterations)
-		return skip, true, err
-	case "--fluxid-implement-retries":
-		skip, err := parseIntFlag(index, arg, &args.CLIImplementRetries)
-		return skip, true, err
-	case "--fluxid-commit-enabled":
-		trueVal := true
-		args.CLICommitEnabled = &trueVal
-		return 0, true, nil
-	case "--fluxid-no-commit":
-		falseVal := false
-		args.CLICommitEnabled = &falseVal
-		return 0, true, nil
+	case "--fluxid-iterations", "--fluxid-implement-retries", "--fluxid-output", "--output":
+		// Reject space syntax for value flags
+		//nolint:err113 // Dynamic error message includes arg name for better UX
+		return 0, true, fmt.Errorf("%s requires equals syntax: use %s=<value> instead of %s <value>", arg, arg, arg)
 	case "--fluxid-dry-run", "--dry-run":
 		trueVal := true
 		args.CLIDryRun = &trueVal
 		return 0, true, nil
-	case "--fluxid-output", "--output":
-		skip, err := parseStringFlag(index, arg, &args.CLIOutputFormat)
-		return skip, true, err
 	default:
 		return 0, false, nil
 	}
-}
-
-func parseIntFlag(index int, flagName string, dest **int) (int, error) {
-	if index+1 >= len(os.Args) {
-		return 0, fmt.Errorf("%s %w", flagName, errFlagMissingValue)
-	}
-	val, err := parsePositiveInt(os.Args[index+1], flagName)
-	if err != nil {
-		return 0, err
-	}
-	*dest = &val
-	return 1, nil
-}
-
-func parseStringFlag(index int, flagName string, dest **string) (int, error) {
-	if index+1 >= len(os.Args) {
-		return 0, fmt.Errorf("%s %w", flagName, errFlagMissingValue)
-	}
-	value := os.Args[index+1]
-	*dest = &value
-	return 1, nil
 }
 
 func validateAgentFlags(count int, currentAgent string, args *CLIArgs) error {

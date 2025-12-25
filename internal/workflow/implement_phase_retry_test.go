@@ -20,12 +20,10 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 		Agent:               "nonexistent-agent-xyz",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -49,12 +47,10 @@ func TestRunImplementPhase_NonZeroExitCode(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -85,12 +81,10 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
-		CommitEnabled:       false,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
-		Sources:             map[string]string{},
 	}
 
 	// Pre-write PASS report before workflow starts
