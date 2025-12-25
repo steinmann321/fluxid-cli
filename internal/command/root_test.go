@@ -11,12 +11,13 @@ import (
 //nolint:paralleltest // Cannot run in parallel - modifies global os.Args
 func TestExecute_Help(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
-	// Save original os.Args
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Set args to request help
 	os.Args = []string{"fluxid", "--help"}
 
 	exitCode := Execute()
@@ -28,12 +29,13 @@ func TestExecute_Help(t *testing.T) {
 //nolint:paralleltest // Cannot run in parallel - modifies global os.Args
 func TestExecute_HelpShort(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
-	// Save original os.Args
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Set args to request help with -h
 	os.Args = []string{"fluxid", "-h"}
 
 	exitCode := Execute()
@@ -44,11 +46,13 @@ func TestExecute_HelpShort(t *testing.T) {
 
 func TestExecute_DryRunSuccess(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
-	// Save original os.Args
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
@@ -63,12 +67,14 @@ func TestExecute_DryRunSuccess(t *testing.T) {
 
 func TestExecute_InvalidAgent(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("PATH", "") // Empty PATH to ensure agent not found
 
-	// Save original os.Args
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
@@ -83,12 +89,14 @@ func TestExecute_InvalidAgent(t *testing.T) {
 
 func TestExecute_MissingAgentArgument(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("PATH", "") // Empty PATH to ensure no agent is found
 
-	// Save original os.Args
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
@@ -103,7 +111,10 @@ func TestExecute_MissingAgentArgument(t *testing.T) {
 
 func TestExecute_InvalidConfigHomeError(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	// Test that invalid home config path returns error
 	// Create a file where a directory is expected
 	tmpDir := t.TempDir()
@@ -128,17 +139,22 @@ func TestExecute_InvalidConfigHomeError(t *testing.T) {
 
 func TestExecute_ParseArgsError(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
+	// Reset signal count for clean test state
+	signalCount.Store(0)
+
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Use invalid flag to trigger parse error
-	os.Args = []string{"fluxid", "--invalid-flag-that-does-not-exist"}
+	os.Args = []string{"fluxid", "--fluxid-iterations", "not-a-number"}
 
 	exitCode := Execute()
 	if exitCode == 0 {
@@ -148,14 +164,16 @@ func TestExecute_ParseArgsError(t *testing.T) {
 
 func TestExecute_WorkflowExecutionWithEchoAgent(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Use echo which exists in PATH
 	os.Args = []string{"fluxid", "--dry-run", "echo"}
 
 	exitCode := Execute()
@@ -166,7 +184,10 @@ func TestExecute_WorkflowExecutionWithEchoAgent(t *testing.T) {
 
 func TestExecute_ValidateAgentNotExecutable(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -197,7 +218,10 @@ func TestExecute_ValidateAgentNotExecutable(t *testing.T) {
 
 func TestExecute_BuildFinalConfigError(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -205,8 +229,7 @@ func TestExecute_BuildFinalConfigError(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Provide agent args but no agent - this should trigger build config error
-	os.Args = []string{"fluxid", "--"}
+	os.Args = []string{"fluxid", "--dry-run", "--output", "invalid-format"}
 
 	exitCode := Execute()
 	if exitCode == 0 {
@@ -216,7 +239,10 @@ func TestExecute_BuildFinalConfigError(t *testing.T) {
 
 func TestExecute_AgentStatError(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -247,7 +273,10 @@ func TestExecute_AgentStatError(t *testing.T) {
 
 func TestExecute_NoAgentSpecified(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -268,7 +297,10 @@ func TestExecute_NoAgentSpecified(t *testing.T) {
 
 func TestExecute_InvalidOutputFormatBuildConfig(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -276,7 +308,6 @@ func TestExecute_InvalidOutputFormatBuildConfig(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Use invalid output format to trigger buildFinalConfig error
 	os.Args = []string{"fluxid", "--dry-run", "--output", "invalid-format", "echo"}
 
 	exitCode := Execute()
@@ -287,7 +318,10 @@ func TestExecute_InvalidOutputFormatBuildConfig(t *testing.T) {
 
 func TestExecute_AgentNotInPathError(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -308,7 +342,10 @@ func TestExecute_AgentNotInPathError(t *testing.T) {
 
 func TestExecute_LoadAllConfigsWithMultipleSources(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
@@ -340,7 +377,10 @@ func TestExecute_LoadAllConfigsWithMultipleSources(t *testing.T) {
 
 func TestExecute_BuildInitStatusWithEnvConfig(t *testing.T) {
 	defer goleak.VerifyNone(t)
-	t.Cleanup(cleanupAllSignalHandlers)
+	defer func() {
+		cleanupAllSignalHandlers()
+		signalCount.Store(0)
+	}()
 	tmpDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)

@@ -55,6 +55,7 @@ func (h *signalHandler) handleSignal(sig os.Signal, count int32) bool {
 // On the second signal, it forces immediate exit.
 func setupSignalHandler(sessionID string) func() {
 	sigChan := make(chan os.Signal, 1)
+	done := make(chan struct{})
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	handler := &signalHandler{
@@ -65,21 +66,26 @@ func setupSignalHandler(sessionID string) func() {
 	}
 
 	go func() {
-		for sig := range sigChan {
-			count := signalCount.Add(1)
-			if !handler.handleSignal(sig, count) {
-				break
+		for {
+			select {
+			case sig := <-sigChan:
+				count := signalCount.Add(1)
+				if !handler.handleSignal(sig, count) {
+					return
+				}
+			case <-done:
+				return
 			}
 		}
 	}()
 
-	// Return cleanup function to stop signal handling and close channel
+	// Return cleanup function to stop signal handling and close done channel
 	// Use sync.Once to ensure cleanup only runs once even if called multiple times
 	var cleanupOnce sync.Once
 	cleanup := func() {
 		cleanupOnce.Do(func() {
 			signal.Stop(sigChan)
-			close(sigChan)
+			close(done)
 		})
 	}
 
