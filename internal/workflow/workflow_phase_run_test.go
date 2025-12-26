@@ -32,10 +32,11 @@ func TestRunImplementPhase_Success(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write implement PASS report immediately before calling runImplementPhase
+	// This ensures deterministic test behavior without timing dependencies
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write implement report: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err != nil {
@@ -65,10 +66,11 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write implement PASS report immediately before calling runImplementPhase
+	// This ensures deterministic test behavior without timing dependencies
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write implement report: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err != nil {
@@ -165,10 +167,11 @@ func TestRunImplementPhase_WithCommandFile(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write implement PASS report immediately before calling runImplementPhase
+	// This ensures deterministic test behavior without timing dependencies
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write implement report: %v", err)
+	}
 
 	exitCode, err := runImplementPhase(cfg)
 	if err != nil {

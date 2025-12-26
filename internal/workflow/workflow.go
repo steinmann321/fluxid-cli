@@ -110,15 +110,16 @@ func runImplementPhase(cfg types.Config) (int, error) {
 			continue
 		}
 
-		// Run commit phase
-		if exitCode, err := executeCommit(cfg); err != nil {
-			return exitCode, err
-		}
-
-		// Check implement report status
+		// Check implement report status IMMEDIATELY after implement phase
+		// CRITICAL: This must happen BEFORE executeCommit(), otherwise the commit phase
+		// will overwrite the implement report with a commit report
 		if exitCode, err := checkImplementReportStatus(cfg.SessionID, retry); err != nil {
 			return exitCode, err
 		} else if exitCode == 0 {
+			// Implement phase succeeded, run commit and return success
+			if exitCode, err := executeCommit(cfg); err != nil {
+				return exitCode, err
+			}
 			return 0, nil
 		}
 
@@ -129,6 +130,13 @@ func runImplementPhase(cfg types.Config) (int, error) {
 	// All retries exhausted, but continue to commit/review phases
 	retries := cfg.MaxImplementRetries
 	log.Printf("Implement phase retries exhausted (%d/%d), continuing to next phase", retries, retries)
+
+	// Run commit phase even when all implement retries failed
+	// This ensures the commit phase executes regardless of implement status
+	if exitCode, err := executeCommit(cfg); err != nil {
+		return exitCode, err
+	}
+
 	return 0, nil
 }
 

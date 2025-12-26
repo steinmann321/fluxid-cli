@@ -200,12 +200,25 @@ echo "Claude stub invoked with args: $@"
 # Echo environment variables for validation
 echo "FLUXID_SESSION_ID=$FLUXID_SESSION_ID"
 
+# Detect phase from prompt argument (last argument)
+PROMPT="${@: -1}"
+COMMAND="test"
+
+# Determine phase-specific command based on prompt keywords
+if [[ "$PROMPT" == *"Implement the required changes"* ]]; then
+  COMMAND="fluxid.implement"
+elif [[ "$PROMPT" == *"Create a git commit"* ]]; then
+  COMMAND="fluxid.commit"
+elif [[ "$PROMPT" == *"Review the implementation"* ]]; then
+  COMMAND="fluxid.review"
+fi
+
 # Write a valid PASS report so workflow can proceed
 # This allows tests to pass with the report-based workflow
 FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 "$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
-command: test
+command: $COMMAND
 artifact: stub-test
 timestamp: $TIMESTAMP
 status: PASS

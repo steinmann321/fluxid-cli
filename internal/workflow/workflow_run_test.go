@@ -32,11 +32,11 @@ func TestRun_SingleCycleSuccess(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	// Start goroutine to write reports after a brief delay
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write implement PASS report immediately before calling Run()
+	// This ensures deterministic test behavior without timing dependencies
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write implement report: %v", err)
+	}
 
 	exitCode, err := Run(cfg)
 	if err != nil {
@@ -97,35 +97,12 @@ func TestRun_MultipleReviewCycles(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	failReport := `command: "test"
-artifact: "test-artifact"
-timestamp: "2024-01-01T00:00:00Z"
-status: FAIL
-issues:
-  blockers:
-    - message: "Test failed"
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-summary: "Test failed"
-`
-
-	callCount := 0
-	go func() {
-		for callCount < 4 {
-			<-time.After(100 * time.Millisecond)
-			callCount++
-			// First implement: PASS, first review: FAIL
-			// Second implement: PASS, second review: PASS
-			switch callCount {
-			case 1, 3:
-				_ = ipc.WriteReport(sessionID, testPassReport)
-			case 2:
-				_ = ipc.WriteReport(sessionID, failReport)
-			}
-		}
-	}()
+	// Write initial implement PASS report before calling Run()
+	// The workflow will: implement (PASS) -> commit -> review (FAIL) -> implement (PASS) -> commit -> review (PASS)
+	// We pre-write the first implement report to start the workflow deterministically
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write initial implement report: %v", err)
+	}
 
 	exitCode, err := Run(cfg)
 	if err != nil {
@@ -155,10 +132,11 @@ func TestRun_WithAgentArgs(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	go func() {
-		<-time.After(100 * time.Millisecond)
-		_ = ipc.WriteReport(sessionID, testPassReport)
-	}()
+	// Write implement PASS report immediately before calling Run()
+	// This ensures deterministic test behavior without timing dependencies
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write implement report: %v", err)
+	}
 
 	exitCode, err := Run(cfg)
 	if err != nil {

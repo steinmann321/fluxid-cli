@@ -64,6 +64,13 @@ func testContext(timeout time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), timeout)
 }
 
+// Phase command constants for test validation.
+const (
+	phaseCommandImplement = "fluxid.implement"
+	phaseCommandCommit    = "fluxid.commit"
+	phaseCommandReview    = "fluxid.review"
+)
+
 // Test report templates.
 const testPassReport = `command: test-command
 artifact: test-artifact
@@ -93,4 +100,54 @@ issues:
   enhancements: []
 next_steps:
   - Retry
+`
+
+// Phase-specific test report templates for implement, commit, and review phases.
+// These templates ensure tests properly validate phase-specific report handling.
+//
+// #nosec G101 -- False positive: test data, not credentials
+const testImplementPassReport = `command: fluxid.implement
+artifact: test-artifact
+timestamp: 2025-12-13T10:00:00Z
+status: PASS
+summary: Implement phase successful
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+next_steps:
+  - Continue to commit phase
+`
+
+const testImplementFailReport = `command: fluxid.implement
+artifact: test-artifact
+timestamp: 2025-12-13T10:00:00Z
+status: FAIL
+summary: Implement phase failed
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+next_steps:
+  - Retry implement phase
+`
+
+// #nosec G101 -- False positive: test data, not credentials
+const testCommitPassReport = `command: fluxid.commit
+artifact: test-artifact
+timestamp: 2025-12-13T10:00:00Z
+status: PASS
+summary: Commit phase successful
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+next_steps:
+  - Continue to review phase
 `

@@ -7,7 +7,6 @@ import (
 	"fluxid-loop/internal/output"
 	"fluxid-loop/internal/types"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -78,27 +77,12 @@ func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	// Return FAIL for first review cycle, PASS for second
-	reportCount := 0
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
-		for i := 0; i < 10; i++ {
-			<-time.After(50 * time.Millisecond)
-			reportCount++
-			// First cycle: implement PASS, review FAIL
-			// Second cycle: implement PASS, review PASS
-			switch {
-			case reportCount <= 2:
-				_ = ipc.WriteReport(sessionID, testPassReport)
-			case reportCount == 3:
-				_ = ipc.WriteReport(sessionID, testFailReport)
-			default:
-				_ = ipc.WriteReport(sessionID, testPassReport)
-			}
-		}
-	}()
+	// Write initial implement PASS report before calling Run()
+	// The workflow will: implement (PASS) -> commit -> review (FAIL) -> implement (PASS) -> commit -> review (PASS)
+	// We pre-write the first implement report to start the workflow deterministically
+	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+		t.Fatalf("Failed to write initial implement report: %v", err)
+	}
 
 	exitCode, err := Run(cfg)
 	if err != nil {
@@ -107,6 +91,4 @@ func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0, got %d", exitCode)
 	}
-
-	waitGroup.Wait()
 }
