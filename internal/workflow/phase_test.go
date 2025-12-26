@@ -2,8 +2,8 @@
 package workflow
 
 import (
-	"fluxid-loop/internal/output"
-	"fluxid-loop/internal/types"
+	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/types"
 	"strings"
 	"testing"
 )

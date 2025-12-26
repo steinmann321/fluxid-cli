@@ -1,7 +1,7 @@
 package command
 
 import (
-	"fluxid-loop/internal/ipc"
+	"fluxid-cli/internal/ipc"
 	"os"
 	"sync"
 	"syscall"

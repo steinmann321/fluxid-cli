@@ -246,8 +246,7 @@ func validateCustomConfig(cfg *CustomConfig) error {
 }
 
 // resolveField resolves a configuration field with precedence: CLI > project > home > default.
-//
-//nolint:ireturn // Generic function intentionally returns type parameter
+//nolint:ireturn // Generic functions return type parameters
 func resolveField[T any](
 	cliValue *T,
 	projectValue *T,

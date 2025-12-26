@@ -1,7 +1,7 @@
 package command
 
 import (
-	"fluxid-loop/internal/output"
+	"fluxid-cli/internal/output"
 	"testing"
 )
 

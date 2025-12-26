@@ -2,7 +2,7 @@
 package workflow
 
 import (
-	"fluxid-loop/internal/ipc"
+	"fluxid-cli/internal/ipc"
 	"fmt"
 	"testing"
 	"time"

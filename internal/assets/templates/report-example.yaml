@@ -1,0 +1,39 @@
+# Example E2E Test Execution Report
+# Pure YAML format following report-schema.yaml
+
+command: fluxid.review-e2e
+artifact: tests/home.spec.ts
+timestamp: 2025-12-04T15:30:00Z
+status: FAIL
+
+issues:
+  blockers:
+    - message: "Screenshot not generated - Test failed before screenshot step, check logs for assertion failures"
+      location: "tests/home.png"
+      code: "SCREENSHOT-001"
+
+  defects:
+    - message: "Title assertion failed: expected /app-name/i, received 'Default Title'"
+      location: "tests/home.spec.ts:6"
+      code: "ASSERT-001"
+      suggestion: "Update index.html title or adjust test expectation"
+
+  concerns:
+    - message: "No explicit page load wait before assertions"
+      location: "tests/home.spec.ts:4"
+      code: "TIMING-002"
+      suggestion: "Add await page.waitForLoadState('networkidle')"
+
+  observations:
+    - message: "Frontend started successfully on port 5173"
+
+  enhancements:
+    - message: "Test name could be more descriptive"
+      suggestion: "Change 'app loads' to 'home page displays correct title'"
+
+next_steps:
+  - "Update index.html title to match expected pattern"
+  - "Re-run test to verify assertion passes"
+  - "Verify screenshot generation after successful test"
+
+summary: "E2E test failed (attempt #3). Screenshot not generated due to title assertion failure at line 6. Root cause: index.html has default title instead of app-specific title."

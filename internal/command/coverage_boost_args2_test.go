@@ -33,7 +33,7 @@ func TestParseFluxidFlag_Output(t *testing.T) {
 	if skip != 0 {
 		t.Errorf("Expected skip=0 for equals syntax, got %d", skip)
 	}
-	if args.CLIOutputFormat == nil || *args.CLIOutputFormat != "json" {
+	if args.CLIOutputFormat == nil || *args.CLIOutputFormat != testFormatJSON {
 		t.Error("Expected output format to be 'json'")
 	}
 }

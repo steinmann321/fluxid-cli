@@ -2,7 +2,7 @@
 package main
 
 import (
-	"fluxid-loop/internal/command"
+	"fluxid-cli/internal/command"
 	"os"
 )
 

@@ -2,8 +2,8 @@
 package command
 
 import (
-	"fluxid-loop/internal/types"
-	"fluxid-loop/internal/workflow"
+	"fluxid-cli/internal/types"
+	"fluxid-cli/internal/workflow"
 	"fmt"
 	"os"
 )
@@ -32,7 +32,13 @@ func Execute() int {
 }
 
 func handleSpecialCommands() (int, bool) {
-	// Check for IPC command first (before loading config)
+	// Check for init command first (before loading config)
+	// Init creates the config, so it must run before config loading
+	if len(os.Args) > 1 && os.Args[1] == "init" {
+		return handleInit(os.Args[2:]), true
+	}
+
+	// Check for IPC command (before loading config)
 	if len(os.Args) > 1 && os.Args[1] == "ipc" {
 		return handleIPCCommand(os.Args[2:]), true
 	}

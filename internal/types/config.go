@@ -4,8 +4,8 @@
 package types
 
 import (
-	"fluxid-loop/internal/config"
-	"fluxid-loop/internal/output"
+	"fluxid-cli/internal/config"
+	"fluxid-cli/internal/output"
 )
 
 // Config represents the complete fluxid configuration.

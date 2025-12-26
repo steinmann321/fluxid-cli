@@ -1,10 +1,10 @@
 package command
 
 import (
-	"fluxid-loop/internal/ipc"
-	"fluxid-loop/internal/output"
-	"fluxid-loop/internal/types"
-	"fluxid-loop/internal/workflow"
+	"fluxid-cli/internal/ipc"
+	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/types"
+	"fluxid-cli/internal/workflow"
 	"os"
 	"path/filepath"
 	"strings"

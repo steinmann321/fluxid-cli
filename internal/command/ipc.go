@@ -15,6 +15,7 @@ func printHelp(w io.Writer, text string) {
 // printUsage prints the usage information for the fluxid CLI.
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
+	fmt.Fprintf(os.Stderr, "  fluxid init [path]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid --claude [--fluxid-iterations N] [--fluxid-implement-retries R] [claude-args]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid --write-history <message> [--help]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid ipc get-report-schema [--help]\n")
@@ -24,6 +25,7 @@ func printUsage() {
 	fmt.Fprintf(os.Stderr, "  fluxid ipc write-history <message> [--session ID] [--help]\n")
 	fmt.Fprintf(os.Stderr, "  fluxid ipc view-history [--session ID] [--help]\n")
 	fmt.Fprintf(os.Stderr, "\nCommands:\n")
+	fmt.Fprintf(os.Stderr, "  init [path]              Initialize fluxid configuration (global or project)\n")
 	fmt.Fprintf(os.Stderr, "  (default)                Run workflow controller (requires --claude)\n")
 	fmt.Fprintf(os.Stderr, "  --write-history          Append timestamped history entry to session\n")
 	fmt.Fprintf(os.Stderr, "  ipc get-report-schema    Print YAML schema for workflow reports\n")

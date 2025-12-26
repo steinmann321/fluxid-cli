@@ -3,7 +3,7 @@ package tests
 
 import (
 	"errors"
-	"fluxid-loop/internal/ipc"
+	"fluxid-cli/internal/ipc"
 	"fmt"
 	"os"
 	"os/exec"

@@ -3,7 +3,7 @@ package command
 
 import (
 	"bytes"
-	"fluxid-loop/internal/ipc"
+	"fluxid-cli/internal/ipc"
 	"io"
 	"os"
 	"strings"

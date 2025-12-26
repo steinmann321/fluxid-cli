@@ -3,7 +3,7 @@ package command
 
 import (
 	"errors"
-	"fluxid-loop/internal/ipc"
+	"fluxid-cli/internal/ipc"
 	"fmt"
 	"io"
 	"os"

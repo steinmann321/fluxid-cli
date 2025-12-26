@@ -1,4 +1,4 @@
-//nolint:paralleltest,goconst // CLI argument parsing tests with repeated test strings
+//nolint:paralleltest // CLI argument parsing tests with repeated test strings
 package command
 
 import (

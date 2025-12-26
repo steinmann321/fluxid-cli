@@ -4,8 +4,8 @@ package workflow
 import (
 	"context"
 	"errors"
-	"fluxid-loop/internal/ipc"
-	"fluxid-loop/internal/types"
+	"fluxid-cli/internal/ipc"
+	"fluxid-cli/internal/types"
 	"fmt"
 	"log"
 	"os"

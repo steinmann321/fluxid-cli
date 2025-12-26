@@ -2,9 +2,9 @@
 package command
 
 import (
-	"fluxid-loop/internal/config"
-	"fluxid-loop/internal/ipc"
-	"fluxid-loop/internal/output"
+	"fluxid-cli/internal/config"
+	"fluxid-cli/internal/ipc"
+	"fluxid-cli/internal/output"
 	"os"
 	"path/filepath"
 	"testing"

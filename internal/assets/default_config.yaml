@@ -1,0 +1,13 @@
+# Fluxid Configuration
+# Workflow automation for coding agents
+
+# Command file paths (relative to .fluxid/commands/)
+commands:
+  implement: fluxid.implement.md
+  review: fluxid.review-implementation.md
+  commit: fluxid.commit.md
+
+# Optional: Override defaults
+# agent: claude                  # Default: claude
+# implement_retries: 3           # Default: 3
+# iterations: 20                 # Default: 20

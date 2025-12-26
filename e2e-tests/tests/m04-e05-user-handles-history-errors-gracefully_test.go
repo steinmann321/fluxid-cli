@@ -2,7 +2,7 @@
 package tests
 
 import (
-	"fluxid-loop/internal/ipc"
+	"fluxid-cli/internal/ipc"
 	"os"
 	"os/exec"
 	"regexp"

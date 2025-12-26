@@ -2,9 +2,9 @@
 package workflow
 
 import (
-	"fluxid-loop/internal/ipc"
-	"fluxid-loop/internal/output"
-	"fluxid-loop/internal/types"
+	"fluxid-cli/internal/ipc"
+	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/types"
 	"os"
 	"path/filepath"
 	"testing"

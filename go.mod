@@ -1,4 +1,4 @@
-module fluxid-loop
+module fluxid-cli
 
 go 1.25
 
