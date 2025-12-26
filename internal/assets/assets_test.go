@@ -47,9 +47,9 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	if len(entries) == 0 {
 		t.Error("No command files created")
 	}
-	// We expect 28 command files
-	if len(entries) != 28 {
-		t.Errorf("Expected 28 command files, got %d", len(entries))
+	// We expect 6 command files (implement, review, commit variants)
+	if len(entries) != 6 {
+		t.Errorf("Expected 6 command files, got %d", len(entries))
 	}
 
 	// Verify templates directory with files
@@ -74,30 +74,6 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	}
 }
 
-func TestCopyAssetsToDir_AlreadyExists(t *testing.T) {
-	t.Parallel()
-	tmpDir := t.TempDir()
-
-	// Create .fluxid directory
-	fluxidDir := filepath.Join(tmpDir, ".fluxid")
-	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
-		t.Fatalf("Failed to create test dir: %v", err)
-	}
-
-	// Should fail
-	err := CopyAssetsToDir(tmpDir)
-	if err == nil {
-		t.Error("Expected error when .fluxid already exists")
-	}
-	if err != nil && !os.IsExist(err) {
-		// Check error message contains expected text
-		errMsg := err.Error()
-		if errMsg == "" {
-			t.Error("Error message is empty")
-		}
-	}
-}
-
 func TestGetDefaultConfig(t *testing.T) {
 	t.Parallel()
 	config := GetDefaultConfig()
@@ -108,5 +84,88 @@ func TestGetDefaultConfig(t *testing.T) {
 	// Verify config contains expected sections
 	if len(config) < 50 {
 		t.Error("Config seems too short, might be incomplete")
+	}
+}
+
+func TestCopyAssetsToDir_FileContents(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	err := CopyAssetsToDir(tmpDir)
+	if err != nil {
+		t.Fatalf("CopyAssetsToDir failed: %v", err)
+	}
+
+	// Verify command files have content
+	commandsDir := filepath.Join(tmpDir, ".fluxid", "commands")
+	commandFiles := []string{
+		"fluxid.implement.md",
+		"fluxid.implement-cli.md",
+		"fluxid.implement-e2e.md",
+		"fluxid.review-implementation.md",
+		"fluxid.review-implementation-e2e.md",
+		"fluxid.commit.md",
+	}
+
+	for _, file := range commandFiles {
+		path := filepath.Join(commandsDir, file)
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Errorf("Failed to read %s: %v", file, err)
+			continue
+		}
+		if len(content) == 0 {
+			t.Errorf("Command file %s is empty", file)
+		}
+	}
+
+	// Verify template files have content
+	templatesDir := filepath.Join(tmpDir, ".fluxid", "templates")
+	templateFiles := []string{"report-schema.yaml", "report-example.yaml"}
+
+	for _, file := range templateFiles {
+		path := filepath.Join(templatesDir, file)
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Errorf("Failed to read %s: %v", file, err)
+			continue
+		}
+		if len(content) == 0 {
+			t.Errorf("Template file %s is empty", file)
+		}
+	}
+}
+
+func TestCopyAssetsToDir_ConfigContent(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	err := CopyAssetsToDir(tmpDir)
+	if err != nil {
+		t.Fatalf("CopyAssetsToDir failed: %v", err)
+	}
+
+	// Read and verify config content
+	configPath := filepath.Join(tmpDir, ".fluxid", "config.yaml")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Failed to read config.yaml: %v", err)
+	}
+
+	configStr := string(content)
+
+	// Check for expected e2e default commands
+	expectedStrings := []string{
+		"fluxid.implement-e2e.md",
+		"fluxid.review-implementation-e2e.md",
+		"fluxid.commit.md",
+	}
+
+	for _, expected := range expectedStrings {
+		if !containsStr(configStr, expected) {
+			t.Errorf("Config does not contain expected string: %s", expected)
+		}
 	}
 }

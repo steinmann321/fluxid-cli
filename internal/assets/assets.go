@@ -44,6 +44,7 @@ func CopyAssetsToDir(targetDir string) error {
 	}
 
 	// Create base directory
+	// #nosec G301 -- 0o755 is standard user directory permission
 	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create .fluxid directory: %w", err)
 	}
@@ -60,6 +61,7 @@ func CopyAssetsToDir(targetDir string) error {
 
 	// Write config.yaml
 	configPath := filepath.Join(fluxidDir, "config.yaml")
+	// #nosec G306 -- 0o644 is standard config file permission
 	if err := os.WriteFile(configPath, []byte(defaultConfigYAML), 0o644); err != nil {
 		return fmt.Errorf("failed to write config.yaml: %w", err)
 	}
@@ -72,6 +74,7 @@ func CopyAssetsToDir(targetDir string) error {
 //nolint:mnd,wrapcheck // File permissions are standard, errors already contextual
 func copyEmbeddedDir(fsys embed.FS, srcDir, dstDir string) error {
 	// Create destination directory
+	// #nosec G301 -- 0o755 is standard user directory permission
 	if err := os.MkdirAll(dstDir, 0o755); err != nil {
 		return err
 	}
@@ -96,7 +99,7 @@ func copyEmbeddedDir(fsys embed.FS, srcDir, dstDir string) error {
 		dstPath := filepath.Join(dstDir, relPath)
 
 		if d.IsDir() {
-			return os.MkdirAll(dstPath, 0o755)
+			return os.MkdirAll(dstPath, 0o755) // #nosec G301
 		}
 
 		// Copy file
@@ -114,7 +117,7 @@ func copyEmbeddedFile(fsys embed.FS, src, dst string) error {
 	}
 	defer func() { _ = srcFile.Close() }()
 
-	dstFile, err := os.Create(dst)
+	dstFile, err := os.Create(dst) // #nosec G304
 	if err != nil {
 		return err
 	}

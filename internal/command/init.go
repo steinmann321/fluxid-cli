@@ -86,7 +86,8 @@ func getInitTargetDir(args []string) (string, error) {
 
 		// Create directory if it doesn't exist
 		if _, err := os.Stat(absPath); os.IsNotExist(err) {
-			//nolint:mnd // 0o755 is standard directory permission
+			// #nosec G301 -- 0o755 is standard user directory permission
+			//nolint:mnd // 0o755 is standard file permission constant
 			if err := os.MkdirAll(absPath, 0o755); err != nil {
 				return "", fmt.Errorf("failed to create directory %s: %w", absPath, err)
 			}

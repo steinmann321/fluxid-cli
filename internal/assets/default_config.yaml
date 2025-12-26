@@ -3,8 +3,8 @@
 
 # Command file paths (relative to .fluxid/commands/)
 commands:
-  implement: fluxid.implement.md
-  review: fluxid.review-implementation.md
+  implement: fluxid.implement-e2e.md
+  review: fluxid.review-implementation-e2e.md
   commit: fluxid.commit.md
 
 # Optional: Override defaults
