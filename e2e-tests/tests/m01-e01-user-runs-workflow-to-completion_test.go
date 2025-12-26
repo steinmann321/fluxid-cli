@@ -188,62 +188,6 @@ func TestM01E01SessionIDPropagation(t *testing.T) {
 
 // Helper functions
 
-func createStubClaude(t *testing.T, root string) {
-	t.Helper()
-
-	stubScript := `#!/bin/bash
-# Stub agent CLI for testing
-
-# Echo all arguments to demonstrate passthrough
-echo "Claude stub invoked with args: $@"
-
-# Echo environment variables for validation
-echo "FLUXID_SESSION_ID=$FLUXID_SESSION_ID"
-
-# Detect phase from prompt argument (last argument)
-PROMPT="${@: -1}"
-COMMAND="test"
-
-# Determine phase-specific command based on prompt keywords
-if [[ "$PROMPT" == *"Implement the required changes"* ]]; then
-  COMMAND="fluxid.implement"
-elif [[ "$PROMPT" == *"Create a git commit"* ]]; then
-  COMMAND="fluxid.commit"
-elif [[ "$PROMPT" == *"Review the implementation"* ]]; then
-  COMMAND="fluxid.review"
-fi
-
-# Write a valid PASS report so workflow can proceed
-# This allows tests to pass with the report-based workflow
-FLUXID_BIN="$(dirname "$0")/fluxid"
-TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
-command: $COMMAND
-artifact: stub-test
-timestamp: $TIMESTAMP
-status: PASS
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-REPORT_EOF
-
-# Simulate successful execution
-exit 0
-`
-
-	// Create stubs for all agents used in tests
-	agents := []string{"claude", "opencode", "codex", "project-agent"}
-	for _, agent := range agents {
-		agentPath := filepath.Join(root, "bin", agent)
-		if err := os.WriteFile(agentPath, []byte(stubScript), 0o755); err != nil {
-			t.Fatalf("failed to create stub %s: %v", agent, err)
-		}
-	}
-}
-
 func isValidUUIDv4(uuid string) bool {
 	// UUID v4 has format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 	// where y is one of [8, 9, a, b]
