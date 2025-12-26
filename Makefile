@@ -73,6 +73,8 @@ test-unit: ## Run only unit tests
 
 coverage: ## Run tests with coverage report
 	@echo "Running tests with coverage..."
-	@go test -short -cover ./cmd/fluxid/... ./internal/...
+	@mkdir -p .tmp/coverage
+	@go test -short -covermode=atomic -coverprofile=.tmp/coverage/coverage.out ./cmd/fluxid/... ./internal/...
+	@go tool cover -func=.tmp/coverage/coverage.out | grep total:
 
 .DEFAULT_GOAL := help
