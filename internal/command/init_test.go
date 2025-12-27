@@ -3,6 +3,7 @@ package command
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -113,9 +114,8 @@ func TestHandleInit_Help(t *testing.T) {
 	}
 }
 
-func TestHandleInit_AlreadyExists(t *testing.T) {
-	t.Parallel()
-
+//nolint:paralleltest // Tests modify global os.Stdin and cannot run concurrently
+func TestHandleInit_AlreadyExists_UserDeclines(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Initialize once
@@ -124,10 +124,70 @@ func TestHandleInit_AlreadyExists(t *testing.T) {
 		t.Fatalf("First init failed with exit code %d", exitCode)
 	}
 
-	// Try to initialize again - should fail
+	// Mock stdin to simulate user declining overwrite
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+	r, w, _ := os.Pipe() //nolint:varnamelen // Standard os.Pipe() return names
+	os.Stdin = r
+
+	var wg sync.WaitGroup //nolint:varnamelen // Standard abbreviation for WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_, _ = w.WriteString("n\n")
+		_ = w.Close()
+	}()
+
+	// Try to initialize again - should abort due to user declining
 	exitCode = handleInit([]string{tmpDir})
+	wg.Wait()
+
 	if exitCode == 0 {
-		t.Error("Expected non-zero exit code when .fluxid already exists")
+		t.Error("Expected non-zero exit code when user declines overwrite")
+	}
+}
+
+//nolint:paralleltest // Tests modify global os.Stdin and cannot run concurrently
+func TestHandleInit_AlreadyExists_UserConfirms(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Initialize once
+	exitCode := handleInit([]string{tmpDir})
+	if exitCode != 0 {
+		t.Fatalf("First init failed with exit code %d", exitCode)
+	}
+
+	// Create a marker file in .fluxid to verify it gets deleted
+	markerFile := filepath.Join(tmpDir, ".fluxid", "marker.txt")
+	if err := os.WriteFile(markerFile, []byte("test"), 0o600); err != nil {
+		t.Fatalf("Failed to create marker file: %v", err)
+	}
+
+	// Mock stdin to simulate user confirming overwrite
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+	r, w, _ := os.Pipe() //nolint:varnamelen // Standard os.Pipe() return names
+	os.Stdin = r
+
+	var wg sync.WaitGroup //nolint:varnamelen // Standard abbreviation for WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_, _ = w.WriteString("y\n")
+		_ = w.Close()
+	}()
+
+	// Try to initialize again - should succeed and remove old .fluxid
+	exitCode = handleInit([]string{tmpDir})
+	wg.Wait()
+
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 when user confirms overwrite, got %d", exitCode)
+	}
+
+	// Verify marker file was deleted (directory was recreated)
+	if _, err := os.Stat(markerFile); !os.IsNotExist(err) {
+		t.Error("Expected marker file to be deleted, but it still exists")
 	}
 }
 

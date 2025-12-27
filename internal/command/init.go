@@ -1,10 +1,12 @@
 package command
 
 import (
+	"bufio"
 	"fluxid-cli/internal/assets"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // handleInit processes the init command to bootstrap fluxid configuration.
@@ -35,6 +37,22 @@ func handleInit(args []string) int {
 		return 1
 	}
 
+	// Check if .fluxid directory already exists
+	fluxidDir := filepath.Join(targetDir, ".fluxid")
+	if _, err := os.Stat(fluxidDir); err == nil {
+		// Directory exists, prompt for overwrite
+		if !promptOverwrite(fluxidDir) {
+			fmt.Fprintf(os.Stderr, "Initialization aborted.\n")
+			return 1
+		}
+
+		// Remove existing directory
+		if err := os.RemoveAll(fluxidDir); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to remove existing directory: %v\n", err)
+			return 1
+		}
+	}
+
 	// Copy assets to target directory
 	counts, err := assets.CopyAssetsToDir(targetDir)
 	if err != nil {
@@ -43,7 +61,6 @@ func handleInit(args []string) int {
 	}
 
 	// Print success message
-	fluxidDir := filepath.Join(targetDir, ".fluxid")
 	absPath, _ := filepath.Abs(fluxidDir)
 
 	fmt.Fprintf(os.Stderr, "✓ Successfully initialized fluxid configuration\n\n")
@@ -102,6 +119,22 @@ func getInitTargetDir(args []string) (string, error) {
 	return "", fmt.Errorf("too many arguments: expected 0 or 1, got %d", len(args))
 }
 
+// promptOverwrite prompts the user to confirm overwriting an existing .fluxid directory.
+// Returns true if user confirms (y/Y), false otherwise.
+func promptOverwrite(fluxidDir string) bool {
+	fmt.Fprintf(os.Stderr, "Warning: .fluxid directory already exists at %s\n", fluxidDir)
+	fmt.Fprintf(os.Stderr, "Overwrite existing configuration? (y/n): ")
+
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	return response == "y" || response == "yes"
+}
+
 // printInitHelp prints help text for the init command.
 func printInitHelp() {
 	helpText := `fluxid init - Initialize fluxid configuration
@@ -122,7 +155,7 @@ BEHAVIOR:
   - Copies command files to .fluxid/commands/
   - Copies template files to .fluxid/templates/
   - Creates default config.yaml
-  - Fails if .fluxid/ already exists (safety check)
+  - Prompts for confirmation if .fluxid/ already exists
 
 EXAMPLES:
   fluxid init                    Initialize global config in ~/.fluxid/
