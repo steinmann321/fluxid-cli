@@ -6,15 +6,23 @@ import (
 	"testing"
 )
 
-//nolint:cyclop // Test validation requires multiple assertions
+//nolint:cyclop,funlen // Test validation requires multiple assertions
 func TestCopyAssetsToDir_Success(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	counts, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
+	}
+
+	// Verify counts
+	if counts.Commands != 6 {
+		t.Errorf("Expected 6 command files, got %d", counts.Commands)
+	}
+	if counts.Templates != 2 {
+		t.Errorf("Expected 2 template files, got %d", counts.Templates)
 	}
 
 	// Verify structure created
@@ -92,7 +100,7 @@ func TestCopyAssetsToDir_FileContents(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -142,7 +150,7 @@ func TestCopyAssetsToDir_ConfigContent(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}

@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,13 +39,13 @@ func TestM02E03CommandFilesResolvedFromHome(t *testing.T) {
 		t.Fatalf("Failed to write commit file: %v", err)
 	}
 
-	// Create home config referencing command files
-	configContent := `agent: claude
+	// Create home config referencing command files with absolute paths
+	configContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, fluxidDir, fluxidDir, fluxidDir)
 	configPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
@@ -104,12 +105,12 @@ func TestM02E03ProjectCommandFilesOverrideHome(t *testing.T) {
 	}
 
 	// Create home config
-	homeConfigContent := `agent: claude
+	homeConfigContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: home-implement.md
-  review: home-review.md
-  commit: home-commit.md
-`
+  implement: %s
+  review: %s
+  commit: %s
+`, homeImplementFile, homeReviewFile, homeCommitFile)
 	homeConfigPath := filepath.Join(homeFluxidDir, "config.yaml")
 	if err := os.WriteFile(homeConfigPath, []byte(homeConfigContent), 0o644); err != nil {
 		t.Fatalf("Failed to write home config: %v", err)
@@ -138,11 +139,11 @@ commands:
 	}
 
 	// Create project config
-	projectConfigContent := `commands:
-  implement: project-implement.md
-  review: project-review.md
-  commit: project-commit.md
-`
+	projectConfigContent := fmt.Sprintf(`commands:
+  implement: %s
+  review: %s
+  commit: %s
+`, projectImplementFile, projectReviewFile, projectCommitFile)
 	projectConfigPath := filepath.Join(projectFluxidDir, "config.yaml")
 	if err := os.WriteFile(projectConfigPath, []byte(projectConfigContent), 0o644); err != nil {
 		t.Fatalf("Failed to write project config: %v", err)
@@ -184,13 +185,13 @@ func TestM02E03MissingCommandFileError(t *testing.T) {
 		t.Fatalf("Failed to create commands dir: %v", err)
 	}
 
-	// Create home config referencing non-existent command files
-	configContent := `agent: claude
+	// Create home config referencing non-existent command files with absolute paths
+	configContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: missing-implement.md
-  review: missing-review.md
-  commit: missing-commit.md
-`
+  implement: %s/missing-implement.md
+  review: %s/missing-review.md
+  commit: %s/missing-commit.md
+`, commandsDir, commandsDir, commandsDir)
 	configPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
@@ -225,12 +226,12 @@ func TestM02E03PartialCommandsError(t *testing.T) {
 		t.Fatalf("Failed to create .fluxid dir: %v", err)
 	}
 
-	// Create home config with only some command files specified
-	configContent := `agent: claude
+	// Create home config with only some command files specified (absolute paths)
+	configContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: implement.md
-  review: review.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+`, fluxidDir, fluxidDir)
 	configPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
@@ -266,12 +267,12 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 		t.Fatalf("Failed to create home fluxid dir: %v", err)
 	}
 
-	// Create minimal v2.0 config with commands section and command files
-	configContent := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	// Create minimal v2.0 config with commands section and command files (absolute paths)
+	configContent := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, homeFluxidDir, homeFluxidDir, homeFluxidDir)
 	configPath := filepath.Join(homeFluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
@@ -322,12 +323,12 @@ func TestM02E03AbsolutePathsDisplayed(t *testing.T) {
 		t.Fatalf("Failed to write file: %v", err)
 	}
 
-	// Create home config with relative paths
-	configContent := `commands:
-  implement: impl.md
-  review: rev.md
-  commit: com.md
-`
+	// Create home config with absolute paths
+	configContent := fmt.Sprintf(`commands:
+  implement: %s/impl.md
+  review: %s/rev.md
+  commit: %s/com.md
+`, fluxidDir, fluxidDir, fluxidDir)
 	configPath := filepath.Join(fluxidDir, "config.yaml")
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("Failed to write config: %v", err)

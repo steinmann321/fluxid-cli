@@ -17,7 +17,7 @@ func TestResolveCommandFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")
 	projectDir := filepath.Join(tmpDir, "project")
-	// Paths are relative to .fluxid/ directory (not .fluxid/commands/)
+	// Command file paths must be absolute (no relative paths allowed)
 	homeFluxidDir := filepath.Join(homeDir, ".fluxid")
 	projectFluxidDir := filepath.Join(projectDir, ".fluxid")
 
@@ -28,26 +28,35 @@ func TestResolveCommandFiles(t *testing.T) {
 		t.Fatalf("Failed to create project .fluxid dir: %v", err)
 	}
 
-	// Create test command files directly in .fluxid/ directory
-	homeImpl := filepath.Join(homeFluxidDir, "implement.sh")
-	homeRev := filepath.Join(homeFluxidDir, "review.sh")
-	homeCommit := filepath.Join(homeFluxidDir, "commit.sh")
-	projImpl := filepath.Join(projectFluxidDir, "implement.sh")
-	projRev := filepath.Join(projectFluxidDir, "review.sh")
-	projCommit := filepath.Join(projectFluxidDir, "commit.sh")
-
-	// Create subdirectory for testing subdirectory path resolution
-	projectScriptsDir := filepath.Join(projectFluxidDir, "scripts")
-	if err := os.MkdirAll(projectScriptsDir, 0o755); err != nil {
-		t.Fatalf("Failed to create scripts dir: %v", err)
+	// Create test command files in commands/ subdirectory
+	homeCommandsDir := filepath.Join(homeFluxidDir, "commands")
+	projectCommandsDir := filepath.Join(projectFluxidDir, "commands")
+	if err := os.MkdirAll(homeCommandsDir, 0o755); err != nil {
+		t.Fatalf("Failed to create home commands dir: %v", err)
 	}
-	projScriptImpl := filepath.Join(projectScriptsDir, "implement.sh")
-	projScriptRev := filepath.Join(projectScriptsDir, "review.sh")
-	projScriptCommit := filepath.Join(projectScriptsDir, "commit.sh")
+	if err := os.MkdirAll(projectCommandsDir, 0o755); err != nil {
+		t.Fatalf("Failed to create project commands dir: %v", err)
+	}
+
+	homeImpl := filepath.Join(homeCommandsDir, "implement.sh")
+	homeRev := filepath.Join(homeCommandsDir, "review.sh")
+	homeCommit := filepath.Join(homeCommandsDir, "commit.sh")
+	projImpl := filepath.Join(projectCommandsDir, "implement.sh")
+	projRev := filepath.Join(projectCommandsDir, "review.sh")
+	projCommit := filepath.Join(projectCommandsDir, "commit.sh")
+
+	// Create alternate location for testing absolute paths
+	altCommandsDir := filepath.Join(projectCommandsDir, "alt")
+	if err := os.MkdirAll(altCommandsDir, 0o755); err != nil {
+		t.Fatalf("Failed to create alt commands dir: %v", err)
+	}
+	projAltImpl := filepath.Join(altCommandsDir, "implement.sh")
+	projAltRev := filepath.Join(altCommandsDir, "review.sh")
+	projAltCommit := filepath.Join(altCommandsDir, "commit.sh")
 
 	for _, f := range []string{
 		homeImpl, homeRev, homeCommit, projImpl, projRev, projCommit,
-		projScriptImpl, projScriptRev, projScriptCommit,
+		projAltImpl, projAltRev, projAltCommit,
 	} {
 		if err := os.WriteFile(f, []byte("#!/bin/bash\necho test"), 0o644); err != nil {
 			t.Fatalf("Failed to create test file %s: %v", f, err)
@@ -86,12 +95,12 @@ func TestResolveCommandFiles(t *testing.T) {
 			errMsg:        "commands section is required",
 		},
 		{
-			name: "project commands resolved successfully",
+			name: "project commands with absolute paths",
 			projectConfig: &ProjectConfig{
 				Commands: &Commands{
-					Implement: strPtr("implement.sh"),
-					Review:    strPtr("review.sh"),
-					Commit:    strPtr("commit.sh"),
+					Implement: &projImpl,
+					Review:    &projRev,
+					Commit:    &projCommit,
 				},
 			},
 			setupWd:   projectDir,
@@ -100,12 +109,12 @@ func TestResolveCommandFiles(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "home commands resolved successfully",
+			name: "home commands with absolute paths",
 			homeConfig: &HomeConfig{
 				Commands: &Commands{
-					Implement: strPtr("implement.sh"),
-					Review:    strPtr("review.sh"),
-					Commit:    strPtr("commit.sh"),
+					Implement: &homeImpl,
+					Review:    &homeRev,
+					Commit:    &homeCommit,
 				},
 			},
 			setupWd:   projectDir,
@@ -114,12 +123,12 @@ func TestResolveCommandFiles(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "project commands with subdirectory paths",
+			name: "project commands with absolute paths in alternate location",
 			projectConfig: &ProjectConfig{
 				Commands: &Commands{
-					Implement: strPtr("scripts/implement.sh"),
-					Review:    strPtr("scripts/review.sh"),
-					Commit:    strPtr("scripts/commit.sh"),
+					Implement: &projAltImpl,
+					Review:    &projAltRev,
+					Commit:    &projAltCommit,
 				},
 			},
 			setupWd:   projectDir,
@@ -128,12 +137,12 @@ func TestResolveCommandFiles(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "missing command file",
+			name: "missing command file with absolute path",
 			projectConfig: &ProjectConfig{
 				Commands: &Commands{
-					Implement: strPtr("missing.sh"),
-					Review:    strPtr("review.sh"),
-					Commit:    strPtr("commit.sh"),
+					Implement: strPtr(filepath.Join(projectCommandsDir, "missing.sh")),
+					Review:    &projRev,
+					Commit:    &projCommit,
 				},
 			},
 			setupWd:   projectDir,
@@ -146,8 +155,8 @@ func TestResolveCommandFiles(t *testing.T) {
 			name: "incomplete commands - missing review",
 			projectConfig: &ProjectConfig{
 				Commands: &Commands{
-					Implement: strPtr("implement.sh"),
-					Commit:    strPtr("commit.sh"),
+					Implement: &projImpl,
+					Commit:    &projCommit,
 				},
 			},
 			setupWd:   projectDir,
@@ -155,6 +164,21 @@ func TestResolveCommandFiles(t *testing.T) {
 			wantNil:   false,
 			wantErr:   true,
 			errMsg:    "commands.review: command is required",
+		},
+		{
+			name: "relative path should fail",
+			projectConfig: &ProjectConfig{
+				Commands: &Commands{
+					Implement: strPtr("commands/implement.sh"),
+					Review:    strPtr("commands/review.sh"),
+					Commit:    strPtr("commands/commit.sh"),
+				},
+			},
+			setupWd:   projectDir,
+			setupHome: homeDir,
+			wantNil:   false,
+			wantErr:   true,
+			errMsg:    "must be absolute path",
 		},
 	}
 
@@ -227,7 +251,6 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		baseDir  string
 		filename *string
 		cmdName  string
 		wantErr  bool
@@ -235,7 +258,6 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 	}{
 		{
 			name:     "nil filename",
-			baseDir:  tmpDir,
 			filename: nil,
 			cmdName:  "implement",
 			wantErr:  true,
@@ -243,34 +265,37 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 		},
 		{
 			name:     "empty filename",
-			baseDir:  tmpDir,
 			filename: strPtr(""),
 			cmdName:  "review",
 			wantErr:  true,
 			errMsg:   "commands.review: command is required",
 		},
 		{
-			name:     "valid file",
-			baseDir:  tmpDir,
-			filename: strPtr("valid.sh"),
+			name:     "valid absolute path",
+			filename: &validFile,
 			cmdName:  "commit",
 			wantErr:  false,
 		},
 		{
-			name:     "file not found",
-			baseDir:  tmpDir,
-			filename: strPtr("nonexistent.sh"),
+			name:     "absolute path not found",
+			filename: strPtr(filepath.Join(tmpDir, "nonexistent.sh")),
 			cmdName:  "implement",
 			wantErr:  true,
 			errMsg:   "command file not found",
 		},
 		{
-			name:     "not a regular file",
-			baseDir:  tmpDir,
-			filename: strPtr("dir"),
+			name:     "absolute path to directory",
+			filename: &nonRegularFile,
 			cmdName:  "review",
 			wantErr:  true,
 			errMsg:   "is not a regular file",
+		},
+		{
+			name:     "relative path should fail",
+			filename: strPtr("valid.sh"),
+			cmdName:  "implement",
+			wantErr:  true,
+			errMsg:   "must be absolute path",
 		},
 	}
 
@@ -278,7 +303,7 @@ func TestResolveAndValidateCommandFile(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result, err := resolveAndValidateCommandFile(testCase.baseDir, testCase.filename, testCase.cmdName)
+			result, err := validateCommandFile(testCase.filename, testCase.cmdName)
 
 			checkValidateFileError(t, err, result, testCase.wantErr, testCase.errMsg)
 		})
@@ -289,112 +314,19 @@ func checkValidateFileError(t *testing.T, err error, result string, wantErr bool
 	t.Helper()
 	if wantErr {
 		if err == nil {
-			t.Errorf("resolveAndValidateCommandFile() expected error, got nil")
+			t.Errorf("validateCommandFile() expected error, got nil")
 			return
 		}
 		if errMsg != "" && !strings.Contains(err.Error(), errMsg) {
-			t.Errorf("resolveAndValidateCommandFile() error = %v, want error containing %q", err, errMsg)
+			t.Errorf("validateCommandFile() error = %v, want error containing %q", err, errMsg)
 		}
 		return
 	}
 	if err != nil {
-		t.Errorf("resolveAndValidateCommandFile() unexpected error: %v", err)
+		t.Errorf("validateCommandFile() unexpected error: %v", err)
 		return
 	}
 	if result == "" {
-		t.Errorf("resolveAndValidateCommandFile() expected non-empty result, got empty string")
-	}
-}
-
-//nolint:funlen // Unit test with command validation scenarios
-func TestValidateCommands(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		cmds    *Commands
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name:    "nil commands is valid",
-			cmds:    nil,
-			wantErr: false,
-		},
-		{
-			name:    "all nil pointers is valid",
-			cmds:    &Commands{},
-			wantErr: false,
-		},
-		{
-			name: "all three specified is valid",
-			cmds: &Commands{
-				Implement: strPtr("implement.sh"),
-				Review:    strPtr("review.sh"),
-				Commit:    strPtr("commit.sh"),
-			},
-			wantErr: false,
-		},
-		{
-			name: "missing implement",
-			cmds: &Commands{
-				Review: strPtr("review.sh"),
-				Commit: strPtr("commit.sh"),
-			},
-			wantErr: true,
-			errMsg:  "commands.implement is required",
-		},
-		{
-			name: "missing review",
-			cmds: &Commands{
-				Implement: strPtr("implement.sh"),
-				Commit:    strPtr("commit.sh"),
-			},
-			wantErr: true,
-			errMsg:  "commands.review is required",
-		},
-		{
-			name: "missing commit",
-			cmds: &Commands{
-				Implement: strPtr("implement.sh"),
-				Review:    strPtr("review.sh"),
-			},
-			wantErr: true,
-			errMsg:  "commands.commit is required",
-		},
-		{
-			name: "only implement specified",
-			cmds: &Commands{
-				Implement: strPtr("implement.sh"),
-			},
-			wantErr: true,
-			errMsg:  "commands.review is required",
-		},
-		{
-			name: "empty string values",
-			cmds: &Commands{
-				Implement: strPtr(""),
-				Review:    strPtr(""),
-				Commit:    strPtr(""),
-			},
-			wantErr: false, // Empty strings are treated as not specified
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			err := validateCommands(testCase.cmds)
-			if testCase.wantErr {
-				if err == nil {
-					t.Errorf("validateCommands() expected error containing %q, got nil", testCase.errMsg)
-				} else if testCase.errMsg != "" && !strings.Contains(err.Error(), testCase.errMsg) {
-					t.Errorf("validateCommands() error = %v, want error containing %q", err, testCase.errMsg)
-				}
-			} else if err != nil {
-				t.Errorf("validateCommands() unexpected error: %v", err)
-			}
-		})
+		t.Errorf("validateCommandFile() expected non-empty result, got empty string")
 	}
 }

@@ -1,7 +1,7 @@
-//nolint:goconst // Test file with repeated config strings
 package main
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
@@ -21,25 +21,29 @@ func TestMain_SuccessfulExecution(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 
-	// Create config with commands section
+	// Create config with commands section using absolute paths
 	configDir := tmpDir + "/.fluxid"
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	commandsDir := configDir + "/commands"
+	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := `agent: claude
-commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
-	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
-		t.Fatal(err)
-	}
+
 	// Create command files
 	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
-		if err := os.WriteFile(configDir+"/"+file, []byte("# Command"), 0o644); err != nil {
+		if err := os.WriteFile(commandsDir+"/"+file, []byte("# Command"), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	// Write config with absolute paths
+	configContent := fmt.Sprintf(`agent: claude
+commands:
+  implement: %s/commands/implement.md
+  review: %s/commands/review.md
+  commit: %s/commands/commit.md
+`, configDir, configDir, configDir)
+	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
 	// Simulate dry-run mode to avoid actual agent execution
@@ -123,25 +127,29 @@ func TestMain_DryRunMode(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 
-	// Create config with commands section
+	// Create config with commands section using absolute paths
 	configDir := tmpDir + "/.fluxid"
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	commandsDir := configDir + "/commands"
+	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := `agent: claude
-commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
-	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
-		t.Fatal(err)
-	}
+
 	// Create command files
 	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
-		if err := os.WriteFile(configDir+"/"+file, []byte("# Command"), 0o644); err != nil {
+		if err := os.WriteFile(commandsDir+"/"+file, []byte("# Command"), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	// Write config with absolute paths
+	configContent := fmt.Sprintf(`agent: claude
+commands:
+  implement: %s/commands/implement.md
+  review: %s/commands/review.md
+  commit: %s/commands/commit.md
+`, configDir, configDir, configDir)
+	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
 	// Set dry-run mode with valid agent
@@ -171,25 +179,29 @@ func TestMain_SuccessfulExecutionWithIterations(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", tmpDir)
 	t.Setenv("HOME", tmpDir)
 
-	// Create config with commands section
+	// Create config with commands section using absolute paths
 	configDir := tmpDir + "/.fluxid"
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	commandsDir := configDir + "/commands"
+	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := `agent: claude
-commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
-	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
-		t.Fatal(err)
-	}
+
 	// Create command files
 	for _, file := range []string{"implement.md", "review.md", "commit.md"} {
-		if err := os.WriteFile(configDir+"/"+file, []byte("# Command"), 0o644); err != nil {
+		if err := os.WriteFile(commandsDir+"/"+file, []byte("# Command"), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	// Write config with absolute paths
+	configContent := fmt.Sprintf(`agent: claude
+commands:
+  implement: %s/commands/implement.md
+  review: %s/commands/review.md
+  commit: %s/commands/commit.md
+`, configDir, configDir, configDir)
+	if err := os.WriteFile(configDir+"/config.yaml", []byte(configContent), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
 	// Set dry-run mode with custom iterations using equals syntax

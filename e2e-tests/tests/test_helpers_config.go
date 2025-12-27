@@ -23,24 +23,24 @@ func setupConfigDir(t *testing.T, baseDir string) string {
 	return fluxidDir
 }
 
-// writeConfigFile writes a config file with the given agent name.
+// writeConfigFile writes a config file with the given agent name and absolute paths.
 func writeConfigFile(t *testing.T, configPath, agent string) {
 	t.Helper()
-	// Create v2.0 config with commands section
+	// Create command files in the same directory as the config
+	configDir := filepath.Dir(configPath)
+	createCommandFiles(t, configDir)
+
+	// Create v2.0 config with commands section using absolute paths
 	config := fmt.Sprintf(`agent: %s
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`, agent)
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, agent, configDir, configDir, configDir)
 	// #nosec G306 -- Test fixture file with standard permissions
 	if err := os.WriteFile(configPath, []byte(config), permFile); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
-
-	// Create command files in the same directory as the config
-	configDir := filepath.Dir(configPath)
-	createCommandFiles(t, configDir)
 }
 
 // writeRawConfigFile writes raw config content to the specified path.
@@ -60,18 +60,18 @@ func setupConfigWithCommands(t *testing.T, baseDir, agent string) string {
 	t.Helper()
 	configDir := setupConfigDir(t, baseDir)
 
-	// Create config with commands section
+	// Create command files first
+	createCommandFiles(t, configDir)
+
+	// Create config with commands section using absolute paths
 	configContent := fmt.Sprintf(`agent: %s
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`, agent)
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, agent, configDir, configDir, configDir)
 	configPath := filepath.Join(configDir, "config.yaml")
 	writeRawConfigFile(t, configPath, configContent)
-
-	// Create command files
-	createCommandFiles(t, configDir)
 
 	return configDir
 }

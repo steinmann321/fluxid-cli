@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -9,14 +10,14 @@ const (
 	minExpectedArgCount = 2 // Minimum expected argument count for validation
 )
 
-// Common test constants.
-const (
-	standardCommandFilesConfig = `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
-)
+// standardCommandFilesConfigFor returns a config with absolute paths to command files in the given directory.
+func standardCommandFilesConfigFor(dir string) string {
+	return fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, dir, dir, dir)
+}
 
 // testContext creates a context with timeout for testing.
 // This helper avoids direct context.Background() calls in test files.

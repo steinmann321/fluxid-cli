@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,8 +23,7 @@ func TestM02E02ProjectOverridesHome(t *testing.T) {
 	// Create project config that overrides some fields and run fluxid
 	projectConfigContent := `agent: opencode
 implement_retries: 7
-iterations: 15
-`
+iterations: 15`
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 	// Use dry-run mode (only need init status, not workflow execution)
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
@@ -50,16 +50,15 @@ func TestM02E02ProjectOnlyConfig(t *testing.T) {
 	if err := os.MkdirAll(homeFluxidDir, 0o755); err != nil {
 		t.Fatalf("Failed to create home .fluxid dir: %v", err)
 	}
-	homeConfigContent := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	homeConfigContent := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, homeFluxidDir, homeFluxidDir, homeFluxidDir)
 	writeHomeConfig(t, homeFluxidDir, homeConfigContent)
 
 	// Create project config with v2.0 commands section
-	projectConfigContent := `iterations: 12
-`
+	projectConfigContent := `iterations: 12`
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
 	// Run fluxid from the project directory in dry-run mode (only need init status)
@@ -114,8 +113,7 @@ func TestM02E02PartialProjectOverride(t *testing.T) {
 	tmpHome := setupHomeWithConfig(t, fullHomeConfig)
 
 	// Create project with partial override (only iterations) and run fluxid in dry-run mode
-	projectConfigContent := `iterations: 25
-`
+	projectConfigContent := `iterations: 25`
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpProjectDir, "--fluxid-dry-run")
 
@@ -142,8 +140,7 @@ func TestM02E02CLIOverridesProjectAndHome(t *testing.T) {
 
 	// Create project config with v2.0 commands section
 	projectConfigContent := `iterations: 15
-implement_retries: 7
-`
+implement_retries: 7`
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
 	// Run fluxid with CLI overrides in dry-run mode (only need init status)
@@ -172,16 +169,15 @@ func TestM02E02InvalidProjectConfig(t *testing.T) {
 	if err := os.MkdirAll(homeFluxidDir, 0o755); err != nil {
 		t.Fatalf("Failed to create home .fluxid dir: %v", err)
 	}
-	homeConfigContent := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	homeConfigContent := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, homeFluxidDir, homeFluxidDir, homeFluxidDir)
 	writeHomeConfig(t, homeFluxidDir, homeConfigContent)
 
 	// Create project with invalid config (iterations: 0) but valid v2.0 commands section
-	projectConfigContent := `iterations: 0
-`
+	projectConfigContent := `iterations: 0`
 	tmpProjectDir := createProjectWithConfig(t, projectConfigContent)
 
 	// Run fluxid expecting error

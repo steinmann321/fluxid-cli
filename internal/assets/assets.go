@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Embed all assets using embed.FS
@@ -26,62 +27,89 @@ func GetDefaultConfig() string {
 	return defaultConfigYAML
 }
 
+// AssetCounts tracks the number of files copied during initialization.
+type AssetCounts struct {
+	Commands  int
+	Templates int
+}
+
 // CopyAssetsToDir copies all embedded assets to the specified directory.
 // Creates: <targetDir>/.fluxid/{commands/,templates/,config.yaml}
 //
-// Returns error if:
+// Returns file counts and error.
+// Error if:
 //   - targetDir/.fluxid already exists
 //   - Failed to create directories
 //   - Failed to write files
 //
 //nolint:err113,mnd // Init errors are descriptive, file permissions are standard
-func CopyAssetsToDir(targetDir string) error {
+func CopyAssetsToDir(targetDir string) (AssetCounts, error) {
+	var counts AssetCounts
 	fluxidDir := filepath.Join(targetDir, ".fluxid")
 
 	// Check if .fluxid already exists
 	if _, err := os.Stat(fluxidDir); err == nil {
-		return fmt.Errorf(".fluxid directory already exists at %s", fluxidDir)
+		return counts, fmt.Errorf(".fluxid directory already exists at %s", fluxidDir)
 	}
 
 	// Create base directory
 	// #nosec G301 -- 0o755 is standard user directory permission
 	if err := os.MkdirAll(fluxidDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create .fluxid directory: %w", err)
+		return counts, fmt.Errorf("failed to create .fluxid directory: %w", err)
 	}
 
 	// Copy commands
-	if err := copyEmbeddedDir(commandsFS, "commands", filepath.Join(fluxidDir, "commands")); err != nil {
-		return fmt.Errorf("failed to copy commands: %w", err)
+	cmdCount, err := copyEmbeddedDir(commandsFS, "commands", filepath.Join(fluxidDir, "commands"))
+	if err != nil {
+		return counts, fmt.Errorf("failed to copy commands: %w", err)
 	}
+	counts.Commands = cmdCount
 
 	// Copy templates
-	if err := copyEmbeddedDir(templatesFS, "templates", filepath.Join(fluxidDir, "templates")); err != nil {
-		return fmt.Errorf("failed to copy templates: %w", err)
+	tplCount, err := copyEmbeddedDir(templatesFS, "templates", filepath.Join(fluxidDir, "templates"))
+	if err != nil {
+		return counts, fmt.Errorf("failed to copy templates: %w", err)
 	}
+	counts.Templates = tplCount
 
-	// Write config.yaml
+	// Write config.yaml with placeholder replacement
 	configPath := filepath.Join(fluxidDir, "config.yaml")
+	configContent := replacePlaceholders(defaultConfigYAML, fluxidDir)
 	// #nosec G306 -- 0o644 is standard config file permission
-	if err := os.WriteFile(configPath, []byte(defaultConfigYAML), 0o644); err != nil {
-		return fmt.Errorf("failed to write config.yaml: %w", err)
+	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+		return counts, fmt.Errorf("failed to write config.yaml: %w", err)
 	}
 
-	return nil
+	return counts, nil
+}
+
+// replacePlaceholders replaces {{FLUXID_DIR}} with the actual absolute path.
+func replacePlaceholders(content string, fluxidDir string) string {
+	// Get absolute path
+	absPath, err := filepath.Abs(fluxidDir)
+	if err != nil {
+		// Fallback to fluxidDir if abs fails
+		absPath = fluxidDir
+	}
+	return strings.ReplaceAll(content, "{{FLUXID_DIR}}", absPath)
 }
 
 // copyEmbeddedDir recursively copies files from embedded FS to destination.
+// Returns the count of files copied.
 //
 //nolint:mnd,wrapcheck // File permissions are standard, errors already contextual
-func copyEmbeddedDir(fsys embed.FS, srcDir, dstDir string) error {
+func copyEmbeddedDir(fsys embed.FS, srcDir, dstDir string) (int, error) {
+	fileCount := 0
+
 	// Create destination directory
 	// #nosec G301 -- 0o755 is standard user directory permission
 	if err := os.MkdirAll(dstDir, 0o755); err != nil {
-		return err
+		return 0, err
 	}
 
 	// Walk embedded filesystem
 	//nolint:varnamelen // 'd' is standard for fs.DirEntry in WalkDir callback
-	return fs.WalkDir(fsys, srcDir, func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(fsys, srcDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -103,8 +131,14 @@ func copyEmbeddedDir(fsys embed.FS, srcDir, dstDir string) error {
 		}
 
 		// Copy file
-		return copyEmbeddedFile(fsys, path, dstPath)
+		if err := copyEmbeddedFile(fsys, path, dstPath); err != nil {
+			return err
+		}
+		fileCount++
+		return nil
 	})
+
+	return fileCount, err
 }
 
 // copyEmbeddedFile copies a single file from embedded FS to destination.

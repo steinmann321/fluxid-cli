@@ -40,7 +40,7 @@ func TestM06E04MissingCommandFileSingleError(t *testing.T) {
 	}
 
 	// Configure to use command files (implement.md doesn't exist)
-	configContent := standardCommandFilesConfig
+	configContent := standardCommandFilesConfigFor(commandsDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
@@ -101,7 +101,7 @@ func TestM06E04MissingCommandFileMultipleErrors(t *testing.T) {
 	}
 
 	// Configure to use command files (none exist)
-	configContent := standardCommandFilesConfig
+	configContent := standardCommandFilesConfigFor(commandsDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
@@ -150,12 +150,12 @@ func TestM06E04NoAgentProcessSpawnedOnValidationFailure(t *testing.T) {
 		t.Fatalf("Failed to create commands directory: %v", err)
 	}
 
-	// Configure to use command files (none exist)
-	configContent := `commands:
-  implement: missing.md
-  review: missing2.md
-  commit: missing3.md
-`
+	// Configure to use command files (none exist) - use absolute paths to non-existent files
+	configContent := fmt.Sprintf(`commands:
+  implement: %s/missing.md
+  review: %s/missing2.md
+  commit: %s/missing3.md
+`, commandsDir, commandsDir, commandsDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
@@ -221,7 +221,7 @@ func TestM06E04UnreadableCommandFile(t *testing.T) {
 	}
 
 	// Configure to use command files
-	configContent := standardCommandFilesConfig
+	configContent := standardCommandFilesConfigFor(configDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
@@ -276,7 +276,7 @@ func TestM06E04DirectoryAsCommandFile(t *testing.T) {
 	}
 
 	// Configure to use command files
-	configContent := standardCommandFilesConfig
+	configContent := standardCommandFilesConfigFor(configDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
@@ -318,12 +318,12 @@ func TestM06E04ErrorGuidance(t *testing.T) {
 		t.Fatalf("Failed to create commands directory: %v", err)
 	}
 
-	// Configure to use missing command files
-	configContent := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	// Configure to use missing command files (absolute paths to non-existent files)
+	configContent := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, commandsDir, commandsDir, commandsDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
@@ -339,7 +339,7 @@ func TestM06E04ErrorGuidance(t *testing.T) {
 	stderrOutput := stderr.String()
 
 	// Verify error includes the full expected path (resolved relative to config dir)
-	expectedPath := filepath.Join(configDir, "implement.md")
+	expectedPath := filepath.Join(commandsDir, "implement.md")
 	if !strings.Contains(stderrOutput, expectedPath) {
 		t.Errorf("Expected full path %q in error message, got:\n%s", expectedPath, stderrOutput)
 	}

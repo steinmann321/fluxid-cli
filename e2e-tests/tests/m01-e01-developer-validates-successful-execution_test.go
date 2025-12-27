@@ -5,6 +5,7 @@ package tests
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,14 +16,17 @@ import (
 
 // v2.0: commit_enabled removed (Phase 10), commands section required (Phase 4)
 // v2.0: only claude, codex, and opencode are valid agents.
-const minimalHomeConfig = `agent: claude
+// minimalHomeConfigTemplate returns a config string with absolute command file paths.
+func minimalHomeConfigTemplate(commandsDir string) string {
+	return fmt.Sprintf(`agent: claude
 iterations: 1
 implement_retries: 1
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, commandsDir, commandsDir, commandsDir)
+}
 
 // extractExitCode extracts the exit code from an error using errors.As.
 func extractExitCode(err error) int {
@@ -65,17 +69,17 @@ func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 	// v2.0: Create minimal home config to prevent validation errors
 	// Use ~/.fluxid/config.yaml (not ~/.config/fluxid/config.yaml)
 	homeConfigPath := filepath.Join(homeDir, ".fluxid", "config.yaml")
-	if err := os.MkdirAll(filepath.Dir(homeConfigPath), 0o755); err != nil {
+	homeConfigDir := filepath.Dir(homeConfigPath)
+	if err := os.MkdirAll(homeConfigDir, 0o755); err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
 	}
 
-	if err := os.WriteFile(homeConfigPath, []byte(minimalHomeConfig), 0o644); err != nil {
+	// v2.0: Create command files in config directory
+	createCommandFiles(t, homeConfigDir)
+
+	if err := os.WriteFile(homeConfigPath, []byte(minimalHomeConfigTemplate(homeConfigDir)), 0o644); err != nil {
 		t.Fatalf("Failed to write home config: %v", err)
 	}
-
-	// v2.0: Create command files in config directory
-	homeConfigDir := filepath.Dir(homeConfigPath)
-	createCommandFiles(t, homeConfigDir)
 
 	// Execute fluxid with --fluxid-dry-run flag
 	ctx, cancel := testContext(5 * time.Second)
@@ -216,14 +220,14 @@ func TestMain_OutputFormats(t *testing.T) {
 				t.Fatalf("Failed to create config dir: %v", err)
 			}
 
-			homeConfig := `agent: echo
+			homeConfig := fmt.Sprintf(`agent: echo
 iterations: 1
 implement_retries: 1
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, homeConfigDir, homeConfigDir, homeConfigDir)
 			if err := os.WriteFile(homeConfigPath, []byte(homeConfig), 0o644); err != nil {
 				t.Fatalf("Failed to write home config: %v", err)
 			}
@@ -243,22 +247,26 @@ commands:
 
 			// Create project config with commands section (v2.0 requirement)
 			projectConfigDir := filepath.Join(projectDir, ".fluxid")
+			projectCommandsDir := filepath.Join(projectConfigDir, "commands")
 			if err := os.MkdirAll(projectConfigDir, 0o755); err != nil {
 				t.Fatalf("Failed to create project config dir: %v", err)
 			}
+			if err := os.MkdirAll(projectCommandsDir, 0o755); err != nil {
+				t.Fatalf("Failed to create project commands dir: %v", err)
+			}
 			projectConfigPath := filepath.Join(projectConfigDir, "config.yaml")
-			projectConfig := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+			projectConfig := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, projectCommandsDir, projectCommandsDir, projectCommandsDir)
 			if err := os.WriteFile(projectConfigPath, []byte(projectConfig), 0o644); err != nil {
 				t.Fatalf("Failed to write project config: %v", err)
 			}
 
 			// Create command files in project config dir
 			for filename, content := range commandFiles {
-				path := filepath.Join(projectConfigDir, filename)
+				path := filepath.Join(projectCommandsDir, filename)
 				if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 					t.Fatalf("Failed to write project command file %s: %v", filename, err)
 				}
@@ -328,17 +336,17 @@ func TestMain_ExecutionSpeed(t *testing.T) {
 	// v2.0: Create minimal home config
 	// Use ~/.fluxid/config.yaml (not ~/.config/fluxid/config.yaml)
 	homeConfigPath := filepath.Join(homeDir, ".fluxid", "config.yaml")
-	if err := os.MkdirAll(filepath.Dir(homeConfigPath), 0o755); err != nil {
+	homeConfigDir := filepath.Dir(homeConfigPath)
+	if err := os.MkdirAll(homeConfigDir, 0o755); err != nil {
 		t.Fatalf("Failed to create config dir: %v", err)
 	}
 
-	if err := os.WriteFile(homeConfigPath, []byte(minimalHomeConfig), 0o644); err != nil {
+	// v2.0: Create command files in config directory
+	createCommandFiles(t, homeConfigDir)
+
+	if err := os.WriteFile(homeConfigPath, []byte(minimalHomeConfigTemplate(homeConfigDir)), 0o644); err != nil {
 		t.Fatalf("Failed to write home config: %v", err)
 	}
-
-	// v2.0: Create command files in config directory
-	homeConfigDir := filepath.Dir(homeConfigPath)
-	createCommandFiles(t, homeConfigDir)
 
 	// Run the test 3 times to ensure consistent performance
 	for iteration := 0; iteration < 3; iteration++ {

@@ -21,7 +21,7 @@ bin/
 .claude/
 .opencode/
 .fluxid/
-fluxid/
+/fluxid/
 
 # Test binary, built with `go test -c`
 *.test

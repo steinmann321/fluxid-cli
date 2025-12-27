@@ -4,6 +4,7 @@ package tests
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,11 +42,15 @@ func writeHomeConfig(t *testing.T, fluxidDir, content string) {
 
 	// v2.0: Ensure commands section is present
 	if !strings.Contains(content, "commands:") {
-		content = content + `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+		// Ensure there's a newline before the commands section
+		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		content = content + fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, fluxidDir, fluxidDir, fluxidDir)
 	}
 
 	configPath := filepath.Join(fluxidDir, "config.yaml")
@@ -174,11 +179,15 @@ func createProjectWithConfig(t *testing.T, content string) string {
 
 	// v2.0: Ensure commands section is present
 	if !strings.Contains(content, "commands:") {
-		content = content + `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+		// Ensure there's a newline before the commands section
+		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		content = content + fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, fluxidDir, fluxidDir, fluxidDir)
 	}
 
 	cfgPath := filepath.Join(fluxidDir, "config.yaml")

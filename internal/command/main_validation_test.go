@@ -1,13 +1,14 @@
-//nolint:paralleltest,goconst // Tests manipulate environment, repeated config strings
+//nolint:paralleltest // Tests manipulate environment
 package command
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
-// TestLoadAllConfigs tests the loadAllConfigs function for various scenarios.
+//nolint:funlen // Table-driven test with comprehensive test cases
 func TestLoadAllConfigs(t *testing.T) {
 	t.Run("successful load", func(t *testing.T) {
 		tmpDir := t.TempDir()
@@ -17,7 +18,8 @@ func TestLoadAllConfigs(t *testing.T) {
 
 		// Create valid config files in the expected location
 		configDir := filepath.Join(tmpDir, ".fluxid")
-		if err := os.MkdirAll(configDir, 0o755); err != nil {
+		commandsDir := filepath.Join(configDir, "commands")
+		if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 
@@ -57,7 +59,8 @@ max_review_cycles: 10
 
 		// Create home config in .fluxid directory
 		configDir := filepath.Join(tmpDir, ".fluxid")
-		if err := os.MkdirAll(configDir, 0o755); err != nil {
+		commandsDir := filepath.Join(configDir, "commands")
+		if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte("agent: claude\n"), 0o644); err != nil {
@@ -149,27 +152,28 @@ func TestLoadAndResolveConfig(t *testing.T) {
 
 		// Create valid config in .fluxid directory with commands section
 		configDir := filepath.Join(tmpDir, ".fluxid")
-		if err := os.MkdirAll(configDir, 0o755); err != nil {
+		commandsDir := filepath.Join(configDir, "commands")
+		if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 			t.Fatal(err)
 		}
-		configContent := `agent: claude
+		configContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, commandsDir, commandsDir, commandsDir)
 		if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 			t.Fatal(err)
 		}
 
-		// Create command files
-		if err := os.WriteFile(filepath.Join(configDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
+		// Create command files in commandsDir (not configDir)
+		if err := os.WriteFile(filepath.Join(commandsDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(configDir, "review.md"), []byte("# Review"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(commandsDir, "review.md"), []byte("# Review"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(configDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(commandsDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 

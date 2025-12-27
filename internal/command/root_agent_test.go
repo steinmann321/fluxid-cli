@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -117,26 +118,27 @@ func TestExecute_WorkflowExecutionWithEchoAgent(t *testing.T) {
 
 	// Create config with commands section
 	configDir := filepath.Join(tmpDir, ".fluxid")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	commandsDir := filepath.Join(configDir, "commands")
+	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := `agent: claude
+	configContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, commandsDir, commandsDir, commandsDir)
 	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create command files
-	if err := os.WriteFile(filepath.Join(configDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(commandsDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(configDir, "review.md"), []byte("# Review"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(commandsDir, "review.md"), []byte("# Review"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(configDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(commandsDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -218,26 +220,27 @@ func TestExecute_AgentStatError(t *testing.T) {
 
 	// Create config with commands section
 	configDir := filepath.Join(tmpDir, ".fluxid")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	commandsDir := filepath.Join(configDir, "commands")
+	if err := os.MkdirAll(commandsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	configContent := `agent: claude
+	configContent := fmt.Sprintf(`agent: claude
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, commandsDir, commandsDir, commandsDir)
 	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// Create command files
-	if err := os.WriteFile(filepath.Join(configDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(commandsDir, "implement.md"), []byte("# Implement"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(configDir, "review.md"), []byte("# Review"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(commandsDir, "review.md"), []byte("# Review"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(configDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(commandsDir, "commit.md"), []byte("# Commit"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

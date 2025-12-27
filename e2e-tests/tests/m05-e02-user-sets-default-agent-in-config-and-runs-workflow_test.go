@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -180,11 +181,11 @@ func TestM05E02NoConfigUsesDefault(t *testing.T) {
 	// The agent will use the default (claude) since no agent is specified in config
 	configDir := setupConfigDir(t, tmpDir)
 	configPath := filepath.Join(configDir, "config.yaml")
-	configContent := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	configContent := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, configDir, configDir, configDir)
 	writeRawConfigFile(t, configPath, configContent)
 
 	// Create command files

@@ -17,7 +17,7 @@ func TestCopyAssetsToDir_AlreadyExists(t *testing.T) {
 	}
 
 	// Should fail
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err == nil {
 		t.Error("Expected error when .fluxid already exists")
 	}
@@ -34,7 +34,7 @@ func TestCopyAssetsToDir_InvalidPath(t *testing.T) {
 	t.Parallel()
 
 	// Try to copy to a path that doesn't exist and can't be created
-	err := CopyAssetsToDir("/dev/null/invalid/path")
+	_, err := CopyAssetsToDir("/dev/null/invalid/path")
 	if err == nil {
 		t.Error("Expected error for invalid path, got nil")
 	}
@@ -62,7 +62,7 @@ func TestCopyAssetsToDir_ReadOnlyParent(t *testing.T) {
 	}()
 
 	// Try to copy assets to a subdirectory of the read-only directory
-	err := CopyAssetsToDir(roDir)
+	_, err := CopyAssetsToDir(roDir)
 	if err == nil {
 		t.Error("Expected error when parent directory is read-only, got nil")
 	}
@@ -80,7 +80,7 @@ func TestCopyAssetsToDir_FileExistsWhereDirectoryShouldBe(t *testing.T) {
 	}
 
 	// Try to copy assets - should fail because .fluxid is a file, not a directory
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err == nil {
 		t.Error("Expected error when .fluxid is a file, got nil")
 	}

@@ -3,6 +3,7 @@ package assets
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestCopyAssetsToDir_VerifyPermissions(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestCopyAssetsToDir_CreatesAllDirectories(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -93,22 +94,29 @@ func TestCopyAssetsToDir_WritesConfigFile(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
 
 	configPath := filepath.Join(tmpDir, ".fluxid", "config.yaml")
 
-	// Read config and verify it matches GetDefaultConfig()
+	// Read config and verify placeholders were replaced
 	content, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("Failed to read config: %v", err)
 	}
 
-	expected := GetDefaultConfig()
-	if string(content) != expected {
-		t.Errorf("Config content mismatch.\nGot:\n%s\nExpected:\n%s", string(content), expected)
+	contentStr := string(content)
+	// Verify placeholders were replaced (should NOT contain {{FLUXID_DIR}})
+	if strings.Contains(contentStr, "{{FLUXID_DIR}}") {
+		t.Error("Config still contains unreplaced placeholder {{FLUXID_DIR}}")
+	}
+
+	// Verify it contains absolute paths
+	absFluxidPath := filepath.Join(tmpDir, ".fluxid")
+	if !strings.Contains(contentStr, absFluxidPath) {
+		t.Errorf("Config should contain absolute path %s", absFluxidPath)
 	}
 }
 
@@ -117,7 +125,7 @@ func TestCopyAssetsToDir_CopiesTemplateFiles(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -144,7 +152,7 @@ func TestCopyAssetsToDir_CopiesCommandFiles(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -180,7 +188,7 @@ func TestCopyAssetsToDir_VerifyAllFiles(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -275,7 +283,7 @@ func TestCopyAssetsToDir_VerifyFileContents(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := CopyAssetsToDir(tmpDir)
+	_, err := CopyAssetsToDir(tmpDir)
 	if err != nil {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
@@ -356,7 +364,7 @@ func TestCopyAssetsToDir_MultipleInvocations(t *testing.T) {
 	for invocation := 0; invocation < 3; invocation++ {
 		tmpDir := t.TempDir()
 
-		err := CopyAssetsToDir(tmpDir)
+		_, err := CopyAssetsToDir(tmpDir)
 		if err != nil {
 			t.Errorf("Invocation %d failed: %v", invocation, err)
 		}

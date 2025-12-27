@@ -1,7 +1,7 @@
-//nolint:goconst // Test file with repeated config strings
 package tests
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -18,8 +18,7 @@ func TestM02E01HomeConfigApplied(t *testing.T) {
 
 	configContent := `agent: claude
 implement_retries: 5
-iterations: 10
-`
+iterations: 10`
 	tmpHome := setupHomeWithConfig(t, configContent)
 	output := runFluxidWithHome(t, root, tmpHome)
 
@@ -43,11 +42,11 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 	tmpHome := t.TempDir()
 	fluxidDir := createHomeConfigDir(t, tmpHome)
 	// Create minimal config with only commands section (other values will use defaults)
-	minimalConfig := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	minimalConfig := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, fluxidDir, fluxidDir, fluxidDir)
 	writeHomeConfig(t, fluxidDir, minimalConfig)
 
 	// Run fluxid with custom HOME
@@ -69,8 +68,7 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	configContent := `iterations: 15
-`
+	configContent := `iterations: 15`
 	tmpHome := setupHomeWithConfig(t, configContent)
 	output := runFluxidWithHome(t, root, tmpHome)
 
@@ -90,8 +88,7 @@ func TestM02E01InvalidTypeInConfig(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
-	configContent := `implement_retries: "three"
-`
+	configContent := `implement_retries: "three"`
 	tmpHome := setupHomeWithConfig(t, configContent)
 	errOutput, exitCode := runFluxidExpectError(t, root, tmpHome)
 
@@ -114,8 +111,7 @@ func TestM02E01InvalidValueInConfig(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
-	configContent := `implement_retries: 0
-`
+	configContent := `implement_retries: 0`
 	tmpHome := setupHomeWithConfig(t, configContent)
 	errOutput, exitCode := runFluxidExpectError(t, root, tmpHome)
 
@@ -162,11 +158,11 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 	// Create temporary home with minimal v2.0 config (need commands section)
 	tmpHome := t.TempDir()
 	fluxidDir := createHomeConfigDir(t, tmpHome)
-	minimalConfig := `commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
-`
+	minimalConfig := fmt.Sprintf(`commands:
+  implement: %s/implement.md
+  review: %s/review.md
+  commit: %s/commit.md
+`, fluxidDir, fluxidDir, fluxidDir)
 	writeHomeConfig(t, fluxidDir, minimalConfig)
 	output := runFluxidWithHome(t, root, tmpHome)
 

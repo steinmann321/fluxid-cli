@@ -36,7 +36,8 @@ func handleInit(args []string) int {
 	}
 
 	// Copy assets to target directory
-	if err := assets.CopyAssetsToDir(targetDir); err != nil {
+	counts, err := assets.CopyAssetsToDir(targetDir)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to initialize: %v\n", err)
 		return 1
 	}
@@ -49,8 +50,8 @@ func handleInit(args []string) int {
 	fmt.Fprintf(os.Stderr, "Location: %s\n\n", absPath)
 	fmt.Fprintf(os.Stderr, "Created:\n")
 	fmt.Fprintf(os.Stderr, "  %s/config.yaml\n", absPath)
-	fmt.Fprintf(os.Stderr, "  %s/commands/      (28 command files)\n", absPath)
-	fmt.Fprintf(os.Stderr, "  %s/templates/     (2 template files)\n", absPath)
+	fmt.Fprintf(os.Stderr, "  %s/commands/      (%d command files)\n", absPath, counts.Commands)
+	fmt.Fprintf(os.Stderr, "  %s/templates/     (%d template files)\n", absPath, counts.Templates)
 	fmt.Fprintf(os.Stderr, "\nNext steps:\n")
 	fmt.Fprintf(os.Stderr, "  1. Review and customize config.yaml\n")
 	fmt.Fprintf(os.Stderr, "  2. Run 'fluxid --claude' to start a workflow\n")
@@ -118,8 +119,8 @@ ARGUMENTS:
 
 BEHAVIOR:
   - Creates .fluxid/ directory in target location
-  - Copies 28 command files to .fluxid/commands/
-  - Copies 2 template files to .fluxid/templates/
+  - Copies command files to .fluxid/commands/
+  - Copies template files to .fluxid/templates/
   - Creates default config.yaml
   - Fails if .fluxid/ already exists (safety check)
 
