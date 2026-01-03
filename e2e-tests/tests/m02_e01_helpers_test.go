@@ -105,7 +105,7 @@ func runFluxidWithHomeAndArgs(t *testing.T, root, homeDir string, args ...string
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
-		"PATH"+":"+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer
