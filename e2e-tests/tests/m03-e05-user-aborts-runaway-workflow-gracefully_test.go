@@ -26,13 +26,20 @@ func TestM03E05GracefulAbortViaSignal(t *testing.T) {
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
 
+	// Create task file
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+
 	sessionID := "test-abort-signal-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3")
+	cmd := exec.CommandContext(ctx, binPath,
+		"--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
@@ -149,53 +156,48 @@ func TestM03E05AbortViaIPCCommand(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
-
 	// v2.0: Create temporary home with config and command files
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
-
+	// Create task file
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
 	sessionID := "test-ipc-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
-
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
-
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3")
+	cmd := exec.CommandContext(ctx, binPath,
+		"--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
-
 	// Capture output
 	var outputBuf strings.Builder
 	cmd.Stdout = &outputBuf
 	cmd.Stderr = &outputBuf
-
 	// Start the workflow command
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Failed to start fluxid: %v", err)
 	}
-
 	// Wait for workflow to start
 	<-time.After(300 * time.Millisecond)
-
 	// Issue abort via IPC command
 	abortCmd := exec.CommandContext(ctx, binPath, "ipc", "abort", "--session", sessionID)
 	abortOutput, err := abortCmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Failed to run ipc abort: %v\nOutput: %s", err, abortOutput)
 	}
-
 	// Verify abort confirmation message
 	outputStr := string(abortOutput)
 	if !strings.Contains(outputStr, "Abort requested") {
 		t.Errorf("Expected abort confirmation message, got: %s", outputStr)
 	}
-
 	// Wait for workflow to exit
 	err = cmd.Wait()
-
 	// Verify graceful abort
 	if err == nil {
 		t.Fatal("Expected fluxid to exit with error after abort")
@@ -224,13 +226,20 @@ func TestM03E05AbortMessageContent(t *testing.T) {
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
 
+	// Create task file
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+
 	sessionID := "test-abort-messages-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
 
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3")
+	cmd := exec.CommandContext(ctx, binPath,
+		"--claude", "--fluxid-iterations=3", "--fluxid-implement-retries=3", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),

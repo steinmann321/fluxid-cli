@@ -209,8 +209,14 @@ func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 		tmpHome := t.TempDir()
 		setupConfigWithCommands(t, tmpHome, "claude")
 
+		// Create task file
+		taskPath := filepath.Join(tmpHome, "task.txt")
+		if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+			t.Fatalf("Failed to write task file: %v", err)
+		}
+
 		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--codex", "--fluxid-iterations=1")
+		cmd := exec.CommandContext(t.Context(), binPath, "--codex", "--fluxid-iterations=1", "--file="+taskPath)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 			"HOME="+tmpHome,

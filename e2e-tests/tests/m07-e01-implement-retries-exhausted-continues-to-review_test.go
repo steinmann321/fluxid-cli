@@ -124,11 +124,18 @@ issues:
 		}
 	}()
 
+	// Create task file
+	taskPath := filepath.Join(homeDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+
 	// v2.0: Run fluxid workflow with --codex flag
 	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin,
 		"--fluxid-iterations=1",
 		"--fluxid-implement-retries=2",
 		"--codex",
+		"--file="+taskPath,
 	)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
@@ -272,11 +279,18 @@ issues:
 		}
 	}()
 
+	// Create task file
+	taskPath := filepath.Join(homeDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+
 	// v2.0: Run fluxid workflow with --codex flag
 	cmd := exec.CommandContext(testCtx(30*time.Second), fluxidBin,
 		"--fluxid-iterations=1",
 		"--fluxid-implement-retries=2",
 		"--codex",
+		"--file="+taskPath,
 	)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,

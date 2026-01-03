@@ -75,6 +75,14 @@ func loadAndResolveConfig() (types.Config, int) {
 		}
 	}
 
+	// Validate task file after agent validation (so agent errors are shown first)
+	if !cfg.DryRun && args.CLIAgent != nil {
+		if err := validateTaskFile(cfg.TaskFilePath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return emptyConfig, 1
+		}
+	}
+
 	return cfg, 0
 }
 
@@ -175,16 +183,10 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		}
 		outputFormat = output.Format(*args.CLIOutputFormat)
 	}
-	// Validate task file path only for real execution (non-dry-run)
+	// Extract task file path (validation happens in loadAndResolveConfig)
 	var taskAbs string
 	if args.CLITaskFilePath != nil {
 		taskAbs = *args.CLITaskFilePath
-	}
-	// Enforce task file only for explicit agent execution (non-dry-run with agent flag)
-	if !dryRun && args.CLIAgent != nil {
-		if err := validateTaskFile(taskAbs); err != nil {
-			return emptyConfig, err
-		}
 	}
 	return types.Config{
 		Agent:               resolved.Agent,
