@@ -67,9 +67,10 @@ func TestBuildFinalConfigWithSessionID(t *testing.T) {
 	args := &CLIArgs{
 		AgentArgs:           []string{},
 		CLIOutputFormat:     nil,
-		CLIDryRun:           boolPtr(false),
+		CLIDryRun:           boolPtr(true),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
+		CLITaskFilePath:     strPtr("/abs/task.txt"),
 	}
 
 	// Test with FLUXID_SESSION_ID set
@@ -97,9 +98,10 @@ func TestBuildFinalConfigWithJSONFormat(t *testing.T) {
 	args := &CLIArgs{
 		AgentArgs:           []string{},
 		CLIOutputFormat:     &jsonFormat,
-		CLIDryRun:           boolPtr(false),
+		CLIDryRun:           boolPtr(true),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
+		CLITaskFilePath:     strPtr("/abs/task.txt"),
 	}
 
 	cfg, err := buildFinalConfig(resolved, args)
@@ -124,9 +126,10 @@ func TestBuildFinalConfigWithYAMLFormat(t *testing.T) {
 	args := &CLIArgs{
 		AgentArgs:           []string{},
 		CLIOutputFormat:     &yamlFormat,
-		CLIDryRun:           boolPtr(false),
+		CLIDryRun:           boolPtr(true),
 		CLIIterations:       nil,
 		CLIImplementRetries: nil,
+		CLITaskFilePath:     strPtr("/abs/task.txt"),
 	}
 
 	cfg, err := buildFinalConfig(resolved, args)
@@ -143,3 +146,5 @@ func TestBuildFinalConfigWithYAMLFormat(t *testing.T) {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
+func strPtr(s string) *string { return &s }

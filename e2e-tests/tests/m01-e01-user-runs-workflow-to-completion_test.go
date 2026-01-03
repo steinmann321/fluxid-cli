@@ -46,7 +46,12 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 	// Run fluxid 3 times and collect session IDs
 	for runIndex := 0; runIndex < 3; runIndex++ {
 		binPath := filepath.Join(root, "bin", "fluxid")
-		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+		// Create a dummy task file in home
+		taskPath := filepath.Join(tmpHome, "task.txt")
+		if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+			t.Fatalf("Failed to write task file: %v", err)
+		}
+		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 		cmd.Env = append(os.Environ(),
 			fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 			"HOME="+tmpHome,
@@ -109,7 +114,12 @@ func TestM01E01WithoutClaudeFlag(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-iterations=1")
+	// Create a dummy task file in home
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
@@ -154,7 +164,12 @@ func TestM01E01SessionIDPropagation(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	// Create a dummy task file in home
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
@@ -204,6 +219,12 @@ func runFluxidWithClaude(t *testing.T, root string, args ...string) string {
 
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmdArgs := append([]string{"--claude"}, args...)
+	// Create dummy task file in home for real runs
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	cmdArgs = append(cmdArgs, "--file="+taskPath)
 	cmd := exec.CommandContext(t.Context(), binPath, cmdArgs...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),

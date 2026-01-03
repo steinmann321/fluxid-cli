@@ -26,9 +26,9 @@ const (
 	statusPass = "PASS"
 	statusFail = "FAIL"
 
-	implementPrompt = "Implement the required changes based on the epic requirements."
-	commitPrompt    = "Create a git commit with all changes."
-	reviewPrompt    = "Review the implementation and report status."
+	implementPrompt = "Run implement command file for task: ${FLUXID_TASK_FILE}"
+	commitPrompt    = "Execute commit command file to create git commit"
+	reviewPrompt    = "Run review command file for task: ${FLUXID_TASK_FILE}"
 
 	exitCodeInterrupted = 130 // Exit code for SIGINT/SIGTERM user interrupt
 )
@@ -223,11 +223,15 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	timestamp := time.Now().Format("15:04:05")
 	log.Printf("[%s] Starting phase: %s", timestamp, phase)
 
-	// Build Claude command with correct API
-	cmd := buildClaudeCommand(config, prompt)
+	// Compose prompt with command and task file paths
+	finalPrompt := composePrompt(config, phase, prompt)
 
-	// Set environment variable for session tracking
+	// Build Claude command with correct API
+	cmd := buildClaudeCommand(config, finalPrompt)
+
+	// Set environment variables for session tracking and task file
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+config.SessionID)
+	cmd.Env = append(cmd.Env, "FLUXID_TASK_FILE="+config.TaskFilePath)
 
 	// Pipe stdout/stderr/stdin for real-time streaming
 	cmd.Stdout = os.Stdout
@@ -261,6 +265,12 @@ func buildClaudeCommand(config types.Config, prompt string) *exec.Cmd {
 
 	// #nosec G204 - Agent name comes from validated config file, not user input
 	return exec.CommandContext(context.Background(), config.Agent, args...)
+}
+
+// composePrompt builds the phase prompt including command and task file context.
+func composePrompt(cfg types.Config, phase string, basePrompt string) string {
+	cmdFile := getCommandFilePath(cfg, phase)
+	return fmt.Sprintf("%s\nCommand file: %s\nTask file: %s", basePrompt, cmdFile, cfg.TaskFilePath)
 }
 
 // checkReportStatus checks for a valid report immediately after agent exits.
@@ -330,12 +340,14 @@ func RunSimulation(cfg types.Config) int {
 	// Simulate implement phase
 	commandFile := getCommandFilePath(cfg, "implement")
 	log.Printf("Would execute: Iteration %d, Retry %d, Phase: implement", reviewCycle, retry)
+	log.Printf("  Task file: %s", cfg.TaskFilePath)
 	log.Printf("  Command file: %s", commandFile)
 	log.Println()
 
 	// Simulate commit phase
 	commandFile = getCommandFilePath(cfg, "commit")
 	log.Printf("Would execute: Iteration %d, Retry %d, Phase: commit", reviewCycle, retry)
+	log.Printf("  Task file: %s", cfg.TaskFilePath)
 	log.Printf("  Command file: %s", commandFile)
 	log.Println()
 
@@ -346,6 +358,7 @@ func RunSimulation(cfg types.Config) int {
 	// Simulate review phase
 	commandFile = getCommandFilePath(cfg, "review")
 	log.Printf("Would execute: Iteration %d, Retry 1, Phase: review", reviewCycle)
+	log.Printf("  Task file: %s", cfg.TaskFilePath)
 	log.Printf("  Command file: %s", commandFile)
 	log.Println()
 

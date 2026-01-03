@@ -41,7 +41,7 @@ echo "FLUXID_SESSION_ID=$FLUXID_SESSION_ID"
 # Write report so workflow can proceed
 FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<-REPORT_EOF
 command: test
 artifact: stub-test
 timestamp: $TIMESTAMP
@@ -66,35 +66,35 @@ func createInteractiveStubClaude(t *testing.T, root string) {
 
 	stubPath := filepath.Join(root, "bin", "claude")
 	stubScript := `#!/bin/bash
-# Interactive stub - prompts for input and echoes it back
-
-echo "Claude stub: Interactive test"
-
-# Only prompt during implement phase
-if echo "$@" | grep -q "Implement the required"; then
-  echo "PROMPT: Enter your name:"
-  read -r response
-  echo "RECEIVED: $response"
-fi
-
-# Write report so workflow can proceed
-FLUXID_BIN="$(dirname "$0")/fluxid"
-TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
-command: test
-artifact: stub-test
-timestamp: $TIMESTAMP
-status: PASS
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-REPORT_EOF
-
-exit 0
-`
+	# Interactive stub - prompts for input and echoes it back
+	
+	echo "Claude stub: Interactive test"
+	
+	# Only prompt during implement phase (support old and new prompt text)
+	if echo "$@" | grep -q -e "Implement the required" -e "Run implement command file"; then
+	  echo "PROMPT: Enter your name:"
+	  read -r response
+	  echo "RECEIVED: $response"
+	fi
+	
+	# Write report so workflow can proceed
+	FLUXID_BIN="$(dirname "$0")/fluxid"
+	TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+	"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<-REPORT_EOF
+	command: test
+	artifact: stub-test
+	timestamp: $TIMESTAMP
+	status: PASS
+	issues:
+	  blockers: []
+	  defects: []
+	  concerns: []
+	  observations: []
+	  enhancements: []
+	REPORT_EOF
+	
+	exit 0
+	`
 
 	_ = writeExecutableStub(stubPath, []byte(stubScript)) // Ignore error - test will fail if stub missing
 }
@@ -117,7 +117,7 @@ done
 # Write report so workflow can proceed
 FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<-REPORT_EOF
 command: test
 artifact: stub-test
 timestamp: $TIMESTAMP
@@ -155,7 +155,7 @@ done
 # Write report so workflow can proceed
 FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<-REPORT_EOF
 command: test
 artifact: stub-test
 timestamp: $TIMESTAMP
@@ -181,37 +181,37 @@ func createWorkflowContinuationStubClaude(t *testing.T, root string) {
 
 	stubPath := filepath.Join(root, "bin", "claude")
 	stubScript := `#!/bin/bash
-# Workflow continuation stub - interactive during implement, silent for others
-
-# Check which phase we're in
-if echo "$@" | grep -q "Implement the required"; then
-  echo "IMPLEMENT_PROMPT: Ready to implement? (type anything to continue)"
-  read -r response
-  echo "IMPLEMENT_RESPONSE: Got '$response', continuing..."
-elif echo "$@" | grep -q "Create a git commit"; then
-  echo "Commit phase executing..."
-elif echo "$@" | grep -q "Review the implementation"; then
-  echo "Review phase executing..."
-fi
-
-# Write report so workflow can proceed
-FLUXID_BIN="$(dirname "$0")/fluxid"
-TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
-command: test
-artifact: stub-test
-timestamp: $TIMESTAMP
-status: PASS
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-REPORT_EOF
-
-exit 0
-`
+	# Workflow continuation stub - interactive during implement, silent for others
+	
+	# Check which phase we're in (support old and new prompt text)
+	if echo "$@" | grep -q -e "Implement the required" -e "Run implement command file"; then
+	  echo "IMPLEMENT_PROMPT: Ready to implement? (type anything to continue)"
+	  read -r response
+	  echo "IMPLEMENT_RESPONSE: Got '$response', continuing..."
+	elif echo "$@" | grep -q -e "Create a git commit" -e "Execute commit command"; then
+	  echo "Commit phase executing..."
+	elif echo "$@" | grep -q -e "Review the implementation" -e "Run review command file"; then
+	  echo "Review phase executing..."
+	fi
+	
+	# Write report so workflow can proceed
+	FLUXID_BIN="$(dirname "$0")/fluxid"
+	TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+	"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<-REPORT_EOF
+	command: test
+	artifact: stub-test
+	timestamp: $TIMESTAMP
+	status: PASS
+	issues:
+	  blockers: []
+	  defects: []
+	  concerns: []
+	  observations: []
+	  enhancements: []
+	REPORT_EOF
+	
+	exit 0
+	`
 
 	_ = writeExecutableStub(stubPath, []byte(stubScript)) // Ignore error - test will fail if stub missing
 }
@@ -233,7 +233,7 @@ sleep 0.5
 # Write report so workflow can proceed to next phase
 FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<-REPORT_EOF
 command: test
 artifact: stub-test
 timestamp: $TIMESTAMP

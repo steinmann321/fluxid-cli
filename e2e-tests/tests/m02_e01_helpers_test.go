@@ -66,8 +66,14 @@ func writeHomeConfig(t *testing.T, fluxidDir, content string) {
 func runFluxidWithHome(t *testing.T, root, homeDir string) string {
 	t.Helper()
 
+	// Create a dummy task file in home
+	taskPath := filepath.Join(homeDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath)
+	cmd := exec.CommandContext(t.Context(), binPath, "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
 		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
@@ -88,11 +94,18 @@ func runFluxidWithHome(t *testing.T, root, homeDir string) string {
 func runFluxidWithHomeAndArgs(t *testing.T, root, homeDir string, args ...string) string {
 	t.Helper()
 
+	// Ensure a dummy task file exists
+	taskPath := filepath.Join(homeDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	args = append(args, "--file="+taskPath)
+
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
-		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
+		"PATH"+":"+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout bytes.Buffer

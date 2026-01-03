@@ -10,6 +10,11 @@ import (
 	"testing"
 )
 
+const (
+	// testFilePermission is the standard file permission for test files (rw-r--r--).
+	testFilePermission = 0o644
+)
+
 // testAgentArgsPassthrough is a helper to test that agent-specific arguments are passed through correctly.
 // It runs fluxid with the given agent flag and custom args, then verifies the args appear in output.
 func testAgentArgsPassthrough(t *testing.T, root, agentFlag, argsLabel string, customArgs []string) {
@@ -20,8 +25,14 @@ func testAgentArgsPassthrough(t *testing.T, root, agentFlag, argsLabel string, c
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
+	// Create a dummy task file
+	taskFile := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), testFilePermission); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
 	args := append([]string{agentFlag}, customArgs...)
 	args = append(args, "--fluxid-iterations=1")
+	args = append(args, "--file="+taskFile)
 	// #nosec G204 -- Test helper with controlled test inputs
 	cmd := exec.CommandContext(t.Context(), binPath, args...)
 	cmd.Env = append(os.Environ(),
@@ -93,8 +104,13 @@ func runFluxidWithOutputFormat(
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
+	// Create a dummy task file
+	taskFile := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), testFilePermission); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
 	// v2.0: equals syntax only (Phase 8)
-	args := []string{"--fluxid-output=" + format, "--fluxid-dry-run", "--claude"}
+	args := []string{"--fluxid-output=" + format, "--fluxid-dry-run", "--claude", "--file=" + taskFile}
 	args = append(args, extraArgs...)
 
 	// #nosec G204 -- Test helper with controlled test inputs
@@ -128,8 +144,13 @@ func runFluxidDefaultFormat(t *testing.T, root string) string {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
+	// Create a dummy task file
+	taskFile := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), testFilePermission); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
 	// #nosec G204 -- Test helper with controlled test inputs
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude", "--file="+taskFile)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,

@@ -21,14 +21,16 @@ import (
 //nolint:paralleltest,cyclop,funlen // Sequential stub usage; I/O streaming complexity with multiple validations
 func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 	defer goleak.VerifyNone(t)
-
 	t.Skip("BROKEN: Stub doesn't write reports (M03-E04 workflow requirement)")
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStreamingStubClaude(t, root)
-
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(t.TempDir(), "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")))
 
 	// Capture stdout with timestamps to measure latency
@@ -36,25 +38,20 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get stdout pipe: %v", err)
 	}
-
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		t.Fatalf("failed to get stderr pipe: %v", err)
 	}
-
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("failed to start fluxid: %v", err)
 	}
-
 	// Track output timing
 	type timedLine struct {
 		text      string
 		timestamp time.Time
 	}
-
 	var lines []timedLine
 	startTime := time.Now()
-
 	// Read stdout and stderr concurrently
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(2)
@@ -69,7 +66,6 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 			})
 		}
 	}()
-
 	go func() {
 		defer waitGroup.Done()
 		scanner := bufio.NewScanner(stderr)
@@ -80,10 +76,8 @@ func TestM01E03StreamingOutputPassthrough(t *testing.T) {
 			})
 		}
 	}()
-
 	// Wait for completion
 	waitGroup.Wait()
-
 	if err := cmd.Wait(); err != nil {
 		t.Fatalf("fluxid failed: %v", err)
 	}
@@ -142,7 +136,11 @@ func TestM01E03InteractiveStdinDelivery(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
@@ -234,7 +232,11 @@ func TestM01E03NoOutputTruncation(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
@@ -284,7 +286,11 @@ func TestM01E03StreamOrderingReadable(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
@@ -326,60 +332,52 @@ func TestM01E03WorkflowContinuesAfterInteraction(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createWorkflowContinuationStubClaude(t, root)
-
 	// Create temporary home with v2.0 config
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
-
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
-
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		t.Fatalf("failed to get stdin pipe: %v", err)
 	}
-
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("failed to get stdout pipe: %v", err)
 	}
-
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		t.Fatalf("failed to get stderr pipe: %v", err)
 	}
-
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("failed to start fluxid: %v", err)
 	}
-
 	// Read output and handle interactive prompt
 	outputStr, err := readCombinedOutput(stdout, stderr, stdin, "IMPLEMENT_PROMPT:", "confirmed", 10*time.Second)
 	if err != nil {
 		t.Fatalf("error reading output: %v", err)
 	}
-
 	if err := stdin.Close(); err != nil {
 		t.Logf("failed to close stdin: %v", err)
 	}
-
 	if err := cmd.Wait(); err != nil {
 		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, outputStr)
 	}
-
 	// Verify all three phases ran
 	if !strings.Contains(outputStr, "Starting phase: implement") {
 		t.Errorf("Implement phase did not start")
 	}
-
 	if !strings.Contains(outputStr, "Starting phase: review") {
 		t.Errorf("Review phase did not run after interaction")
 	}
-
 	// Verify workflow completed
 	if !strings.Contains(outputStr, "Status: SUCCESS") {
 		t.Errorf("Workflow did not complete successfully after interactive phase")

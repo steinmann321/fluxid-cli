@@ -58,7 +58,12 @@ func TestM01E02InvalidIterationsZero(t *testing.T) {
 	buildFluxid(t, root)
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=0")
+	// Create dummy task file in temp dir
+	taskPath := filepath.Join(t.TempDir(), "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=0", "--file="+taskPath)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -261,11 +266,17 @@ func TestM01E02ClaudeArgsPassthroughWithOverrides(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
+	// Create dummy task file in home
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	cmd := exec.CommandContext(t.Context(), binPath,
 		"--claude",
 		"--fluxid-iterations=5",
 		"--fluxid-implement-retries=2",
-		"--custom-arg", "value")
+		"--custom-arg", "value",
+		"--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,

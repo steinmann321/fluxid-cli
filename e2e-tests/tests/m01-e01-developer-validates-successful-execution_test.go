@@ -84,11 +84,16 @@ func TestMain_SuccessfulExecutionWithDryRun(t *testing.T) {
 	// Execute fluxid with --fluxid-dry-run flag
 	ctx, cancel := testContext(5 * time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, binaryPath, "--fluxid-dry-run", "--claude")
+	// Create a dummy task file in home
+	taskFile := filepath.Join(homeDir, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	cmd := exec.CommandContext(ctx, binaryPath, "--fluxid-dry-run", "--claude", "--file="+taskFile)
 	cmd.Dir = projectDir
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
-		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
+		"PATH"+":"+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
 	)
 
 	var stdout, stderr bytes.Buffer

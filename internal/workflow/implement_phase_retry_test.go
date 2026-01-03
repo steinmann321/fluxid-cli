@@ -24,6 +24,7 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -51,6 +52,7 @@ func TestRunImplementPhase_NonZeroExitCode(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -85,6 +87,7 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Pre-write PASS report before workflow starts

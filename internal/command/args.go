@@ -27,6 +27,7 @@ type CLIArgs struct {
 	CLIImplementCommand *string
 	CLIReviewCommand    *string
 	CLICommitCommand    *string
+	CLITaskFilePath     *string
 }
 
 // ParseArgs parses command-line arguments.
@@ -42,6 +43,7 @@ func ParseArgs() (*CLIArgs, error) {
 		CLIImplementCommand: nil,
 		CLIReviewCommand:    nil,
 		CLICommitCommand:    nil,
+		CLITaskFilePath:     nil,
 	}
 
 	var agentFlagCount int
@@ -132,6 +134,13 @@ func parseFluxidFlag(arg string, _ int, args *CLIArgs) (int, bool, error) {
 	if len(arg) >= len("--commit-command=") && arg[:len("--commit-command=")] == "--commit-command=" {
 		value := arg[len("--commit-command="):]
 		args.CLICommitCommand = &value
+		return 0, true, nil
+	}
+
+	// Handle --file=value format (task file)
+	if len(arg) >= len("--file=") && arg[:len("--file=")] == "--file=" {
+		value := arg[len("--file="):]
+		args.CLITaskFilePath = &value
 		return 0, true, nil
 	}
 

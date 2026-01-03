@@ -47,7 +47,12 @@ commands:
 	}
 
 	// Simulate dry-run mode to avoid actual agent execution
-	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude"}
+	// Create dummy task file
+	taskPath := tmpDir + "/task.txt"
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--file=" + taskPath}
 
 	// Reset exit code
 	exitCode = -1
@@ -153,7 +158,12 @@ commands:
 	}
 
 	// Set dry-run mode with valid agent
-	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude"}
+	// Create dummy task file
+	taskPath := tmpDir + "/task.txt"
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--file=" + taskPath}
 
 	// Reset exit code
 	exitCode = -1
@@ -205,7 +215,12 @@ commands:
 	}
 
 	// Set dry-run mode with custom iterations using equals syntax
-	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--fluxid-iterations=3"}
+	// Create dummy task file
+	taskPath := tmpDir + "/task.txt"
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--fluxid-iterations=3", "--file=" + taskPath}
 
 	// Reset exit code
 	exitCode = -1

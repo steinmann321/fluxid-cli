@@ -32,6 +32,7 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -61,6 +62,7 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Pre-write PASS report before workflow starts
@@ -96,6 +98,7 @@ func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Pre-write FAIL report before workflow starts
@@ -131,6 +134,7 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -160,6 +164,7 @@ func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -184,6 +189,7 @@ func TestRunCommitPhase_Disabled(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -208,6 +214,7 @@ func TestRunCommitPhase_Enabled(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := runCommitPhase(cfg)

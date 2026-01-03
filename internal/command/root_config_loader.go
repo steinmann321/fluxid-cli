@@ -1,14 +1,23 @@
 package command
 
 import (
+	"errors"
 	"fluxid-cli/internal/config"
 	"fluxid-cli/internal/output"
 	"fluxid-cli/internal/types"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/google/uuid"
+)
+
+var (
+	errTaskFileRequired    = errors.New("missing required --file=PATH flag for workflow execution")
+	errTaskFileNotAbsolute = errors.New("task file path must be absolute")
+	errTaskFileNotFound    = errors.New("task file not found")
+	errTaskFileNotRegular  = errors.New("task file is not a regular file")
 )
 
 func loadAndResolveConfig() (types.Config, int) {
@@ -21,6 +30,7 @@ func loadAndResolveConfig() (types.Config, int) {
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Load all configuration sources
@@ -110,25 +120,72 @@ func validateAgent(agent string) int {
 	return 0
 }
 
+func validateTaskFile(taskPath string) error {
+	if taskPath == "" {
+		return errTaskFileRequired
+	}
+	if !filepath.IsAbs(taskPath) {
+		return fmt.Errorf("%s: %w", taskPath, errTaskFileNotAbsolute)
+	}
+	info, err := os.Stat(taskPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s: %w", taskPath, errTaskFileNotFound)
+		}
+		return fmt.Errorf("cannot access task file %s: %w", taskPath, err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%s: %w", taskPath, errTaskFileNotRegular)
+	}
+	// #nosec G304 -- taskPath is validated to be absolute and readable before this point
+	f, err := os.Open(taskPath)
+	if err != nil {
+		return fmt.Errorf("cannot read task file %s: %w", taskPath, err)
+	}
+	if cerr := f.Close(); cerr != nil {
+		return fmt.Errorf("failed to close task file %s: %w", taskPath, cerr)
+	}
+	return nil
+}
+
 func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Config, error) {
+	emptyConfig := types.Config{
+		Agent:               "",
+		AgentArgs:           nil,
+		SessionID:           "",
+		MaxReviewCycles:     0,
+		MaxImplementRetries: 0,
+		DryRun:              false,
+		CommandFiles:        nil,
+		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
+	}
 	// Generate or use provided UUID v4 session ID
 	sessionID := os.Getenv("FLUXID_SESSION_ID")
 	if sessionID == "" {
 		sessionID = uuid.New().String()
 	}
-
 	// Determine dry-run mode
 	dryRun := args.CLIDryRun != nil && *args.CLIDryRun
-
 	// Determine output format
 	outputFormat := output.FormatText
 	if args.CLIOutputFormat != nil {
 		if err := output.ValidateFormat(*args.CLIOutputFormat); err != nil {
-			return types.Config{}, fmt.Errorf("invalid output format: %w", err)
+			return emptyConfig, fmt.Errorf("invalid output format: %w", err)
 		}
 		outputFormat = output.Format(*args.CLIOutputFormat)
 	}
-
+	// Validate task file path only for real execution (non-dry-run)
+	var taskAbs string
+	if args.CLITaskFilePath != nil {
+		taskAbs = *args.CLITaskFilePath
+	}
+	// Enforce task file only for explicit agent execution (non-dry-run with agent flag)
+	if !dryRun && args.CLIAgent != nil {
+		if err := validateTaskFile(taskAbs); err != nil {
+			return emptyConfig, err
+		}
+	}
 	return types.Config{
 		Agent:               resolved.Agent,
 		AgentArgs:           args.AgentArgs,
@@ -138,5 +195,6 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		DryRun:              dryRun,
 		CommandFiles:        resolved.CommandFiles,
 		OutputFormat:        outputFormat,
+		TaskFilePath:        taskAbs,
 	}, nil
 }

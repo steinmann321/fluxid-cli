@@ -18,4 +18,5 @@ type Config struct {
 	DryRun              bool
 	CommandFiles        *config.ResolvedCommandFiles
 	OutputFormat        output.Format
+	TaskFilePath        string
 }

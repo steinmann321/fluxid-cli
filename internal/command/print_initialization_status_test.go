@@ -12,6 +12,7 @@ func TestPrintInitializationStatus_TextFormat(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -29,6 +30,7 @@ func TestPrintInitializationStatus_JSONFormat(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -46,6 +48,7 @@ func TestPrintInitializationStatus_YAMLFormat(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -63,6 +66,7 @@ func TestPrintInitializationStatus_DefaultFormat(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}

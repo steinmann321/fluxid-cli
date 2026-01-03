@@ -29,6 +29,7 @@ func TestRunSimulation(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode := RunSimulation(cfg)
@@ -71,6 +72,7 @@ func TestGetCommandFilePath_NoCommandFiles(t *testing.T) {
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	result := getCommandFilePath(cfg, "implement")
@@ -93,6 +95,7 @@ func TestGetCommandFilePath_WithCommandFiles(t *testing.T) {
 			CommitPath:    "/path/to/commit.md",
 		},
 		OutputFormat: output.FormatText,
+		TaskFilePath: "",
 	}
 
 	tests := []struct {
@@ -129,6 +132,7 @@ func TestGetCommandFilePath_PartialCommandFiles(t *testing.T) {
 			CommitPath:    "",
 		},
 		OutputFormat: output.FormatText,
+		TaskFilePath: "",
 	}
 
 	// Test that we fall back to built-in prompt for missing command files

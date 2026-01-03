@@ -168,7 +168,8 @@ func TestParseArgsWithDryRunFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude"}
+	// Include task file flag
+	os.Args = []string{"fluxid", "--fluxid-dry-run", "--claude", "--file=/abs/path/to/task.txt"}
 	args, err := ParseArgs()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -231,7 +232,8 @@ func TestParseArgsWithFluxidDryRunFlag(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--fluxid-dry-run", "claude"}
+	// Include task file flag
+	os.Args = []string{"fluxid", "--fluxid-dry-run", "claude", "--file=/abs/path/to/task.txt"}
 	args, err := ParseArgs()
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)

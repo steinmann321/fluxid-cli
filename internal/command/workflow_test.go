@@ -45,6 +45,7 @@ func TestRunWorkflow_ImmediateAbort(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := workflow.Run(cfg)
@@ -76,6 +77,7 @@ func TestRunWorkflow_MultipleReviewCycles(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := workflow.Run(cfg)
@@ -106,6 +108,7 @@ func TestRunWorkflow_ChecksAbortBeforeReview(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := workflow.Run(cfg)
@@ -141,6 +144,7 @@ func TestRunWorkflow_SuccessFirstCycle(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Write reports asynchronously to simulate agent responses
@@ -223,6 +227,7 @@ func TestRunWorkflow_FailThenPass(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Strategy: Write a PASS report before workflow starts

@@ -28,6 +28,7 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	_, exitCode, err := runReviewPhase(cfg)
@@ -61,6 +62,7 @@ func TestRunReviewPhase_Success(t *testing.T) {
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	// Use channel-based coordination instead of arbitrary sleep

@@ -23,6 +23,7 @@ type InitializationStatusJSON struct {
 	Agent               string            `json:"agent"`
 	MaxReviewCycles     int               `json:"max_review_cycles"`
 	MaxImplementRetries int               `json:"max_implement_retries"`
+	TaskFile            string            `json:"task_file"`
 	CommandFiles        *CommandFilesJSON `json:"command_files,omitempty"`
 	AgentArgs           []string          `json:"agent_args,omitempty"`
 }
@@ -47,7 +48,13 @@ func TestM06E02JSONOutputBasic(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output=json", "--fluxid-dry-run", "--claude")
+	// Create a dummy task file
+	taskFile := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	cmd := exec.CommandContext(
+		t.Context(), binPath, "--fluxid-output=json", "--fluxid-dry-run", "--claude", "--file="+taskFile)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,

@@ -88,68 +88,58 @@ func TestM03E05ForcedExitOnSecondSignal(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createLongRunningStub(t, root, 30)
-
 	// v2.0: Create temporary home with config and command files
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
-
 	sessionID := "test-forced-exit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
 	binPath := filepath.Join(root, "bin", "fluxid")
-
 	ctx, cancel := testContext(10 * time.Second)
 	defer cancel()
-
-	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=1")
+	// Create dummy task file in home
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(ctx, binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		"HOME="+tmpHome,
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"FLUXID_SESSION_ID="+sessionID,
 	)
-
 	// Start the command
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Failed to start fluxid: %v", err)
 	}
-
 	// Wait for workflow to start
 	<-time.After(500 * time.Millisecond)
-
 	startTime := time.Now()
-
 	// Send first SIGINT
 	if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
 		t.Fatalf("Failed to send first SIGINT: %v", err)
 	}
-
 	// Immediately send second SIGINT
 	<-time.After(100 * time.Millisecond)
 	if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
 		t.Fatalf("Failed to send second SIGINT: %v", err)
 	}
-
 	// Wait for command to complete
 	err := cmd.Wait()
 	elapsed := time.Since(startTime)
-
 	// Verify immediate exit (should exit quickly, not wait for phase completion)
 	if elapsed > 5*time.Second {
 		t.Errorf("Expected immediate exit, took %v", elapsed)
 	}
-
 	// Verify exit code 130
 	if err == nil {
 		t.Fatal("Expected fluxid to exit with error")
 	}
-
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
 		t.Fatalf("Expected ExitError, got: %v", err)
 	}
-
 	if exitErr.ExitCode() != 130 {
 		t.Errorf("Expected exit code 130, got: %d", exitErr.ExitCode())
 	}
-
 	// Cleanup
 	_ = ipc.ClearAbortFlag(sessionID)
 }

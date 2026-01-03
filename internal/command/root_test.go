@@ -85,7 +85,12 @@ commands:
 	defer func() { os.Args = oldArgs }()
 
 	// Set args for dry-run mode
-	os.Args = []string{"fluxid", "--dry-run", "echo", "test"}
+	// Create dummy task file
+	taskPath := filepath.Join(tmpDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--dry-run", "echo", "test", "--file=" + taskPath}
 
 	exitCode := Execute()
 	if exitCode != 0 {
@@ -138,7 +143,12 @@ commands:
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--dry-run", "claude"}
+	// Create dummy task file
+	taskPath := filepath.Join(tmpDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--dry-run", "claude", "--file=" + taskPath}
 
 	exitCode := Execute()
 	if exitCode != 0 {

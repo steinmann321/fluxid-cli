@@ -6,16 +6,32 @@ A workflow controller for coding agents that enables breaking through context wi
 
 `fluxid` is a thin CLI wrapper around coding agents (Claude, Codex, etc.) that orchestrates iterative development workflows. It manages sessions, tracks history, validates reports, and provides IPC primitives for agent communication.
 
-## Usage
+## Quick Start
 
-**Build:**
+**Build and install:**
 ```bash
 make build    # Creates bin/fluxid
+go install ./cmd/fluxid  # Install to $GOPATH/bin
 ```
+
+**Basic workflow execution:**
+```bash
+# Initialize config (first time only)
+fluxid init
+
+# Run a workflow with Claude
+fluxid --claude --file=/absolute/path/to/task.md
+
+# Or with other agents
+fluxid --codex --file=/absolute/path/to/task.md
+fluxid --opencode --file=/absolute/path/to/task.md
+```
+
+## Usage
 
 **Run workflow:**
 ```bash
-fluxid --claude [--fluxid-iterations=N] [--fluxid-implement-retries=R]
+fluxid {--claude|--codex|--opencode} --file=PATH [options] [agent-args]
 ```
 
 **IPC commands:**
@@ -53,62 +69,147 @@ Examples:
   - `fluxid ipc view-history --session=my-session`
   - `fluxid ipc read-report --session=my-session`
 
-**Options:**
+**All Command-Line Options:**
+
+*Agent Selection (required):*
+- `--claude` - Use Claude agent
+- `--codex` - Use Codex agent
+- `--opencode` - Use OpenCode agent
+
+*Workflow Options:*
+- `--file=PATH` - **Required.** Absolute path to task file
 - `--fluxid-iterations=N` - Max review cycles (default: 20)
 - `--fluxid-implement-retries=R` - Max implement retries (default: 3)
-- `--config=PATH` - Load custom configuration file
-- `--implement-command=PATH` - Override implement command file
-- `--review-command=PATH` - Override review command file
-- `--commit-command=PATH` - Override commit command file
+- `--fluxid-dry-run` - Run simulation without executing agent
+- `--dry-run` - Alias for `--fluxid-dry-run`
+- `--fluxid-output=FORMAT` - Set initialization output format: `text`, `json`, or `yaml` (default: text)
+- `--output=FORMAT` - Alias for `--fluxid-output`
+
+*Configuration:*
+- `--config=PATH` - Load custom configuration file (parsed, integration in progress)
+- `--implement-command=PATH` - Override implement command file (parsed, integration in progress)
+- `--review-command=PATH` - Override review command file (parsed, integration in progress)
+- `--commit-command=PATH` - Override commit command file (parsed, integration in progress)
+
+*Session Management:*
 - `--session=ID` - Specify session ID (overrides FLUXID_SESSION_ID env)
+
+*Other:*
+- `--help` - Show help information
+
+**Note:** All value flags require equals syntax (`--flag=value`). Space syntax (`--flag value`) is not supported.
 
 ## Configuration
 
-Configuration follows precedence (lowest to highest): **Defaults** → **Home config** → **Project config** → **Custom config** (`--config`) → **CLI flags**
+### Configuration Precedence
 
-**At least one default config is required** (home or project). Both may exist; project takes precedence.
+Configuration is resolved using a layered precedence system (lowest to highest):
 
-**Home config** (`~/.fluxid/config.yaml`):
+1. **Built-in Defaults** - Hardcoded fallback values
+2. **Home Config** - User-wide settings (`~/.fluxid/config.yaml`)
+3. **Project Config** - Project-specific settings (`./.fluxid/config.yaml`)
+4. **Custom Config** - Optional config via `--config` flag (when implemented)
+5. **CLI Flags** - Command-line arguments (highest priority)
+
+**At least one config file is required** (home or project). Both may exist; fields are resolved independently with the precedence above.
+
+### Configuration Files
+
+All configuration files use the same YAML structure:
+
+```yaml
+agent: claude                # Agent to use: claude, codex, or opencode
+iterations: 20               # Max review cycles
+implement_retries: 3         # Max implement retries per cycle
+commands:
+  implement: /absolute/path/to/implement.md  # MUST be absolute path
+  review: /absolute/path/to/review.md        # MUST be absolute path
+  commit: /absolute/path/to/commit.md        # MUST be absolute path
+```
+
+**Important:** Command file paths **must be absolute paths**. Relative paths are not supported.
+
+### Home Config (`~/.fluxid/config.yaml`)
+
+User-wide default configuration. Create with:
+
+```bash
+fluxid init  # Creates ~/.fluxid/config.yaml and template command files
+```
+
+Example:
 ```yaml
 agent: claude
 iterations: 20
 implement_retries: 3
 commands:
-  implement: implement.md    # Relative to ~/.fluxid/
-  review: review.md
-  commit: commit.md
+  implement: /Users/username/.fluxid/implement.md
+  review: /Users/username/.fluxid/review.md
+  commit: /Users/username/.fluxid/commit.md
 ```
 
-**Project config** (`./.fluxid/config.yaml`):
+### Project Config (`./.fluxid/config.yaml`)
+
+Project-specific configuration that overrides home config. Create with:
+
+```bash
+fluxid init .  # Creates ./.fluxid/config.yaml in current directory
+```
+
+Example (override agent for this project):
 ```yaml
-# Same structure as home config
-# Overrides home settings for this project
-# Command paths are relative to ./.fluxid/
 agent: codex
+# iterations and implement_retries will fall back to home config or defaults
 commands:
-  implement: implement.md
-  review: review.md
-  commit: commit.md
+  implement: /absolute/path/to/project/.fluxid/implement.md
+  review: /absolute/path/to/project/.fluxid/review.md
+  commit: /absolute/path/to/project/.fluxid/commit.md
 ```
 
-**Custom config** (`--config=path/to/config.yaml`):
-```yaml
-# Optional custom config file
-# Inherits missing fields from default configs
-# Command paths are relative to the config file's directory
-iterations: 10
-commands:
-  implement: custom-implement.md
+### Custom Config (via `--config` flag)
+
+**Status:** Flag is parsed but integration is in progress.
+
+When implemented, will allow loading a config from an arbitrary path:
+```bash
+fluxid --claude --config=/path/to/custom-config.yaml --file=/path/to/task.md
 ```
 
-**Environment variables:**
+### Field Resolution Examples
+
+**Example 1: Basic layering**
+```
+Defaults:        agent=claude, iterations=20, implement_retries=3
+Home config:     agent=claude, iterations=30
+Project config:  (none)
+Result:          agent=claude, iterations=30, implement_retries=3
+```
+
+**Example 2: Project overrides home**
+```
+Home config:     agent=claude, iterations=20, implement_retries=3
+Project config:  agent=codex, iterations=10
+Result:          agent=codex, iterations=10, implement_retries=3
+```
+
+**Example 3: CLI flags override everything**
+```
+Home config:     agent=claude, iterations=20
+Project config:  agent=codex
+CLI flags:       --opencode --fluxid-iterations=5
+Result:          agent=opencode, iterations=5, implement_retries=3 (from default)
+```
+
+### Environment Variables
+
 - `FLUXID_SESSION_ID` - Session identifier for IPC operations (optional, auto-generated if not set)
 
-**Defaults:**
-- Agent: `claude`
-- Iterations: `20`
-- Implement retries: `3`
-- Commands: **No defaults** - must be specified in config file
+### Built-in Defaults
+
+- **Agent:** `claude`
+- **Iterations:** `20`
+- **Implement retries:** `3`
+- **Commands:** **No defaults** - must be specified in at least one config file
 
 ## Application Layout
 
@@ -132,58 +233,106 @@ Notes:
 - Runtime is pure Go; shell scripts in `hooks/` are development helpers only.
 - The default `cmd/fluxid/main.go` is intentionally minimal.
 
-## Key Flags & Formats
+## Common Workflows & Examples
 
-**Agent selection:**
-- `--claude | --codex | --opencode` - Select the agent; subsequent args are passed through to the agent
+### Basic Execution
 
-**Workflow control:**
-- `--fluxid-iterations=N` - Set max review cycles (default: 20)
-- `--fluxid-implement-retries=R` - Set max implement retries (default: 3)
-- `--fluxid-dry-run` - Run a non-executing simulation and print the plan
-
-**Configuration:**
-- `--config=PATH` - Load custom configuration file
-- `--implement-command=PATH` - Override implement command file
-- `--review-command=PATH` - Override review command file
-- `--commit-command=PATH` - Override commit command file
-
-**Output & session:**
-- `--fluxid-output=text|json|yaml` - Choose initialization status format (default: text)
-- `--session=ID` - Override `FLUXID_SESSION_ID` for IPC commands
-
-**Note:** All value flags require equals syntax (`--flag=value`). Space syntax (`--flag value`) is not supported.
-
-**Examples:**
-
-Run workflow with custom iterations:
+**Run a simple workflow:**
 ```bash
-fluxid --claude --fluxid-iterations=10
+# Basic execution with Claude
+fluxid --claude --file=/absolute/path/to/task.md
+
+# With custom iterations
+fluxid --claude --file=/path/to/task.md --fluxid-iterations=10
+
+# With different agent
+fluxid --codex --file=/path/to/task.md
 ```
 
-Use custom config file:
+### Dry Run (Simulation Mode)
+
+**Preview workflow without execution:**
 ```bash
-fluxid --claude --config=my-config.yaml
+# See the execution plan without running the agent
+fluxid --claude --file=/path/to/task.md --fluxid-dry-run
+
+# Short alias
+fluxid --claude --file=/path/to/task.md --dry-run
 ```
 
-Text simulation plan:
+### Output Formats
+
+**Get structured output for scripting:**
 ```bash
-fluxid --claude --fluxid-dry-run
+# JSON output - useful for scripting
+fluxid --claude --file=/path/to/task.md --fluxid-output=json
+
+# Extract session ID for later use
+SID=$(fluxid --claude --file=/path/to/task.md --output=json | jq -r '.session_id')
+echo "Session: $SID"
+
+# YAML output
+fluxid --claude --file=/path/to/task.md --output=yaml
 ```
 
-JSON init status for scripting:
+### Session Management
+
+**Work with specific sessions:**
 ```bash
-SID=$(fluxid --claude --fluxid-output=json | jq -r '.session_id')
+# Use a custom session ID
+export FLUXID_SESSION_ID=my-feature-work
+fluxid --claude --file=/path/to/task.md
+
+# Or pass via flag
+fluxid --claude --file=/path/to/task.md --session=my-feature-work
+
+# View history for a session
+fluxid ipc view-history --session=my-feature-work
+
+# Read report from a session
+fluxid ipc read-report --session=my-feature-work
 ```
 
-YAML init status:
+### Complete Example: Feature Development
+
 ```bash
-fluxid --claude --fluxid-output=yaml
+# 1. Initialize fluxid (first time only)
+fluxid init
+
+# 2. Create a task file
+cat > /tmp/add-login-feature.md <<EOF
+# Add User Login Feature
+
+Implement a user login system with:
+- Login form UI
+- Authentication API endpoint
+- Session management
+- Error handling
+EOF
+
+# 3. Run the workflow with a named session
+export FLUXID_SESSION_ID=feature-login
+fluxid --claude --file=/tmp/add-login-feature.md --fluxid-iterations=15
+
+# 4. Check progress during execution (from another terminal)
+fluxid ipc view-history --session=feature-login
+fluxid ipc read-report --session=feature-login
+
+# 5. Request graceful abort if needed
+fluxid ipc abort --session=feature-login
 ```
 
-Override command files:
+### Advanced: Multiple Agents for Different Tasks
+
 ```bash
-fluxid --claude --implement-command=custom-implement.md
+# Use Claude for initial implementation
+fluxid --claude --file=/tmp/implement-api.md --session=api-impl
+
+# Use Codex for code generation tasks
+fluxid --codex --file=/tmp/generate-tests.md --session=test-gen
+
+# Use OpenCode for refactoring
+fluxid --opencode --file=/tmp/refactor-auth.md --session=refactor-auth
 ```
 
 ## Migration Guide (v1.x → v2.0)
@@ -288,15 +437,42 @@ fluxid --claude --fluxid-output=json | jq -r '.agent'  # ✅ Use direct fields o
 
 ### New Features in v2.0
 
-**Custom config files:**
+**Required task file path:**
 ```bash
-fluxid --claude --config=custom-config.yaml
+fluxid --claude --file=/absolute/path/to/task.md  # Now required with absolute path
 ```
 
-**Command override flags:**
+**Multiple agent support:**
 ```bash
-fluxid --claude --implement-command=my-implement.md
+fluxid --claude --file=/path/to/task.md   # Claude agent
+fluxid --codex --file=/path/to/task.md    # Codex agent
+fluxid --opencode --file=/path/to/task.md # OpenCode agent
 ```
 
-**Precedence chain:**
-Defaults → Home config → Project config → Custom config → CLI flags
+**Dry-run mode:**
+```bash
+fluxid --claude --file=/path/to/task.md --fluxid-dry-run
+```
+
+**Output format options:**
+```bash
+fluxid --claude --file=/path/to/task.md --fluxid-output=json
+fluxid --claude --file=/path/to/task.md --output=yaml
+```
+
+**Configuration precedence chain:**
+```
+Defaults → Home config → Project config → CLI flags
+```
+
+**Command file validation:**
+- All command file paths must now be absolute paths
+- Files are validated at startup for existence and readability
+
+### In Progress Features
+
+The following flags are parsed but not fully integrated yet:
+- `--config=PATH` - Custom config file loading
+- `--implement-command=PATH` - Override implement command
+- `--review-command=PATH` - Override review command
+- `--commit-command=PATH` - Override commit command

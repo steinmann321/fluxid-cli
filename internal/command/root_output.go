@@ -14,6 +14,7 @@ func buildInitializationStatus(cfg types.Config) output.InitializationStatus {
 		Agent:               cfg.Agent,
 		MaxReviewCycles:     cfg.MaxReviewCycles,
 		MaxImplementRetries: cfg.MaxImplementRetries,
+		TaskFile:            cfg.TaskFilePath,
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}

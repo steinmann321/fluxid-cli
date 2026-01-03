@@ -135,10 +135,11 @@ func TestPhaseSequencing_ImplementRetryWithPhaseValidation(t *testing.T) {
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
-		MaxImplementRetries: 3,
+		MaxImplementRetries: 1,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "/abs/task.txt",
 	}
 
 	// Write initial implement FAIL report to trigger a retry

@@ -54,6 +54,7 @@ func TestPrintText(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "/path/to/task.txt",
 		CommandFiles: &CommandFilesJSON{
 			Implement: "/path/to/implement.md",
 			Review:    "/path/to/review.md",
@@ -103,6 +104,7 @@ func TestPrintJSON(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     5,
 		MaxImplementRetries: 2,
+		TaskFile:            "",
 	}
 
 	err = PrintJSON(status)
@@ -146,6 +148,7 @@ func TestPrintYAML(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     5,
 		MaxImplementRetries: 2,
+		TaskFile:            "",
 	}
 
 	err = PrintYAML(status)
@@ -183,6 +186,7 @@ func TestPrintJSONToWriter_Success(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "/path/to/task.txt",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -212,6 +216,7 @@ func TestPrintJSONToWriter_Error(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -234,6 +239,7 @@ func TestPrintYAMLToWriter_Success(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "/path/to/task.txt",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -263,6 +269,7 @@ func TestPrintYAMLToWriter_Error(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}
@@ -285,6 +292,7 @@ func TestPrintTextToWriter_WithCommandFiles(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "",
 		CommandFiles: &CommandFilesJSON{
 			Implement: "/path/to/implement.md",
 			Review:    "/path/to/review.md",
@@ -324,6 +332,7 @@ func TestPrintTextToWriter_WithoutCommandFiles(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		TaskFile:            "/path/to/task.txt",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
 	}

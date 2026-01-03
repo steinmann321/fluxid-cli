@@ -59,7 +59,12 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 			setupConfigWithCommands(t, tmpHome, "claude")
 
 			binPath := filepath.Join(root, "bin", "fluxid")
-			cmd := exec.CommandContext(t.Context(), binPath, testCase.flag, "--fluxid-iterations=1")
+			// Create a dummy task file in home
+			taskPath := filepath.Join(tmpHome, "task.txt")
+			if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.CommandContext(t.Context(), binPath, testCase.flag, "--fluxid-iterations=1", "--file="+taskPath)
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 				"HOME="+tmpHome,
@@ -146,6 +151,12 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 			if !testCase.expectError {
 				args = append(args, "--fluxid-iterations=1")
 			}
+			// Create a dummy task file in home
+			taskPath := filepath.Join(tmpHome, "task.txt")
+			if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			args = append(args, "--file="+taskPath)
 			cmd := exec.CommandContext(t.Context(), binPath, args...)
 			cmd.Env = append(os.Environ(),
 				fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
@@ -284,7 +295,12 @@ func TestM05E01OrchestrationMatchesBaseline(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--opencode", "--fluxid-iterations=1")
+	// Create a dummy task file in home
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--opencode", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,

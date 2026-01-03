@@ -24,6 +24,7 @@ type InitializationStatusYAML struct {
 	Agent               string            `yaml:"agent"`
 	MaxReviewCycles     int               `yaml:"max_review_cycles"`
 	MaxImplementRetries int               `yaml:"max_implement_retries"`
+	TaskFile            string            `yaml:"task_file"`
 	CommandFiles        *CommandFilesYAML `yaml:"command_files,omitempty"`
 	AgentArgs           []string          `yaml:"agent_args,omitempty"`
 }
@@ -48,7 +49,13 @@ func TestM06E03YAMLOutputBasic(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-output=yaml", "--fluxid-dry-run", "--claude")
+	// Create a dummy task file
+	taskFile := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+	cmd := exec.CommandContext(
+		t.Context(), binPath, "--fluxid-output=yaml", "--fluxid-dry-run", "--claude", "--file="+taskFile)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,

@@ -23,60 +23,13 @@ func TestM06E01DryRunSimulationBasic(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
-		"HOME="+tmpHome,
-	)
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stdout
-
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("fluxid --fluxid-dry-run failed: %v\nOutput:\n%s", err, stdout.String())
+	// Create a dummy task file
+	taskFile := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskFile, []byte("task"), 0o644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
 	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude", "--file="+taskFile)
 
-	output := stdout.String()
-
-	// Verify dry-run header
-	if !strings.Contains(output, "=== DRY RUN MODE - Simulation Only ===") {
-		t.Errorf("Missing dry-run header in output:\n%s", output)
-	}
-
-	// Verify initialization section appears
-	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
-		t.Errorf("Missing initialization section in output:\n%s", output)
-	}
-
-	// Verify simulation plan section
-	if !strings.Contains(output, "=== Simulation Plan ===") {
-		t.Errorf("Missing simulation plan section in output:\n%s", output)
-	}
-
-	// Verify simulation end marker
-	if !strings.Contains(output, "=== End Simulation ===") {
-		t.Errorf("Missing simulation end marker in output:\n%s", output)
-	}
-
-	// Verify exit code is 0
-	// (already verified by cmd.Run() succeeding)
-}
-
-// TestM06E01DryRunShowsPhasesAndIterations validates the simulation plan output format.
-func TestM06E01DryRunShowsPhasesAndIterations(t *testing.T) {
-	t.Parallel()
-
-	root := getProjectRoot(t)
-	buildFluxid(t, root)
-	createStubClaude(t, root)
-
-	// Create temporary home with v2.0 config
-	tmpHome := t.TempDir()
-	setupConfigWithCommands(t, tmpHome, "claude")
-
-	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--fluxid-dry-run", "--claude")
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,

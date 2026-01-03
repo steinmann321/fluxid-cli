@@ -27,6 +27,7 @@ func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
 	}
 
 	exitCode, err := executeImplementPhase(cfg, 1)

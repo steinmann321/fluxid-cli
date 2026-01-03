@@ -145,7 +145,12 @@ commands:
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	os.Args = []string{"fluxid", "--dry-run", "echo"}
+	// Create dummy task file
+	taskPath := filepath.Join(tmpDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--dry-run", "echo", "--file=" + taskPath}
 
 	exitCode := Execute()
 	if exitCode != 0 {
@@ -261,7 +266,12 @@ commands:
 	defer func() { os.Args = oldArgs }()
 
 	// First verify agent is executable
-	os.Args = []string{"fluxid", "--dry-run", "claude"}
+	// Create dummy task file
+	taskPath := filepath.Join(tmpDir, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	os.Args = []string{"fluxid", "--dry-run", "claude", "--file=" + taskPath}
 	exitCode := Execute()
 	if exitCode != 0 {
 		t.Errorf("Expected exit code 0 for executable agent in dry-run, got %d", exitCode)

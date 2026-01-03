@@ -13,35 +13,52 @@ import (
 
 // TestM01E04ClaudeFailureImmediateAbort verifies that when Claude exits with
 // a non-zero exit code, fluxid aborts immediately and mirrors the exit code.
-//
+func verifyFailureOutput(t *testing.T, output string) {
+	t.Helper()
+	checks := []struct {
+		contains bool
+		pattern  string
+		errMsg   string
+	}{
+		{true, "=== Workflow Aborted ===", "Expected workflow abort header in output"},
+		{true, "Agent execution failed", "Expected agent failure message in output"},
+		{true, "Exit code: 2", "Expected exit code 2 to be displayed in error message"},
+		{true, "Next steps:", "Expected next steps guidance in output"},
+		{false, "Status: SUCCESS", "Success message should not appear after failure"},
+	}
+	for _, check := range checks {
+		if check.contains != strings.Contains(output, check.pattern) {
+			t.Error(check.errMsg)
+		}
+	}
+}
+
 //nolint:paralleltest // Sequential execution required due to shared stub
 func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createFailingClaudeStub(t, root, 2)
-
 	// Create temporary home with v2.0 config
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
-
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
-
 	var output bytes.Buffer
 	cmd.Stdout = &output
 	cmd.Stderr = &output
-
 	err := cmd.Run()
-
 	// Verify command failed
 	if err == nil {
 		t.Fatal("Expected fluxid to fail when Claude exits non-zero, but it succeeded")
 	}
-
 	// Verify exit code matches Claude's exit code (2)
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
@@ -50,36 +67,9 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	if exitErr.ExitCode() != 2 {
 		t.Errorf("Expected exit code 2 (matching Claude), got: %d", exitErr.ExitCode())
 	}
-
-	outputStr := output.String()
-
-	// Verify abort message is displayed
-	if !strings.Contains(outputStr, "=== Workflow Aborted ===") {
-		t.Error("Expected workflow abort header in output")
-	}
-
-	// Verify error explanation
-	if !strings.Contains(outputStr, "Agent execution failed") {
-		t.Error("Expected agent failure message in output")
-	}
-
-	// Verify exit code is displayed
-	if !strings.Contains(outputStr, "Exit code: 2") {
-		t.Error("Expected exit code 2 to be displayed in error message")
-	}
-
-	// Verify next steps are provided
-	if !strings.Contains(outputStr, "Next steps:") {
-		t.Error("Expected next steps guidance in output")
-	}
-
-	// Verify no success message appears
-	if strings.Contains(outputStr, "Status: SUCCESS") {
-		t.Error("Success message should not appear after failure")
-	}
-
+	verifyFailureOutput(t, output.String())
 	// Verify no completion summary appears
-	if strings.Contains(outputStr, "Workflow Completion Summary") {
+	if strings.Contains(output.String(), "Workflow Completion Summary") {
 		t.Error("Completion summary should not appear after abort")
 	}
 }
@@ -98,7 +88,11 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
@@ -184,7 +178,11 @@ func runPhaseFailureTest(t *testing.T, failOnInvoke, expectedExitCode int) {
 	setupConfigWithCommands(t, tmpHome, "claude")
 
 	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1")
+	taskPath := filepath.Join(tmpHome, "task.txt")
+	if err := os.WriteFile(taskPath, []byte("task"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
