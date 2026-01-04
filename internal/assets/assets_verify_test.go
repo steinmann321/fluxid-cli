@@ -197,11 +197,14 @@ func TestCopyAssetsToDir_VerifyAllFiles(t *testing.T) {
 	commandsDir := filepath.Join(tmpDir, ".fluxid", "commands")
 	expectedFiles := map[string]bool{
 		"fluxid.commit.md":                    false,
+		"fluxid.commit-speckit.md":            false,
 		"fluxid.implement-cli.md":             false,
 		"fluxid.implement-e2e.md":             false,
 		"fluxid.implement.md":                 false,
+		"fluxid.implement-speckit.md":         false,
 		"fluxid.review-implementation-e2e.md": false,
 		"fluxid.review-implementation.md":     false,
+		"fluxid.review-speckit.md":            false,
 	}
 
 	entries, err := os.ReadDir(commandsDir)
@@ -295,8 +298,8 @@ func TestCopyAssetsToDir_VerifyFileContents(t *testing.T) {
 		t.Fatalf("Failed to read commands directory: %v", err)
 	}
 
-	if len(entries) != 6 {
-		t.Errorf("Expected 6 command files, got %d", len(entries))
+	if len(entries) != 9 {
+		t.Errorf("Expected 9 command files, got %d", len(entries))
 	}
 
 	for _, entry := range entries {

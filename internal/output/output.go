@@ -44,6 +44,7 @@ type InitializationStatus struct {
 	Agent               string            `json:"agent" yaml:"agent"`
 	MaxReviewCycles     int               `json:"max_review_cycles" yaml:"max_review_cycles"`
 	MaxImplementRetries int               `json:"max_implement_retries" yaml:"max_implement_retries"`
+	MaxCommitRetries    int               `json:"max_commit_retries" yaml:"max_commit_retries"`
 	TaskFile            string            `json:"task_file" yaml:"task_file"`
 	CommandFiles        *CommandFilesJSON `json:"command_files,omitempty" yaml:"command_files,omitempty"`
 	AgentArgs           []string          `json:"agent_args,omitempty" yaml:"agent_args,omitempty"`
@@ -101,6 +102,7 @@ func PrintTextToWriter(writer io.Writer, status InitializationStatus) {
 	_, _ = fmt.Fprintf(writer, "Session ID: %s\n", status.SessionID)
 	_, _ = fmt.Fprintf(writer, "Max Review Cycles: %d\n", status.MaxReviewCycles)
 	_, _ = fmt.Fprintf(writer, "Max Implement Retries: %d\n", status.MaxImplementRetries)
+	_, _ = fmt.Fprintf(writer, "Max Commit Retries: %d\n", status.MaxCommitRetries)
 
 	if status.TaskFile != "" {
 		_, _ = fmt.Fprintf(writer, "Task File: %s\n", status.TaskFile)

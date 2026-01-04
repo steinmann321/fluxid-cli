@@ -76,6 +76,8 @@ exit 0
 	go func() {
 		defer waitGroup.Done()
 		implementAttempts := 0
+		commitWritten := false
+		waitCycles := 0
 		for {
 			select {
 			case <-stopReportWriter:
@@ -85,10 +87,9 @@ exit 0
 				currentReport, _ := ipc.ReadReport(sessionID)
 
 				// Count implement attempts by checking if we've written FAIL reports
-				if currentReport == "" || strings.Contains(currentReport, "fluxid.implement") {
-					if implementAttempts < 2 {
-						// First 2 attempts: FAIL
-						failReport := fmt.Sprintf(`command: fluxid.implement
+				if implementAttempts < 2 && (currentReport == "" || strings.Contains(currentReport, "fluxid.implement")) {
+					// First 2 attempts: FAIL
+					failReport := fmt.Sprintf(`command: fluxid.implement
 artifact: test-artifact-attempt-%d
 timestamp: %s
 status: FAIL
@@ -99,12 +100,30 @@ issues:
   observations: []
   enhancements: []
 `, implementAttempts+1, time.Now().Format(time.RFC3339))
-						_ = ipc.WriteReport(sessionID, failReport)
-						implementAttempts++
-						reportWritten <- "implement-fail"
+					_ = ipc.WriteReport(sessionID, failReport)
+					implementAttempts++
+					reportWritten <- "implement-fail"
+				} else if implementAttempts >= 2 && !commitWritten {
+					// Wait a few cycles after implement exhausts, then write commit PASS
+					waitCycles++
+					if waitCycles >= 2 {
+						commitReport := fmt.Sprintf(`command: fluxid.commit
+artifact: test-commit
+timestamp: %s
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+`, time.Now().Format(time.RFC3339))
+						_ = ipc.WriteReport(sessionID, commitReport)
+						commitWritten = true
+						reportWritten <- "commit-pass"
 					}
-				} else if strings.Contains(currentReport, "fluxid.implement") && implementAttempts >= 2 {
-					// After implement retries exhausted, write review PASS
+				} else if commitWritten && strings.Contains(currentReport, "fluxid.review") {
+					// Review phase is running, write review PASS
 					reviewReport := fmt.Sprintf(`command: fluxid.review
 artifact: test-review
 timestamp: %s
@@ -235,6 +254,8 @@ exit 0
 	go func() {
 		defer waitGroup.Done()
 		implementAttempts := 0
+		commitWritten := false
+		waitCycles := 0
 		for {
 			select {
 			case <-stopReportWriter:
@@ -242,10 +263,9 @@ exit 0
 			case <-time.After(100 * time.Millisecond):
 				currentReport, _ := ipc.ReadReport(sessionID)
 
-				if currentReport == "" || strings.Contains(currentReport, "fluxid.implement") {
-					if implementAttempts < 2 {
-						// FAIL reports for implement attempts
-						failReport := fmt.Sprintf(`command: fluxid.implement
+				if implementAttempts < 2 && (currentReport == "" || strings.Contains(currentReport, "fluxid.implement")) {
+					// FAIL reports for implement attempts
+					failReport := fmt.Sprintf(`command: fluxid.implement
 artifact: test-artifact-attempt-%d
 timestamp: %s
 status: FAIL
@@ -256,11 +276,28 @@ issues:
   observations: []
   enhancements: []
 `, implementAttempts+1, time.Now().Format(time.RFC3339))
-						_ = ipc.WriteReport(sessionID, failReport)
-						implementAttempts++
+					_ = ipc.WriteReport(sessionID, failReport)
+					implementAttempts++
+				} else if implementAttempts >= 2 && !commitWritten {
+					// Wait a few cycles after implement exhausts, then write commit PASS
+					waitCycles++
+					if waitCycles >= 2 {
+						commitReport := fmt.Sprintf(`command: fluxid.commit
+artifact: test-commit
+timestamp: %s
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+`, time.Now().Format(time.RFC3339))
+						_ = ipc.WriteReport(sessionID, commitReport)
+						commitWritten = true
 					}
-				} else if implementAttempts >= 2 {
-					// After retries exhausted, write review PASS
+				} else if commitWritten && strings.Contains(currentReport, "fluxid.review") {
+					// Review phase is running, write review PASS
 					reviewReport := fmt.Sprintf(`command: fluxid.review
 artifact: test-review
 timestamp: %s
@@ -318,7 +355,7 @@ issues:
 	}
 
 	// Verify commit phase executed
-	if !strings.Contains(outputStr, "Running commit phase") {
+	if !strings.Contains(outputStr, "Commit attempt") {
 		t.Error("Expected commit phase to execute after implement retries exhausted")
 	}
 

@@ -54,6 +54,7 @@ func TestPrintText(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		TaskFile:            "/path/to/task.txt",
 		CommandFiles: &CommandFilesJSON{
 			Implement: "/path/to/implement.md",
@@ -80,6 +81,7 @@ func TestPrintText(t *testing.T) {
 		"Session ID: test-session-123",
 		"Max Review Cycles: 10",
 		"Max Implement Retries: 3",
+		"Max Commit Retries: 100",
 	}
 
 	for _, expected := range expectedStrings {

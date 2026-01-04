@@ -18,8 +18,8 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	}
 
 	// Verify counts
-	if counts.Commands != 6 {
-		t.Errorf("Expected 6 command files, got %d", counts.Commands)
+	if counts.Commands != 9 {
+		t.Errorf("Expected 9 command files, got %d", counts.Commands)
 	}
 	if counts.Templates != 2 {
 		t.Errorf("Expected 2 template files, got %d", counts.Templates)
@@ -55,9 +55,9 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	if len(entries) == 0 {
 		t.Error("No command files created")
 	}
-	// We expect 6 command files (implement, review, commit variants)
-	if len(entries) != 6 {
-		t.Errorf("Expected 6 command files, got %d", len(entries))
+	// We expect 9 command files (implement, review, commit variants + speckit variants)
+	if len(entries) != 9 {
+		t.Errorf("Expected 9 command files, got %d", len(entries))
 	}
 
 	// Verify templates directory with files
