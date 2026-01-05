@@ -21,10 +21,6 @@ Replace stdio-based IPC system with file-based report/history interface. Externa
 **Testing**: Go testing (`go test`), E2E test suite (existing framework in `e2e-tests/`)
 **Target Platform**: Cross-platform CLI (Linux, macOS, Windows)
 **Project Type**: Single CLI project with workflow orchestration
-**Performance Goals**:
-- File validation < 100ms for 10MB files
-- Schema retrieval < 10ms (embedded in binary)
-- File path resolution < 5ms
 
 **Constraints**:
 - Report files read entirely into memory (< 10MB enforced)

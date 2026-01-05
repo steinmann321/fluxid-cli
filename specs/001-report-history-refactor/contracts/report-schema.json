@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://fluxid.dev/schemas/report.json",
   "title": "Fluxid Workflow Report",
-  "description": "Report structure for workflow phase outcomes (implement or review). Written by external agents, read by fluxid workflow controller.",
+  "description": "Report file structure for workflow phase outcomes (implement or review). Written by external agents, read by fluxid workflow controller.",
   "type": "object",
   "required": [
     "command",

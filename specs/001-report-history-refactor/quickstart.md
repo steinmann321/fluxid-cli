@@ -41,7 +41,7 @@ echo "Report file: $REPORT_FILE"
 - Path is session-specific (scoped to `FLUXID_SESSION_ID`)
 - You cannot specify a custom path (security: prevents path traversal)
 
-### 2. Write Report YAML
+### 2. Write Report File
 
 ```bash
 # Write report with PASS status
@@ -144,7 +144,7 @@ Agents can query schemas to understand structure without hardcoding.
 ### Report Schema
 
 ```bash
-# Get JSON Schema for report structure
+# Get JSON Schema for report file structure
 fluxid report --get-schema > report-schema.json
 
 # Parse with jq to see required fields

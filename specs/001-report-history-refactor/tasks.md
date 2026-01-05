@@ -38,22 +38,27 @@ Go CLI project structure:
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Phase 2: Foundational (Blocking Prerequisites) - TDD Red Phase
 
 **Purpose**: Core storage infrastructure that MUST be complete before ANY user story can be implemented
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete. TDD enforced: write failing tests FIRST.
 
-- [ ] T005 Implement schema embedding and retrieval in `internal/storage/schema.go` (embed report.json and history.json, provide GetReportSchema() and GetHistorySchema() functions)
-- [ ] T006 [P] Implement YAML security validator in `internal/storage/security.go` (reject anchors &, aliases *, merge keys <<)
-- [ ] T007 [P] Implement session path validator in `internal/storage/paths.go` (validate UUID format, prevent path traversal, ensure within session root)
-- [ ] T008 Implement report file reader in `internal/storage/report.go` with ReadReport(sessionID) function
-- [ ] T009 Implement history file reader in `internal/storage/history.go` with ReadHistory(sessionID) and FIFO eviction logic for 10MB limit
-- [ ] T010 Implement JSON Schema validator in `internal/storage/validate.go` with ValidateReport() and ValidateHistory() functions
-- [ ] T010b [P] Add E2E test in `e2e-tests/tests/storage_report_test.go` for storage.ReadReport() (valid report, malformed YAML, missing file scenarios)
-- [ ] T010c [P] Add E2E test in `e2e-tests/tests/storage_history_test.go` for storage.ReadHistory() with FIFO eviction (valid history, >10MB truncation, empty file scenarios)
-- [ ] T010d [P] Add E2E test in `e2e-tests/tests/security_yaml_test.go` for YAML security validator (reject anchors, aliases, merge keys with clear errors)
-- [ ] T010e [P] Add E2E test in `e2e-tests/tests/path_validation_test.go` for session path validator (valid UUID paths, path traversal rejection, invalid session IDs)
+**Step 1: Write Failing Tests (RED)**
+
+- [ ] T005 [P] Add E2E test in `e2e-tests/tests/storage_report_test.go` for storage.ReadReport() (valid report file, malformed YAML, missing file scenarios)
+- [ ] T006 [P] Add E2E test in `e2e-tests/tests/storage_history_test.go` for storage.ReadHistory() with FIFO eviction (valid history, >10MB truncation by removing oldest 30% of complete entries, empty file scenarios)
+- [ ] T007 [P] Add E2E test in `e2e-tests/tests/security_yaml_test.go` for YAML security validator (reject anchors, aliases, merge keys with clear errors)
+- [ ] T008 [P] Add E2E test in `e2e-tests/tests/path_validation_test.go` for session path validator (valid UUID paths, path traversal rejection, invalid session IDs)
+
+**Step 2: Implement to Pass Tests (GREEN)**
+
+- [ ] T009 Implement schema embedding and retrieval in `internal/storage/schema.go` (embed report.json and history.json, provide GetReportSchema() and GetHistorySchema() functions)
+- [ ] T010 [P] Implement YAML security validator in `internal/storage/security.go` (reject anchors &, aliases *, merge keys <<)
+- [ ] T011 [P] Implement session path validator in `internal/storage/paths.go` (validate UUID format, prevent path traversal, ensure within session root, use os.TempDir() for cross-platform temp directory)
+- [ ] T012 Implement report file reader in `internal/storage/report.go` with ReadReport(sessionID string) function that reads and parses existing report file at session-specific path
+- [ ] T013 Implement history file reader in `internal/storage/history.go` with ReadHistory(sessionID string) function including FIFO eviction logic (removes oldest 30% of complete entries by count when file >10MB)
+- [ ] T014 Implement JSON Schema validator in `internal/storage/validate.go` with ValidateReport(filePath string) and ValidateHistory(filePath string) functions that validate existing files on disk
 
 **Checkpoint**: Foundation ready with full E2E test coverage - user story implementation can now begin in parallel
 
@@ -65,14 +70,17 @@ Go CLI project structure:
 
 **Independent Test**: Agent runs `fluxid report --get-file`, writes valid YAML report to returned path, fluxid workflow reads and processes status correctly
 
-### Implementation for User Story 1
+**Step 1: Write Failing E2E Test (RED)**
 
-- [ ] T011 [P] [US1] Create report command handler in `internal/command/report.go` with cobra command structure
-- [ ] T012 [P] [US1] Implement `--get-file` flag handler in `internal/command/report.go` (resolve session ID from env, construct path, ensure file/dir exist, output absolute path)
-- [ ] T013 [US1] Update root command in `internal/command/root.go` to register report command
-- [ ] T014 [US1] Update workflow controller in `internal/workflow/workflow.go` to use storage.ReadReport() instead of IPC-based report reading
-- [ ] T015 [US1] Add error handling in `internal/command/report.go` for missing FLUXID_SESSION_ID (exit code 3)
-- [ ] T016 [US1] Add E2E test in `e2e-tests/tests/report_write_test.go` for complete agent workflow (get-file → write report → fluxid reads → PASS/FAIL behavior) with performance assertion (< 5 seconds per SC-001)
+- [ ] T015 [US1] Add E2E test in `e2e-tests/tests/report_write_test.go` for complete agent workflow (get-file → write report → fluxid reads → PASS/FAIL behavior)
+
+**Step 2: Implement to Pass Test (GREEN)**
+
+- [ ] T016 [P] [US1] Create report command handler in `internal/command/report.go` with cobra command structure
+- [ ] T017 [P] [US1] Implement `--get-file` flag handler in `internal/command/report.go` (resolve session ID from existing session management, construct path using os.TempDir(), ensure file/dir exist, output absolute path)
+- [ ] T018 [US1] Update root command in `internal/command/root.go` to register report command
+- [ ] T019 [US1] Update workflow controller in `internal/workflow/workflow.go` to use storage.ReadReport() instead of IPC-based report reading
+- [ ] T020 [US1] Add error handling in `internal/command/report.go` for missing FLUXID_SESSION_ID (exit code 3, reuses existing session validation)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - agents can write reports and fluxid processes them
 
@@ -80,31 +88,37 @@ Go CLI project structure:
 
 ## Phase 4: User Story 2 - External Agent Validates Report (Priority: P1)
 
-**Goal**: Enable agents to validate report structure before fluxid reads it, preventing workflow failures
+**Goal**: Enable agents to validate report file structure before fluxid reads it, preventing workflow failures
 
-**Independent Test**: Agent writes valid/invalid reports and runs `fluxid report --validate`, receiving appropriate exit codes and error messages
+**Independent Test**: Agent writes valid/invalid report files and runs `fluxid report --validate`, receiving appropriate exit codes and error messages
 
-### Implementation for User Story 2
+**Step 1: Write Failing E2E Tests (RED)**
 
-- [ ] T017 [P] [US2] Implement `--validate` flag handler in `internal/command/report.go` (read file from session path, call storage.ValidateReport(), format errors with field paths)
-- [ ] T018 [US2] Implement error formatter in `internal/storage/validate.go` to convert JSON Schema errors to instructive messages with field paths
-- [ ] T019 [US2] Add E2E test in `e2e-tests/tests/report_validate_test.go` covering valid report (exit 0), missing required field (exit 1 with field name), invalid status value (exit 1 with enum values), file not found (exit 2)
-- [ ] T019b [US2] Add E2E test in `e2e-tests/tests/report_validate_test.go` for schema mismatch scenarios (valid YAML but wrong structure, additional unexpected fields, wrong data types)
+- [ ] T021 [US2] Add E2E test in `e2e-tests/tests/report_validate_test.go` covering valid report file (exit 0), missing required field (exit 1 with field name), invalid status value (exit 1 with enum values), file not found (exit 2)
+- [ ] T022 [US2] Add E2E test in `e2e-tests/tests/report_validate_test.go` for schema mismatch scenarios (valid YAML but wrong structure, additional unexpected fields, wrong data types)
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - agents can write and validate reports
+**Step 2: Implement to Pass Tests (GREEN)**
+
+- [ ] T023 [P] [US2] Implement `--validate` flag handler in `internal/command/report.go` (resolve session path, read existing file, call storage.ValidateReport(filePath), format errors with field paths)
+- [ ] T024 [US2] Implement error formatter in `internal/storage/validate.go` to convert JSON Schema errors to instructive messages with format "[field_path]: [violation] (expected: [constraint], got: [value])"
+
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - agents can write and validate report files
 
 ---
 
 ## Phase 5: User Story 3 - External Agent Retrieves Report Schema (Priority: P2)
 
-**Goal**: Enable agents to programmatically discover report structure without hardcoding
+**Goal**: Enable agents to programmatically discover report file structure without hardcoding
 
 **Independent Test**: Agent runs `fluxid report --get-schema`, parses JSON Schema output, verifies all required fields documented
 
-### Implementation for User Story 3
+**Step 1: Write Failing E2E Test (RED)**
 
-- [ ] T020 [P] [US3] Implement `--get-schema` flag handler in `internal/command/report.go` (call storage.GetReportSchema(), output JSON to stdout)
-- [ ] T021 [US3] Add E2E test in `e2e-tests/tests/report_schema_test.go` for schema retrieval (valid JSON output, parseable as JSON Schema Draft 7, all required fields present)
+- [ ] T025 [US3] Add E2E test in `e2e-tests/tests/report_schema_test.go` for schema retrieval (valid JSON output, parseable as JSON Schema Draft 7, all required fields present)
+
+**Step 2: Implement to Pass Test (GREEN)**
+
+- [ ] T026 [P] [US3] Implement `--get-schema` flag handler in `internal/command/report.go` (call storage.GetReportSchema(), output JSON to stdout)
 
 **Checkpoint**: All P1/P2 report functionality complete - agents have full self-service report capabilities
 
@@ -116,15 +130,18 @@ Go CLI project structure:
 
 **Independent Test**: Agent obtains history file path, appends valid entries, subsequent session retrieves history
 
-### Implementation for User Story 4
+**Step 1: Write Failing E2E Tests (RED)**
 
-- [ ] T022 [P] [US4] Create history command handler in `internal/command/history.go` with cobra command structure
-- [ ] T023 [P] [US4] Implement `--get-file` flag handler in `internal/command/history.go` (resolve session ID, construct path, ensure file/dir exist, output absolute path)
-- [ ] T024 [P] [US4] Implement `--validate` flag handler in `internal/command/history.go` (read file, call storage.ValidateHistory(), format errors)
-- [ ] T025 [US4] Update root command in `internal/command/root.go` to register history command
-- [ ] T026 [US4] Update workflow controller in `internal/workflow/workflow.go` to use storage.ReadHistory() instead of IPC-based history reading
 - [ ] T027 [US4] Add E2E test in `e2e-tests/tests/history_append_test.go` for history workflow (get-file → append entry → validate → subsequent session reads history)
-- [ ] T028 [US4] Add E2E test in `e2e-tests/tests/history_fifo_test.go` for FIFO eviction (create >10MB history file, verify oldest entries removed on read)
+- [ ] T028 [US4] Add E2E test in `e2e-tests/tests/history_fifo_test.go` for FIFO eviction (create >10MB history file, verify oldest 30% of complete entries removed by count on read, YAML structure preserved)
+
+**Step 2: Implement to Pass Tests (GREEN)**
+
+- [ ] T029 [P] [US4] Create history command handler in `internal/command/history.go` with cobra command structure
+- [ ] T030 [P] [US4] Implement `--get-file` flag handler in `internal/command/history.go` (resolve session ID from existing session management, construct path using os.TempDir(), ensure file/dir exist, output absolute path)
+- [ ] T031 [P] [US4] Implement `--validate` flag handler in `internal/command/history.go` (resolve session path, read existing file, call storage.ValidateHistory(filePath), format errors)
+- [ ] T032 [US4] Update root command in `internal/command/root.go` to register history command
+- [ ] T033 [US4] Update workflow controller in `internal/workflow/workflow.go` to use storage.ReadHistory() instead of IPC-based history reading
 
 **Checkpoint**: User Story 4 complete - agents can record and retrieve history across sessions
 
@@ -136,10 +153,13 @@ Go CLI project structure:
 
 **Independent Test**: Agent runs `fluxid history --get-schema`, parses JSON Schema, verifies required fields documented
 
-### Implementation for User Story 5
+**Step 1: Write Failing E2E Test (RED)**
 
-- [ ] T029 [P] [US5] Implement `--get-schema` flag handler in `internal/command/history.go` (call storage.GetHistorySchema(), output JSON to stdout)
-- [ ] T030 [US5] Add E2E test in `e2e-tests/tests/history_schema_test.go` for schema retrieval (valid JSON output, parseable as JSON Schema Draft 7, required fields present)
+- [ ] T034 [US5] Add E2E test in `e2e-tests/tests/history_schema_test.go` for schema retrieval (valid JSON output, parseable as JSON Schema Draft 7, required fields present)
+
+**Step 2: Implement to Pass Test (GREEN)**
+
+- [ ] T035 [P] [US5] Implement `--get-schema` flag handler in `internal/command/history.go` (call storage.GetHistorySchema(), output JSON to stdout)
 
 **Checkpoint**: All history functionality complete - agents have full self-service history capabilities
 
@@ -151,10 +171,12 @@ Go CLI project structure:
 
 **Independent Test**: Developer creates invalid files, runs validation commands, receives actionable error messages
 
-### Implementation for User Story 6
+**Step 1: Write Failing E2E Tests (RED) - Implementation Already Complete**
 
-- [ ] T031 [P] [US6] Add E2E test in `e2e-tests/tests/developer_workflow_test.go` for developer debugging scenarios (inspect file paths, validate suspect files, view errors for common mistakes)
-- [ ] T032 [US6] Add security validation E2E test in `e2e-tests/tests/yaml_security_test.go` (YAML anchors rejected, aliases rejected, merge keys rejected with clear errors)
+- [ ] T036 [P] [US6] Add E2E test in `e2e-tests/tests/developer_workflow_test.go` for developer debugging scenarios (inspect file paths, validate suspect files, view errors for common mistakes)
+- [ ] T037 [US6] Add security validation E2E test in `e2e-tests/tests/yaml_security_test.go` (YAML anchors rejected, aliases rejected, merge keys rejected with clear errors)
+
+**Note**: No new implementation needed - US6 uses functionality from US1-US5
 
 **Checkpoint**: All user stories implemented and independently testable
 
@@ -166,13 +188,13 @@ Go CLI project structure:
 
 **⚠️ CRITICAL**: Only proceed after ALL previous phases complete and ALL E2E tests pass
 
-- [ ] T033 Remove IPC command files: `internal/command/ipc.go`, `internal/command/ipc_handlers.go`, `internal/command/ipc_abort.go`, `internal/command/ipc_history.go`
-- [ ] T034 Remove IPC storage package: `internal/ipc/storage.go`, `internal/ipc/schema.yaml`, and entire `internal/ipc/` directory
-- [ ] T035 Remove IPC E2E tests: `e2e-tests/tests/m03_e05_*.go` (abort test), `e2e-tests/tests/m04_e0*_*.go` (history IPC tests - 5 files)
-- [ ] T036 [P] Update `internal/command/root_signal.go` to remove abort flag integration if present
-- [ ] T037 [P] Update `internal/command/root_config_loader.go` to remove IPC-specific session handling
-- [ ] T038 Verify breaking change complete: `grep -r "ipc" internal/command internal/storage` returns 0 matches, E2E test count reduced by exactly 7 tests (1 from M03, 6 from M04), and `go build` succeeds
-- [ ] T039 Run full E2E test suite and verify all tests pass with new file-based interface
+- [ ] T038 Remove IPC command files: `internal/command/ipc.go`, `internal/command/ipc_handlers.go`, `internal/command/ipc_abort.go`, `internal/command/ipc_history.go`
+- [ ] T039 Remove IPC storage package: `internal/ipc/storage.go`, `internal/ipc/schema.yaml`, and entire `internal/ipc/` directory (verify exact file count before removal per plan.md)
+- [ ] T040 Remove IPC E2E tests: `e2e-tests/tests/m03_e05_*.go` (abort test), `e2e-tests/tests/m04_e0*_*.go` (history IPC tests - 6 files total per spec.md)
+- [ ] T041 [P] Update `internal/command/root_signal.go` to remove abort flag integration if present
+- [ ] T042 [P] Update `internal/command/root_config_loader.go` to remove IPC-specific session handling if present
+- [ ] T043 Verify breaking change complete: `grep -r "ipc" internal/command internal/storage` returns 0 matches, E2E test count reduced by exactly 7 tests (1 from M03, 6 from M04), and `go build` succeeds
+- [ ] T044 Run full E2E test suite and verify all tests pass with new file-based interface
 
 **Checkpoint**: Breaking change complete - old IPC system fully removed, new file-based system proven
 
@@ -182,11 +204,11 @@ Go CLI project structure:
 
 **Purpose**: Final improvements and validation
 
-- [ ] T040 [P] Update agent integration documentation to reflect file-based interface (reference quickstart.md)
-- [ ] T041 [P] Add edge case E2E tests in `e2e-tests/tests/edge_cases_test.go` (file permission errors with actionable messages, empty files, missing session ID, path validation, directory creation)
-- [ ] T042 Run complete validation using scenarios from quickstart.md
-- [ ] T043 Verify all success criteria from spec.md met (SC-001 through SC-010)
-- [ ] T044 Final code review: check error messages are instructive, exit codes correct, silent success implemented, observability requirements met (FR-041 stderr errors, FR-042 silent success, FR-043 sufficient context)
+- [ ] T045 [P] Update agent integration documentation to reflect file-based interface (reference quickstart.md)
+- [ ] T046 [P] Add edge case E2E tests in `e2e-tests/tests/edge_cases_test.go` (file permission errors with actionable messages, empty files, path validation, directory creation)
+- [ ] T047 Run complete validation using scenarios from quickstart.md
+- [ ] T048 Verify all success criteria from spec.md met (SC-001 through SC-010)
+- [ ] T049 Final code review: check error messages are instructive with format "[field_path]: [violation] (expected: [constraint], got: [value])", exit codes correct, silent success implemented, observability requirements met (FR-041 stderr errors, FR-042 silent success, FR-043 sufficient context)
 
 ---
 
@@ -315,28 +337,32 @@ With multiple developers:
 
 ## Task Summary
 
-**Total Tasks**: 49
-- Phase 1 (Setup): 4 tasks
-- Phase 2 (Foundational): 10 tasks (6 implementation + 4 E2E tests) ⚠️ BLOCKS ALL USER STORIES
-- Phase 3 (US1 - P1): 6 tasks 🎯 MVP
-- Phase 4 (US2 - P1): 4 tasks (includes schema mismatch test)
-- Phase 5 (US3 - P2): 2 tasks
-- Phase 6 (US4 - P2): 7 tasks
-- Phase 7 (US5 - P3): 2 tasks
-- Phase 8 (US6 - P3): 2 tasks
-- Phase 9 (Breaking Change): 7 tasks ⚠️ ONLY AFTER ALL USER STORIES COMPLETE
-- Phase 10 (Polish): 5 tasks
+**Total Tasks**: 49 (T001-T049)
+- Phase 1 (Setup): 4 tasks (T001-T004)
+- Phase 2 (Foundational - TDD): 10 tasks (4 E2E tests first [T005-T008], then 6 implementations [T009-T014]) ⚠️ BLOCKS ALL USER STORIES
+- Phase 3 (US1 - P1 - TDD): 6 tasks (1 E2E test [T015], then 5 implementations [T016-T020]) 🎯 MVP
+- Phase 4 (US2 - P1 - TDD): 4 tasks (2 E2E tests [T021-T022], then 2 implementations [T023-T024])
+- Phase 5 (US3 - P2 - TDD): 2 tasks (1 E2E test [T025], then 1 implementation [T026])
+- Phase 6 (US4 - P2 - TDD): 7 tasks (2 E2E tests [T027-T028], then 5 implementations [T029-T033])
+- Phase 7 (US5 - P3 - TDD): 2 tasks (1 E2E test [T034], then 1 implementation [T035])
+- Phase 8 (US6 - P3 - TDD): 2 tasks (2 E2E tests [T036-T037], no new implementation)
+- Phase 9 (Breaking Change): 7 tasks (T038-T044) ⚠️ ONLY AFTER ALL USER STORIES COMPLETE
+- Phase 10 (Polish): 5 tasks (T045-T049)
+
+**TDD Compliance**: ✅ ALL phases now follow Red-Green-Refactor cycle with E2E tests written BEFORE implementation
 
 **Parallel Opportunities**: 19 tasks marked [P] can run in parallel within their phase
 
 **Independent Test Criteria**:
-- US1: Agent writes report → fluxid reads → workflow proceeds
-- US2: Agent validates report → receives instructive errors
+- US1: Agent writes report file → fluxid reads → workflow proceeds
+- US2: Agent validates report file → receives instructive errors
 - US3: Agent retrieves schema → parses successfully
 - US4: Agent appends history → subsequent session reads
 - US5: Agent retrieves history schema → parses successfully
 - US6: Developer validates files → receives actionable errors
 
-**MVP Scope (Recommended)**: Phase 1 + Phase 2 + Phase 3 (20 tasks) delivers core agent-to-fluxid report communication with full E2E coverage
+**MVP Scope (Recommended)**: Phase 1 + Phase 2 + Phase 3 (20 tasks: T001-T020) delivers core agent-to-fluxid report communication with full TDD E2E coverage
 
 **Format Validation**: ✅ ALL tasks follow required checklist format: `- [ ] [ID] [P?] [Story?] Description with file paths`
+
+**Constitution Compliance**: ✅ TDD violations fixed - all E2E tests now written BEFORE implementation

@@ -39,11 +39,11 @@ An external agent wants to verify its report is correctly formatted before fluxi
 
 **Why this priority**: Immediate feedback prevents workflow failures. Agents can self-correct before submission, reducing retry loops and improving user experience.
 
-**Independent Test**: Can be fully tested by providing various report YAML files (valid, invalid, missing fields) to `fluxid report --validate` and verifying error messages are instructive and actionable.
+**Independent Test**: Can be fully tested by providing various report files (valid, invalid, missing fields) to `fluxid report --validate` and verifying error messages are instructive and actionable.
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid report YAML file, **When** agent runs `fluxid report --validate`, **Then** system confirms validation success with exit code 0
+1. **Given** a valid report file, **When** agent runs `fluxid report --validate`, **Then** system confirms validation success with exit code 0
 2. **Given** an invalid report (missing required field), **When** agent runs `fluxid report --validate`, **Then** system displays error message specifying the missing field name and requirement
 3. **Given** an invalid report (wrong status value), **When** agent runs `fluxid report --validate`, **Then** system displays error explaining allowed values (PASS, FAIL)
 4. **Given** no report file exists, **When** agent runs `fluxid report --validate`, **Then** system displays error indicating file not found with expected path
@@ -136,7 +136,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 **Report Management:**
 
-- **FR-001**: System MUST provide `fluxid report --get-schema` command that outputs complete JSON Schema for report structure to stdout
+- **FR-001**: System MUST provide `fluxid report --get-schema` command that outputs complete JSON Schema for report file structure to stdout
 - **FR-002**: System MUST provide `fluxid report --get-file` command that returns absolute path to session's report file
 - **FR-003**: System MUST ensure report file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
 - **FR-004**: System MUST provide `fluxid report --validate` command that validates current session's report against schema
@@ -162,7 +162,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 - **FR-021**: System MUST NOT provide any history write functionality (delegated to external systems)
 - **FR-022**: History file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/history-<session-id>.yaml`
 - **FR-023**: System MUST read history file during workflow execution to provide context to agents
-- **FR-024**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of entries (FIFO eviction) to preserve valid YAML structure before reading when size exceeds limit
+- **FR-024**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of complete entries (FIFO eviction by entry count, removing only whole event objects to preserve valid YAML array structure) before reading when size exceeds limit
 - **FR-025**: System MUST reject history write attempts where a single entry exceeds 10MB with clear error instructing agent to split entries
 
 **Schema Definitions:**
@@ -201,9 +201,9 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 - **History File**: YAML array of workflow events. Located at `<OS temp folder>/fluxid/history-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows). Each entry records timestamp, step name, outcome (SUCCESS/FAIL), summary, and failure details. Written by external agents, read by fluxid workflow.
 
-- **Report Schema**: JSON Schema document defining report structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
+- **Report Schema**: JSON Schema document defining report file structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
 
-- **History Schema**: JSON Schema document defining history structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
+- **History Schema**: JSON Schema document defining history file structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
 
 - **Session Context**: Unique identifier (UUID format) scoping report/history files to single workflow run. Passed to agents via environment variable (FLUXID_SESSION_ID). Determines file paths in format `<OS temp folder>/fluxid/{report,history}-<session-id>.yaml`.
 
@@ -211,7 +211,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 ### Measurable Outcomes
 
-- **SC-001**: External agents can obtain report file path and write valid reports in under 5 seconds
+- **SC-001**: External agents can obtain report file path and write valid reports
 - **SC-002**: Report validation detects and reports schema violations with specific field-level errors in 100% of invalid cases
 - **SC-003**: History recording by external agents succeeds without fluxid-provided write commands
 - **SC-004**: Workflow loop progression continues to work correctly (PASS status exits, FAIL status retries) with file-based approach
@@ -219,7 +219,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 - **SC-006**: All existing E2E tests for removed IPC functionality are deleted from repository
 - **SC-007**: Schema retrieval commands (`--get-schema`) output valid, parseable JSON Schema in 100% of cases
 - **SC-008**: File existence guarantee (`--get-file` creates file if missing) succeeds in 100% of cases
-- **SC-009**: Validation commands provide actionable error messages that allow agents to self-correct without documentation reference
+- **SC-009**: Validation commands provide actionable error messages with specific field names and expected values (format: "[field_path]: [violation] (expected: [constraint], got: [value])")
 - **SC-010**: Successful command operations produce no output to stderr (silent success except for data output to stdout)
 
 ## Assumptions *(mandatory)*
@@ -251,7 +251,7 @@ This is a **breaking change** that removes existing functionality. Migration req
 1. **Remove** all calls to `fluxid ipc write-report` and `fluxid ipc read-report`
 2. **Replace** with:
    - Call `fluxid report --get-file` to obtain report file path
-   - Write report YAML directly to that path using file I/O
+   - Write report file directly to that path using file I/O
    - Optionally call `fluxid report --validate` before fluxid reads it
 3. **Remove** all calls to `fluxid ipc write-history` and `fluxid ipc view-history`
 4. **Replace** with:

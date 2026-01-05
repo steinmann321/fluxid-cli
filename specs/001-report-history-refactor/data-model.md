@@ -299,7 +299,7 @@ History File ── contains ── History Events (array)
    $ fluxid report --get-file
    → /path/to/session-root/<session-id>/report.yaml
 
-2. Agent writes report YAML:
+2. Agent writes report file:
    $ echo "command: fluxid implement\n..." > /path/to/report.yaml
 
 3. Agent validates report (optional):
