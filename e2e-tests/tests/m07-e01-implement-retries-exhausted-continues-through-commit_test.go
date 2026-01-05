@@ -78,18 +78,18 @@ exit 0
 		implementAttempts := 0
 		commitWritten := false
 		waitCycles := 0
+
 		for {
 			select {
 			case <-stopReportWriter:
 				return
 			case <-time.After(100 * time.Millisecond):
-				// Read current report to determine phase
 				currentReport, _ := ipc.ReadReport(sessionID)
 
-				// Count implement attempts by checking if we've written FAIL reports
+				// State machine: write reports based on current phase
 				//nolint:gocritic // Complex test state management, if-else more readable than switch
 				if implementAttempts < 2 && (currentReport == "" || strings.Contains(currentReport, "fluxid.implement")) {
-					// First 2 attempts: FAIL
+					// First 2 implement attempts: write FAIL reports
 					failReport := fmt.Sprintf(`command: fluxid.implement
 artifact: test-artifact-attempt-%d
 timestamp: %s
@@ -124,7 +124,7 @@ issues:
 						reportWritten <- "commit-pass"
 					}
 				} else if commitWritten && strings.Contains(currentReport, "fluxid.review") {
-					// Review phase is running, write review PASS
+					// After commit succeeds, write review PASS
 					reviewReport := fmt.Sprintf(`command: fluxid.review
 artifact: test-review
 timestamp: %s
