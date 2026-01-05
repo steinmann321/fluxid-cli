@@ -1,0 +1,212 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fluxid.dev/schemas/report.json",
+  "title": "Fluxid Workflow Report",
+  "description": "Report structure for workflow phase outcomes (implement or review). Written by external agents, read by fluxid workflow controller.",
+  "type": "object",
+  "required": [
+    "command",
+    "artifact",
+    "timestamp",
+    "status",
+    "issues"
+  ],
+  "properties": {
+    "command": {
+      "type": "string",
+      "description": "Command that generated the report",
+      "minLength": 1,
+      "examples": [
+        "fluxid implement",
+        "fluxid review"
+      ]
+    },
+    "artifact": {
+      "type": "string",
+      "description": "Primary artifact produced or reviewed",
+      "minLength": 1,
+      "examples": [
+        "internal/storage/report.go",
+        "e2e-tests/tests/report_validation_test.go"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when report was generated",
+      "examples": [
+        "2026-01-05T14:32:10Z",
+        "2026-01-05T14:32:10-05:00"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL"
+      ],
+      "description": "Outcome of workflow phase. PASS exits loop, FAIL triggers retry with history context."
+    },
+    "issues": {
+      "type": "object",
+      "description": "Categorized findings from workflow phase",
+      "required": [
+        "blockers",
+        "defects",
+        "concerns",
+        "observations",
+        "enhancements"
+      ],
+      "properties": {
+        "blockers": {
+          "type": "array",
+          "description": "Critical issues preventing progress (must be resolved before PASS)",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "Test TestValidateReport_InvalidStatus failing",
+              "Missing required dependency: github.com/xeipuuv/gojsonschema"
+            ]
+          ]
+        },
+        "defects": {
+          "type": "array",
+          "description": "Bugs or incorrect behavior (should be fixed but may not block PASS)",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "Validation doesn't check for YAML anchors/aliases",
+              "Error messages missing field paths for nested failures"
+            ]
+          ]
+        },
+        "concerns": {
+          "type": "array",
+          "description": "Potential problems requiring attention (may become blockers)",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "File validation error messages could be more specific",
+              "No test coverage for 10MB file size limit edge case"
+            ]
+          ]
+        },
+        "observations": {
+          "type": "array",
+          "description": "Notable findings that are not problems (informational)",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "Used xeipuuv/gojsonschema for JSON Schema validation",
+              "Constitution check verified sequential workflow compliance"
+            ]
+          ]
+        },
+        "enhancements": {
+          "type": "array",
+          "description": "Improvement suggestions for future iterations (optional optimizations)",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "Consider adding schema caching for performance",
+              "Could batch validate multiple files in single command"
+            ]
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "next_steps": {
+      "type": "array",
+      "description": "Recommended follow-up actions (optional)",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "examples": [
+        [
+          "Run E2E tests to verify integration",
+          "Update documentation with new commands",
+          "Remove deprecated IPC package files"
+        ]
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable summary of report (optional)",
+      "examples": [
+        "Successfully implemented report file operations with JSON Schema validation",
+        "Review identified security gap and test failure requiring fixes"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "command": "fluxid implement",
+      "artifact": "internal/storage/report.go",
+      "timestamp": "2026-01-05T14:32:10Z",
+      "status": "PASS",
+      "issues": {
+        "blockers": [],
+        "defects": [],
+        "concerns": [
+          "File validation error messages could be more specific"
+        ],
+        "observations": [
+          "Used xeipuuv/gojsonschema for JSON Schema validation"
+        ],
+        "enhancements": [
+          "Consider adding schema caching for performance"
+        ]
+      },
+      "next_steps": [
+        "Run E2E tests to verify integration",
+        "Update documentation with new commands"
+      ],
+      "summary": "Successfully implemented report file operations with JSON Schema validation"
+    },
+    {
+      "command": "fluxid review",
+      "artifact": "internal/storage/validate.go",
+      "timestamp": "2026-01-05T15:45:22Z",
+      "status": "FAIL",
+      "issues": {
+        "blockers": [
+          "Test TestValidateReport_InvalidStatus failing due to missing error message"
+        ],
+        "defects": [
+          "Validation doesn't check for YAML anchors/aliases (security requirement)"
+        ],
+        "concerns": [
+          "Error messages don't include field paths for nested validation failures"
+        ],
+        "observations": [
+          "JSON Schema validator provides detailed errors but we're not surfacing them"
+        ],
+        "enhancements": []
+      },
+      "next_steps": [
+        "Fix security validation to reject YAML anchors before parsing",
+        "Update error formatter to include JSON Schema field paths",
+        "Add test cases for anchor/alias rejection"
+      ],
+      "summary": "Review identified security gap and test failure requiring fixes"
+    }
+  ]
+}

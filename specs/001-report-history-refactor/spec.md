@@ -116,7 +116,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 ### Edge Cases
 
-- What happens when report file path directory doesn't exist? System must create parent directories within session-specific directory only.
+- What happens when report file path directory doesn't exist? System must create parent directories within `<OS temp folder>/fluxid/` directory only.
 - What happens when report/history files have incorrect permissions? System must handle permission errors with clear messages.
 - What happens when validation is run on empty files? System must report "empty file" error.
 - What happens when schema is requested but internal schema file is missing? System must fail fast with clear error.
@@ -124,7 +124,8 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 - What happens when report file contains YAML but doesn't match schema? Validation must report specific field mismatches.
 - What happens when history schema requires timestamp format but entry has invalid timestamp? Validation must report timestamp format error with example.
 - What happens when session ID is not set? Commands must fail with clear error indicating session context is required.
-- What happens when history file exceeds 10MB? System must truncate by removing oldest entries (FIFO eviction) to bring size under limit before reading.
+- What happens when history file exceeds 10MB? System must truncate by removing oldest 30% of entries (FIFO eviction) to preserve valid YAML structure before reading.
+- What happens when a single history entry exceeds 10MB? System must reject with error instructing agent to split entries.
 - What happens when report/history files contain advanced YAML features (anchors, aliases, merge keys)? Parser must reject these features with clear error to prevent complexity attacks.
 - What happens if an agent attempts path traversal (e.g., ../../etc/passwd)? System determines all paths internally; agents receive paths via --get-file and cannot specify custom paths.
 - What happens if fluxid reads a report/history file while agent is still writing? Cannot occur - workflow guarantees agent exits before fluxid reads. No partial read protection needed.
@@ -137,75 +138,74 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 - **FR-001**: System MUST provide `fluxid report --get-schema` command that outputs complete JSON Schema for report structure to stdout
 - **FR-002**: System MUST provide `fluxid report --get-file` command that returns absolute path to session's report file
-- **FR-003**: System MUST ensure report file and parent directories exist when `--get-file` is called (create if missing within session-specific directory)
+- **FR-003**: System MUST ensure report file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
 - **FR-004**: System MUST provide `fluxid report --validate` command that validates current session's report against schema
-- **FR-005**: Report validation MUST produce instructive error messages specifying field names, constraint violations, and expected formats
+- **FR-005**: Report validation MUST produce instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])" for human readability and as JSON array with {field, violation, constraint, value} objects for programmatic parsing
 - **FR-006**: Report validation MUST succeed with exit code 0 for valid reports
 - **FR-007**: Report validation MUST fail with non-zero exit code and error message for invalid reports
 - **FR-008**: System MUST NOT provide any report write functionality (delegated to external systems)
 - **FR-009**: System MUST read report file during workflow execution to determine PASS/FAIL status
-- **FR-010**: Report file location MUST be deterministic based on session ID and scoped to session-specific directory
-- **FR-011**: System MUST reject report files containing YAML anchors, aliases, or merge keys with clear error message to prevent complexity attacks
-- **FR-012**: System MUST validate all report file paths are within session-specific directory boundaries (reject path traversal attempts)
-- **FR-013**: System MUST NOT accept agent-provided file paths; fluxid alone determines and manages report file locations
+- **FR-010**: Report file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/report-<session-id>.yaml`
+- **FR-011**: System MUST reject report and history files containing YAML anchors, aliases, or merge keys with clear error message to prevent complexity attacks
+- **FR-012**: System MUST validate all report and history file paths are within `<OS temp folder>/fluxid/` directory boundaries (reject path traversal attempts, validate session ID is valid UUID)
+- **FR-013**: System MUST NOT accept agent-provided file paths; fluxid alone determines and manages report and history file locations
 
 **History Management:**
 
 - **FR-014**: System MUST provide `fluxid history --get-schema` command that outputs complete JSON Schema for history structure to stdout
 - **FR-015**: System MUST provide `fluxid history --get-file` command that returns absolute path to session's history file
-- **FR-016**: System MUST ensure history file and parent directories exist when `--get-file` is called (create if missing within session-specific directory)
+- **FR-016**: System MUST ensure history file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
 - **FR-017**: System MUST provide `fluxid history --validate` command that validates current session's history against schema
-- **FR-018**: History validation MUST produce instructive error messages specifying entry violations and expected structure
+- **FR-018**: History validation MUST produce instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])" for human readability and as JSON array with {field, violation, constraint, value} objects for programmatic parsing
 - **FR-019**: History validation MUST succeed with exit code 0 for valid history
 - **FR-020**: History validation MUST fail with non-zero exit code and error message for invalid history
 - **FR-021**: System MUST NOT provide any history write functionality (delegated to external systems)
-- **FR-022**: History file location MUST be deterministic based on session ID and scoped to session-specific directory
+- **FR-022**: History file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/history-<session-id>.yaml`
 - **FR-023**: System MUST read history file during workflow execution to provide context to agents
-- **FR-024**: System MUST enforce 10MB maximum size for history files by truncating oldest entries (FIFO eviction) before reading when size exceeds limit
-- **FR-025**: System MUST reject history files containing YAML anchors, aliases, or merge keys with clear error message to prevent complexity attacks
-- **FR-026**: System MUST validate all history file paths are within session-specific directory boundaries (reject path traversal attempts)
-- **FR-027**: System MUST NOT accept agent-provided file paths; fluxid alone determines and manages history file locations
+- **FR-024**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of entries (FIFO eviction) to preserve valid YAML structure before reading when size exceeds limit
+- **FR-025**: System MUST reject history write attempts where a single entry exceeds 10MB with clear error instructing agent to split entries
 
 **Schema Definitions:**
 
-- **FR-028**: Report schema MUST define required fields: command (string), artifact (string), timestamp (ISO 8601 string), status (enum: PASS, FAIL), issues (object with 5 categories: blockers, defects, concerns, observations, enhancements)
-- **FR-029**: Report schema MUST define optional fields: next_steps (array), summary (string)
-- **FR-030**: Report schema MUST allow additional properties for extensibility
-- **FR-031**: History schema MUST define array of event objects
-- **FR-032**: History event schema MUST define required fields: timestamp (ISO 8601 string), step (string), status (enum: SUCCESS, FAIL), summary (string)
-- **FR-033**: History event schema MUST define optional field: details (string describing approach and failure reason)
+- **FR-026**: Report schema MUST define required fields: command (string), artifact (string), timestamp (ISO 8601 string), status (enum: PASS, FAIL), issues (object with 5 categories: blockers, defects, concerns, observations, enhancements)
+- **FR-027**: Report schema MUST define optional fields: next_steps (array), summary (string)
+- **FR-028**: Report schema MUST NOT allow additional properties; agents MUST use --validate to ensure validated YAML conforms strictly to provided schema
+- **FR-029**: History schema MUST define array of event objects
+- **FR-030**: History event schema MUST define required fields: timestamp (ISO 8601 string), step (string), status (enum: SUCCESS, FAIL), summary (string)
+- **FR-031**: History event schema MUST define optional field: details (string describing approach and failure reason)
+- **FR-032**: History event schema MUST NOT allow additional properties; agents MUST use --validate to ensure validated YAML conforms strictly to provided schema
 
 **Breaking Changes:**
 
-- **FR-034**: System MUST completely remove `fluxid ipc` command and all subcommands (get-report-schema, write-report, read-report, write-history, view-history, abort)
-- **FR-035**: System MUST remove all stdio-based IPC functionality from codebase
-- **FR-036**: System MUST remove all E2E tests that validate removed IPC functionality
-- **FR-037**: System MUST remove internal storage abstraction for stdio-based operations (temp file management for IPC)
+- **FR-033**: System MUST completely remove `fluxid ipc` command and all subcommands (get-report-schema, write-report, read-report, write-history, view-history, abort)
+- **FR-034**: System MUST remove all stdio-based IPC functionality from codebase
+- **FR-035**: System MUST remove all E2E tests that validate removed IPC functionality
+- **FR-036**: System MUST remove internal storage abstraction for stdio-based operations (temp file management for IPC)
 
 **Workflow Integration:**
 
-- **FR-038**: Workflow execution MUST continue to read report files to control loop progression (PASS = exit, FAIL = retry)
-- **FR-039**: Workflow execution MUST continue to provide session ID to agents via environment variable
-- **FR-040**: Workflow execution MUST continue to read history files to provide failure context to agents
-- **FR-041**: Workflow execution behavior MUST remain unchanged (only interface to report/history changes)
+- **FR-037**: Workflow execution MUST read report file after agent process exits and before retry decision to determine PASS/FAIL status for loop progression (PASS = exit loop, FAIL = retry with history context)
+- **FR-038**: Workflow execution MUST continue to provide session ID to agents via environment variable
+- **FR-039**: Workflow execution MUST continue to read history files to provide failure context to agents
+- **FR-040**: Workflow execution behavior MUST remain unchanged (only interface to report/history changes)
 
 **Observability:**
 
-- **FR-042**: Commands MUST output errors to stderr when operations fail
-- **FR-043**: Commands MUST NOT log or output any messages for successful operations (silent success)
-- **FR-044**: Error messages MUST include sufficient context to diagnose failures (file path, validation field, error reason) without verbose logging
+- **FR-041**: Commands MUST output errors to stderr when operations fail
+- **FR-042**: Commands MUST NOT log or output any messages for successful operations (silent success)
+- **FR-043**: Error messages MUST include sufficient context to diagnose failures (file path, validation field, error reason) without verbose logging
 
 ### Key Entities
 
-- **Report File**: YAML file containing workflow phase results (implement or review). Located at session-specific path. Contains status (PASS/FAIL), issues categorized by severity, and optional next steps. Written by external agents, read by fluxid workflow.
+- **Report File**: YAML file containing workflow phase results (implement or review). Located at `<OS temp folder>/fluxid/report-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows). Contains status (PASS/FAIL), issues categorized by severity, and optional next steps. Written by external agents, read by fluxid workflow.
 
-- **History File**: YAML array of workflow events. Located at session-specific path. Each entry records timestamp, step name, outcome (SUCCESS/FAIL), summary, and failure details. Written by external agents, read by fluxid workflow.
+- **History File**: YAML array of workflow events. Located at `<OS temp folder>/fluxid/history-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows). Each entry records timestamp, step name, outcome (SUCCESS/FAIL), summary, and failure details. Written by external agents, read by fluxid workflow.
 
 - **Report Schema**: JSON Schema document defining report structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
 
 - **History Schema**: JSON Schema document defining history structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
 
-- **Session Context**: Unique identifier scoping report/history files to single workflow run. Passed to agents via environment variable. Determines file paths.
+- **Session Context**: Unique identifier (UUID format) scoping report/history files to single workflow run. Passed to agents via environment variable (FLUXID_SESSION_ID). Determines file paths in format `<OS temp folder>/fluxid/{report,history}-<session-id>.yaml`.
 
 ## Success Criteria *(mandatory)*
 
@@ -275,9 +275,10 @@ This is a **breaking change** that removes existing functionality. Migration req
    - Delete `internal/command/ipc_handlers.go`
    - Delete `internal/command/ipc_abort.go`
    - Delete `internal/command/ipc_history.go`
-   - Delete `internal/ipc/storage.go` (stdio-specific parts)
-   - Delete `internal/ipc/schema.yaml`
-   - Delete all M03 and M04 E2E tests for IPC functionality
+   - Delete entire `internal/ipc/` directory (all files including storage.go, schema.yaml)
+   - Delete E2E test `e2e-tests/tests/m03_e05_*.go` (abort test, 1 file)
+   - Delete E2E tests `e2e-tests/tests/m04_e0*_*.go` (history IPC tests, 6 files)
+   - **Total removal**: 4 command files + 1 directory (internal/ipc) + 7 E2E test files
 
 3. **Phase 3 - Update Documentation**:
    - Update agent integration guides
