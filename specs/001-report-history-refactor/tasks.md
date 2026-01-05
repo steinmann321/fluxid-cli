@@ -32,9 +32,8 @@ Go CLI project structure:
 **Purpose**: Create foundational storage package and schema infrastructure
 
 - [ ] T001 Create directory structure `internal/storage/` and `internal/assets/templates/`
-- [ ] T002 [P] Verify existing JSON Schema file for report in `internal/assets/templates/report-schema.yaml` includes: all required fields (command, artifact, timestamp, status, issues), all optional fields (next_steps, summary), type constraints, enum values, and additionalProperties:false per FR-026, FR-027, FR-028. File already exists - validate completeness only.
-- [ ] T003 [P] Verify existing JSON Schema file for history in `internal/assets/templates/history-schema.yaml` includes: array type, required fields (timestamp, step, status, summary), optional field (details), enum values, and additionalProperties:false per FR-029, FR-030, FR-031, FR-032. File already exists - validate completeness only.
-- [ ] T004 Add JSON Schema validator dependency via `go get github.com/xeipuuv/gojsonschema` (validates YAML files against JSON Schema draft-07, ensures 100% schema compatibility including additionalProperties enforcement per D-002)
+- [ ] T002 [P] Verify existing YAML schema file for report in `internal/assets/templates/report-schema.yaml` includes: all required fields (command, artifact, timestamp, status, issues), all optional fields (next_steps, summary), type constraints, enum values, and strict validation rules per FR-025, FR-026, FR-027. File already exists - validate completeness only.
+- [ ] T003 [P] Verify existing YAML schema file for history in `internal/assets/templates/history-schema.yaml` includes: array type, required fields (timestamp, step, status, summary), optional field (details), enum values, and strict validation rules per FR-028, FR-029, FR-030, FR-031. File already exists - validate completeness only.
 
 ---
 
@@ -50,16 +49,17 @@ Go CLI project structure:
 - [ ] T006 [P] Add E2E test in `e2e-tests/tests/storage_history_test.go` for storage.ReadHistory() with FIFO eviction (valid history, >10MB truncation by removing oldest 30% of complete entries, empty file scenarios)
 - [ ] T007 [P] Add E2E test in `e2e-tests/tests/security_yaml_test.go` for YAML security validator (reject anchors, aliases, merge keys with clear errors)
 - [ ] T008 [P] Add E2E test in `e2e-tests/tests/path_validation_test.go` for session path validator (valid UUID paths, path traversal rejection, invalid session IDs)
+- [ ] T008a [P] Add E2E test in `e2e-tests/tests/observability_test.go` for observability requirements (silent success produces no stderr output with exit 0, error messages include sufficient context with file paths, field paths, constraint details, and session IDs in stderr per FR-040, FR-041, FR-042)
 
 **Step 2: Implement to Pass Tests (GREEN)**
 
-- [ ] T009 Implement schema embedding and retrieval in `internal/storage/schema.go` (embed report-schema.yaml and history-schema.yaml from internal/assets/templates/, provide GetReportSchema() and GetHistorySchema() functions)
+- [ ] T009 Implement schema embedding and retrieval in `internal/storage/schema.go` using Go embed directive (//go:embed) to package report-schema.yaml and history-schema.yaml from internal/assets/templates/ into binary. Provide GetReportSchema() and GetHistorySchema() functions to retrieve embedded schemas.
 - [ ] T010 [P] Implement YAML security validator in `internal/storage/security.go` (reject anchors &, aliases *, merge keys <<)
 - [ ] T011 [P] Implement session path validator in `internal/storage/paths.go` (validate UUID format, prevent path traversal, ensure within session root, use os.TempDir() for cross-platform temp directory)
 - [ ] T012 Implement report file reader in `internal/storage/report.go` with ReadReport(sessionID string) function that reads and parses existing report file at session-specific path
-- [ ] T013 Implement history file reader in `internal/storage/history.go` with ReadHistory(sessionID string) function including FIFO eviction logic (removes oldest 30% of complete entries by count using ceiling function for minimum 1 entry removal when file >10MB, per FR-024)
-- [ ] T014 Implement JSON Schema validator in `internal/storage/validate.go` with ValidateReport(filePath string) and ValidateHistory(filePath string) functions that validate existing YAML files against JSON Schema (ensures 100% schema compatibility including additionalProperties:false checks). Implement error formatting per FR-004a with format "[field_path]: [violation] (expected: [constraint], got: [value])" and exit codes per FR-004b (0=success, 1=validation failure, 2=operational failure including schema load failure per FR-025a)
-- [ ] T014a [P] Implement observability in all command handlers per FR-041, FR-042, FR-043: errors to stderr with sufficient context (file paths, field paths, constraint details, session IDs), silent success (no stderr output on success), stdout reserved for data output only
+- [ ] T013 Implement history file reader in `internal/storage/history.go` with ReadHistory(sessionID string) function including FIFO eviction logic (removes oldest 30% of complete entries by count using ceiling function: ceiling(entry_count * 0.30) ensures minimum 1 entry removed when entry_count >= 4, removing only whole event objects when file >10MB, per FR-022)
+- [ ] T014 Implement custom YAML validator in `internal/storage/validate.go` with ValidateReport(filePath string) and ValidateHistory(filePath string) functions that validate existing YAML files against embedded YAML schema documents (strict field, type, and constraint checking). Implement error formatting per FR-004 with format "[field_path]: [violation] (expected: [constraint], got: [value])" by default, or JSON array with {field, violation, constraint, value} objects when --format=json flag provided. Use exit codes: 0=success, 1=validation failure, 2=operational failure including schema load failure per FR-024
+- [ ] T014a [P] Implement observability in all command handlers per FR-040, FR-041, FR-042: errors to stderr with sufficient context (file paths, field paths, constraint details, session IDs), silent success (no stderr output on success), stdout reserved for data output only
 
 **Checkpoint**: Foundation ready with full E2E test coverage - user story implementation can now begin in parallel
 
@@ -249,7 +249,7 @@ Go CLI project structure:
 ### Parallel Opportunities
 
 - **Phase 1 (Setup)**: T002 [P] and T003 [P] can run in parallel (different schema files)
-- **Phase 2 (Foundational)**: T005 [P], T006 [P], T007 [P], T008 [P] can run in parallel (independent E2E tests), then T010 [P], T011 [P], T014a [P] can run in parallel (independent utilities)
+- **Phase 2 (Foundational)**: T005 [P], T006 [P], T007 [P], T008 [P], T008a [P] can run in parallel (independent E2E tests), then T010 [P], T011 [P], T014a [P] can run in parallel (independent utilities)
 - **Phase 3 (US1)**: T011 [P] and T012 [P] can run in parallel initially (same file but different functions)
 - **Phase 4 (US2)**: T017 [P] can be worked on independently (extends report command)
 - **Phase 5 (US3)**: T020 [P] can be worked on independently (extends report command)
@@ -270,6 +270,7 @@ Task T005: "E2E test for storage.ReadReport() scenarios"
 Task T006: "E2E test for storage.ReadHistory() with FIFO eviction"
 Task T007: "E2E test for YAML security validator"
 Task T008: "E2E test for session path validator"
+Task T008a: "E2E test for observability requirements"
 
 # Then launch independent implementations in parallel (GREEN phase):
 Task T010: "YAML security validator in internal/storage/security.go"
@@ -298,8 +299,8 @@ Task T029-T030: "User Story 5 - Agent retrieves history schema"
 
 ### MVP First (User Story 1 Only)
 
-1. Complete Phase 1: Setup (4 tasks: T001-T004)
-2. Complete Phase 2: Foundational (11 tasks: T005-T014a - CRITICAL)
+1. Complete Phase 1: Setup (3 tasks: T001-T003)
+2. Complete Phase 2: Foundational (12 tasks: T005-T014a including T008a - CRITICAL)
 3. Complete Phase 3: User Story 1 (6 tasks: T015-T020)
 4. **STOP and VALIDATE**: Test US1 independently with E2E test
 5. Verify agents can write reports and fluxid processes them
@@ -319,7 +320,7 @@ Task T029-T030: "User Story 5 - Agent retrieves history schema"
 
 With multiple developers:
 
-1. Team completes Setup + Foundational together (15 tasks: T001-T014a)
+1. Team completes Setup + Foundational together (15 tasks: T001-T003, T005-T014a including T008a)
 2. Once Foundational is done:
    - **Developer A**: Report track (US1 → US2 → US3)
    - **Developer B**: History track (US4 → US5)
@@ -345,9 +346,9 @@ With multiple developers:
 
 ## Task Summary
 
-**Total Tasks**: 50 (T001-T049 + T014a)
-- Phase 1 (Setup): 4 tasks (T001-T004)
-- Phase 2 (Foundational - TDD): 11 tasks (4 E2E tests first [T005-T008], then 7 implementations [T009-T014a]) ⚠️ BLOCKS ALL USER STORIES
+**Total Tasks**: 50 (T001-T049 + T008a + T014a)
+- Phase 1 (Setup): 3 tasks (T001-T003)
+- Phase 2 (Foundational - TDD): 12 tasks (5 E2E tests first [T005-T008a], then 7 implementations [T009-T014a]) ⚠️ BLOCKS ALL USER STORIES
 - Phase 3 (US1 - P1 - TDD): 6 tasks (1 E2E test [T015], then 5 implementations [T016-T020]) 🎯 MVP
 - Phase 4 (US2 - P1 - TDD): 4 tasks (2 E2E tests [T021-T022], then 2 implementations [T023-T024])
 - Phase 5 (US3 - P2 - TDD): 2 tasks (1 E2E test [T025], then 1 implementation [T026])
@@ -359,7 +360,7 @@ With multiple developers:
 
 **TDD Compliance**: ✅ ALL phases now follow Red-Green-Refactor cycle with E2E tests written BEFORE implementation
 
-**Parallel Opportunities**: 20 tasks marked [P] can run in parallel within their phase (T002, T003, T005, T006, T007, T008, T010, T011, T014a, T016, T017, T020, T022, T023, T024, T029, T030, T031, T036, T037, T040, T041)
+**Parallel Opportunities**: 21 tasks marked [P] can run in parallel within their phase (T002, T003, T005, T006, T007, T008, T008a, T010, T011, T014a, T016, T017, T020, T022, T023, T024, T029, T030, T031, T036, T037, T040, T041)
 
 **Independent Test Criteria**:
 - US1: Agent writes report file → fluxid reads → workflow proceeds
@@ -369,7 +370,7 @@ With multiple developers:
 - US5: Agent retrieves history schema → parses successfully
 - US6: Developer validates files → receives actionable errors
 
-**MVP Scope (Recommended)**: Phase 1 + Phase 2 + Phase 3 (21 tasks: T001-T020 + T014a) delivers core agent-to-fluxid report communication with full TDD E2E coverage
+**MVP Scope (Recommended)**: Phase 1 + Phase 2 + Phase 3 (21 tasks: T001-T003, T005-T020, T008a, T014a) delivers core agent-to-fluxid report communication with full TDD E2E coverage
 
 **Format Validation**: ✅ ALL tasks follow required checklist format: `- [ ] [ID] [P?] [Story?] Description with file paths`
 
