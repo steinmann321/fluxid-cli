@@ -2,17 +2,11 @@
 package workflow
 
 import (
-	"context"
 	"errors"
 	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/types"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -23,8 +17,9 @@ var (
 )
 
 const (
-	statusPass = "PASS"
-	statusFail = "FAIL"
+	statusPass    = "PASS"
+	statusFail    = "FAIL"
+	builtInPrompt = "built-in prompt"
 
 	implementPrompt = "Run implement command file for task: ${FLUXID_TASK_FILE}"
 	commitPrompt    = "Execute commit command file to create git commit"
@@ -166,7 +161,7 @@ func executeImplementPhase(cfg types.Config, retry int) (int, error) {
 }
 
 func executeCommit(cfg types.Config) (int, error) {
-	return runCommitPhase(cfg)
+	return runCommitPhaseWithRetry(cfg)
 }
 
 func checkImplementReportStatus(sessionID string, _ int) (int, error) {
@@ -186,7 +181,87 @@ func checkImplementReportStatus(sessionID string, _ int) (int, error) {
 	return -1, nil // Signal to continue retry
 }
 
-// runCommitPhase executes the commit phase.
+// runCommitPhaseWithRetry executes the commit phase with retries until PASS or max retries reached.
+func runCommitPhaseWithRetry(cfg types.Config) (int, error) {
+	for retry := 1; retry <= cfg.MaxCommitRetries; retry++ {
+		log.Printf("Commit attempt %d/%d...", retry, cfg.MaxCommitRetries)
+
+		// Check for abort before commit attempt
+		if exitCode, err := checkAbortBeforeCommit(cfg.SessionID); err != nil {
+			return exitCode, err
+		}
+
+		// Run commit phase
+		if exitCode, err := executeCommitPhase(cfg, retry); err != nil {
+			if exitCode != 0 {
+				return exitCode, err
+			}
+			continue
+		}
+
+		// Check commit report status IMMEDIATELY after commit phase
+		if exitCode, err := checkCommitReportStatus(cfg.SessionID, retry); err != nil {
+			return exitCode, err
+		} else if exitCode == 0 {
+			// Commit phase succeeded (REPORT says PASS)
+			log.Println("Commit phase completed successfully with PASS report")
+			return 0, nil
+		}
+
+		// status == statusFail: continue to next retry
+		log.Printf("Commit report status is FAIL, retrying... (%d/%d)", retry+1, cfg.MaxCommitRetries)
+	}
+
+	// All retries exhausted
+	retries := cfg.MaxCommitRetries
+	log.Printf("Commit phase retries exhausted (%d/%d), workflow cannot continue", retries, retries)
+	return 1, fmt.Errorf("commit phase failed after %d retries: %w", retries, errCommitPhaseFailed)
+}
+
+func checkAbortBeforeCommit(sessionID string) (int, error) {
+	aborted, err := ipc.CheckAbortFlag(sessionID)
+	if err != nil {
+		log.Printf("Warning: failed to check abort flag: %v", err)
+	}
+	if aborted {
+		log.Println("Abort requested - exiting workflow gracefully")
+		return exitCodeInterrupted, errWorkflowAborted
+	}
+	return 0, nil
+}
+
+func executeCommitPhase(cfg types.Config, retry int) (int, error) {
+	exitCode, err := runPhase(cfg, "commit", commitPrompt)
+	if err != nil {
+		// runPhase always returns non-zero exit code on error
+		log.Printf(
+			"Commit phase failed (retry %d/%d) with exit code %d: %v",
+			retry, cfg.MaxCommitRetries, exitCode, err,
+		)
+		return exitCode, fmt.Errorf("commit phase failed with exit code %d: %w", exitCode, errCommitPhaseFailed)
+	}
+	return 0, nil
+}
+
+func checkCommitReportStatus(sessionID string, _ int) (int, error) {
+	status, err := waitForValidReport(sessionID, "commit")
+	if err != nil {
+		var abortErr *AbortError
+		if errors.As(err, &abortErr) {
+			return abortErr.ExitCode, err
+		}
+		return 1, fmt.Errorf("failed to get commit report: %w", err)
+	}
+
+	if status == statusPass {
+		return 0, nil
+	}
+
+	return -1, nil // Signal to continue retry
+}
+
+// runCommitPhase executes the commit phase once without retry logic.
+// This is used by tests that want to test a single commit execution.
 func runCommitPhase(cfg types.Config) (int, error) {
 	log.Println("Running commit phase...")
 	exitCode, err := runPhase(cfg, "commit", commitPrompt)
@@ -217,181 +292,4 @@ func runReviewPhase(cfg types.Config) (string, int, error) {
 	}
 
 	return status, 0, nil
-}
-
-func runPhase(config types.Config, phase string, prompt string) (int, error) {
-	timestamp := time.Now().Format("15:04:05")
-	log.Printf("[%s] Starting phase: %s", timestamp, phase)
-
-	// Compose prompt with command and task file paths
-	finalPrompt := composePrompt(config, phase, prompt)
-
-	// Build Claude command with correct API
-	cmd := buildClaudeCommand(config, finalPrompt)
-
-	// Set environment variables for session tracking and task file
-	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+config.SessionID)
-	cmd.Env = append(cmd.Env, "FLUXID_TASK_FILE="+config.TaskFilePath)
-
-	// Pipe stdout/stderr/stdin for real-time streaming
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	// Execute Claude CLI
-	if err := cmd.Run(); err != nil {
-		// Extract exit code from error
-		exitCode := 1 // Default to 1 if we can't determine the actual code
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			exitCode = exitErr.ExitCode()
-		}
-		return exitCode, fmt.Errorf("phase %s failed: %w", phase, err)
-	}
-
-	timestamp = time.Now().Format("15:04:05")
-	log.Printf("[%s] Phase %s completed successfully", timestamp, phase)
-
-	return 0, nil
-}
-
-func buildClaudeCommand(config types.Config, prompt string) *exec.Cmd {
-	// Build args: --print flag first, then user args, then prompt as positional arg
-	args := []string{
-		"--print", // Non-interactive mode for automation
-	}
-	args = append(args, config.AgentArgs...)
-	args = append(args, prompt)
-
-	// #nosec G204 - Agent name comes from validated config file, not user input
-	return exec.CommandContext(context.Background(), config.Agent, args...)
-}
-
-// composePrompt builds the phase prompt including command and task file context.
-func composePrompt(cfg types.Config, phase string, basePrompt string) string {
-	cmdFile := getCommandFilePath(cfg, phase)
-	return fmt.Sprintf("%s\nCommand file: %s\nTask file: %s", basePrompt, cmdFile, cfg.TaskFilePath)
-}
-
-// checkReportStatus checks for a valid report immediately after agent exits.
-// Since the agent writes reports synchronously via 'fluxid ipc write-report',
-// the report either exists or it doesn't when the agent process completes.
-// Returns the status ("PASS" or "FAIL") or treats missing/invalid reports as FAIL.
-func waitForValidReport(sessionID string, phase string) (string, error) {
-	// Check for abort flag
-	aborted, err := ipc.CheckAbortFlag(sessionID)
-	if err != nil {
-		log.Printf("Warning: failed to check abort flag while checking %s report: %v", phase, err)
-	}
-	if aborted {
-		return "", &AbortError{
-			ExitCode: exitCodeInterrupted,
-			Message:  fmt.Sprintf("workflow aborted while checking %s report", phase),
-		}
-	}
-
-	// Read report from IPC storage
-	reportYAML, err := ipc.ReadReport(sessionID)
-	if err != nil {
-		return "", fmt.Errorf("failed to read report: %w", err)
-	}
-
-	// If no report exists, treat as FAIL
-	// Agent either didn't write one, or the IPC write command failed
-	if reportYAML == "" {
-		log.Printf("No %s report found - agent did not write report", phase)
-		return statusFail, nil
-	}
-
-	// Validate report
-	if err := ipc.ValidateReport(reportYAML); err != nil {
-		log.Printf("Invalid %s report (treating as FAIL): %v", phase, err)
-		return statusFail, nil
-	}
-
-	// Parse report to extract status
-	var report ipc.Report
-	if err := yaml.Unmarshal([]byte(reportYAML), &report); err != nil {
-		log.Printf("Failed to parse %s report (treating as FAIL): %v", phase, err)
-		return statusFail, nil
-	}
-
-	// Valid report found
-	log.Printf("Valid %s report received with status: %s", phase, report.Status)
-	return report.Status, nil
-}
-
-// RunSimulation simulates the workflow execution without spawning agent processes.
-// It prints the execution plan showing all iterations, retries, and phases that would be executed,
-// using synthetic PASS reports to drive loop progression.
-func RunSimulation(cfg types.Config) int {
-	log.Println("=== Simulation Plan ===")
-	log.Println()
-
-	// Simulate a single successful review cycle (happy path)
-	reviewCycle := 1
-	retry := 1
-
-	log.Printf("--- Review Cycle %d/%d ---", reviewCycle, cfg.MaxReviewCycles)
-	log.Println()
-
-	log.Printf("Implement attempt %d/%d...", retry, cfg.MaxImplementRetries)
-
-	// Simulate implement phase
-	commandFile := getCommandFilePath(cfg, "implement")
-	log.Printf("Would execute: Iteration %d, Retry %d, Phase: implement", reviewCycle, retry)
-	log.Printf("  Task file: %s", cfg.TaskFilePath)
-	log.Printf("  Command file: %s", commandFile)
-	log.Println()
-
-	// Simulate commit phase
-	commandFile = getCommandFilePath(cfg, "commit")
-	log.Printf("Would execute: Iteration %d, Retry %d, Phase: commit", reviewCycle, retry)
-	log.Printf("  Task file: %s", cfg.TaskFilePath)
-	log.Printf("  Command file: %s", commandFile)
-	log.Println()
-
-	// Simulate synthetic PASS report for implement
-	log.Printf("Synthetic implement report: PASS")
-	log.Println()
-
-	// Simulate review phase
-	commandFile = getCommandFilePath(cfg, "review")
-	log.Printf("Would execute: Iteration %d, Retry 1, Phase: review", reviewCycle)
-	log.Printf("  Task file: %s", cfg.TaskFilePath)
-	log.Printf("  Command file: %s", commandFile)
-	log.Println()
-
-	// Simulate synthetic PASS report for review
-	log.Printf("Synthetic review report: PASS")
-	log.Println()
-
-	// Review PASS: workflow completes successfully
-	log.Printf("Simulated workflow completed successfully after %d review cycle(s)", reviewCycle)
-
-	log.Println("=== End Simulation ===")
-	return 0
-}
-
-// getCommandFilePath returns the command file path for a phase, or "built-in prompt" if not configured.
-func getCommandFilePath(cfg types.Config, phase string) string {
-	if cfg.CommandFiles == nil {
-		return "built-in prompt"
-	}
-
-	switch phase {
-	case "implement":
-		if cfg.CommandFiles.ImplementPath != "" {
-			return cfg.CommandFiles.ImplementPath
-		}
-	case "review":
-		if cfg.CommandFiles.ReviewPath != "" {
-			return cfg.CommandFiles.ReviewPath
-		}
-	case "commit":
-		if cfg.CommandFiles.CommitPath != "" {
-			return cfg.CommandFiles.CommitPath
-		}
-	}
-	return "built-in prompt"
 }

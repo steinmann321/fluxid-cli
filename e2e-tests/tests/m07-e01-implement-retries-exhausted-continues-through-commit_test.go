@@ -15,12 +15,12 @@ import (
 	"go.uber.org/goleak"
 )
 
-// TestImplementRetriesExhaustedContinuesToReview verifies that when all implement retries fail,
-// the workflow continues to the review phase instead of terminating.
-// Flow: implement (FAIL) → implement (FAIL) → review (PASS) → workflow succeeds.
+// TestImplementRetriesExhaustedContinuesThroughCommit verifies that when all implement retries fail,
+// the workflow continues through commit phase to review instead of terminating.
+// Flow: implement (FAIL) → implement (FAIL) → commit → review (PASS) → workflow succeeds.
 //
-//nolint:cyclop,funlen // E2E test with multiple conditional checks for output validation
-func TestImplementRetriesExhaustedContinuesToReview(t *testing.T) {
+//nolint:cyclop,funlen,gocognit // E2E test with multiple conditional checks for output validation
+func TestImplementRetriesExhaustedContinuesThroughCommit(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	// Setup
@@ -87,6 +87,7 @@ exit 0
 				currentReport, _ := ipc.ReadReport(sessionID)
 
 				// Count implement attempts by checking if we've written FAIL reports
+				//nolint:gocritic // Complex test state management, if-else more readable than switch
 				if implementAttempts < 2 && (currentReport == "" || strings.Contains(currentReport, "fluxid.implement")) {
 					// First 2 attempts: FAIL
 					failReport := fmt.Sprintf(`command: fluxid.implement
@@ -195,10 +196,10 @@ issues:
 }
 
 // TestImplementRetriesExhaustedWithCommitEnabled verifies that when implement retries fail,
-// the workflow continues to commit phase (if enabled) and then review.
+// the workflow continues through commit phase and then review.
 // Flow: implement (FAIL) → implement (FAIL) → commit → review (PASS) → workflow succeeds.
 //
-//nolint:cyclop,funlen // E2E test with multiple conditional checks for output validation
+//nolint:cyclop,funlen,gocognit // E2E test with multiple conditional checks for output validation
 func TestImplementRetriesExhaustedWithCommitEnabled(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
@@ -263,6 +264,7 @@ exit 0
 			case <-time.After(100 * time.Millisecond):
 				currentReport, _ := ipc.ReadReport(sessionID)
 
+				//nolint:gocritic // Complex test state management, if-else more readable than switch
 				if implementAttempts < 2 && (currentReport == "" || strings.Contains(currentReport, "fluxid.implement")) {
 					// FAIL reports for implement attempts
 					failReport := fmt.Sprintf(`command: fluxid.implement

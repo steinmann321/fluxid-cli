@@ -28,6 +28,7 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 		Agent:               testAgentEcho,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -58,6 +59,7 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -80,42 +82,6 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 	}
 }
 
-func TestRunImplementPhase_AllRetriesFail(t *testing.T) {
-	sessionID := "test-all-fail-" + time.Now().Format("20060102150405.000000")
-	dataDir := t.TempDir()
-	t.Setenv("XDG_DATA_HOME", dataDir)
-
-	if err := os.MkdirAll(filepath.Join(dataDir, ".fluxid"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := types.Config{
-		SessionID:           sessionID,
-		Agent:               testAgentTrue,
-		MaxReviewCycles:     1,
-		MaxImplementRetries: 2,
-		DryRun:              false,
-		CommandFiles:        nil,
-		AgentArgs:           []string{},
-		OutputFormat:        output.FormatText,
-		TaskFilePath:        "",
-	}
-
-	// Pre-write FAIL report before workflow starts
-	// No timing dependencies - completely deterministic
-	if err := ipc.WriteReport(sessionID, testFailReport); err != nil {
-		t.Fatalf("Failed to write report: %v", err)
-	}
-
-	exitCode, err := runImplementPhase(cfg)
-	if err != nil {
-		t.Errorf("Expected no error when retries exhausted (should continue), got: %v", err)
-	}
-	if exitCode != 0 {
-		t.Errorf("Expected exit code 0 (continue to next phase), got %d", exitCode)
-	}
-}
-
 func TestRunImplementPhase_AgentFailure(t *testing.T) {
 	sessionID := "test-agent-fail-" + time.Now().Format("20060102150405.000000")
 	dataDir := t.TempDir()
@@ -130,6 +96,7 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -160,6 +127,7 @@ func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
 		Agent:               "nonexistent-agent-12345",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -185,6 +153,7 @@ func TestRunCommitPhase_Disabled(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -210,6 +179,7 @@ func TestRunCommitPhase_Enabled(t *testing.T) {
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

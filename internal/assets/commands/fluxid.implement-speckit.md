@@ -12,8 +12,11 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Optional additional input from previous session
 
-- Report file (get path via `.fluxid/scripts/command/files.sh --report`)
-- History file (get path via `.fluxid/scripts/command/files.sh --history`)
+Check previous work if this is a retry:
+```bash
+fluxid ipc read-report    # Previous report (if exists)
+fluxid ipc view-history   # Session history
+```
 
 ## Outline
 
@@ -168,16 +171,37 @@ Better honest FAIL than compromised implementation — ALWAYS.
 - Document what was tried and what remains
 - Create FAIL report
 
-**Report**:
+**Report - REQUIRED BEFORE EXITING**:
+
+You MUST write a fluxid report using this exact command format (update values as appropriate):
+
 ```bash
-REPORT_PATH=$(./.fluxid/scripts/command/files.sh --report)
-SCHEMA_PATH=$(./.fluxid/scripts/command/files.sh --report-schema)
-./.fluxid/scripts/command/validate-report.sh "$REPORT_PATH"
+cat <<'EOF' | fluxid ipc write-report
+command: fluxid.implement-speckit
+artifact: feature-name-here
+timestamp: 2026-01-05T01:00:00Z
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+summary: Brief summary of what was accomplished
+next_steps: []
+EOF
 ```
 
-Required fields: `command: "fluxid.implement-speckit"`, `artifact: [feature-id]`, `status: PASS|FAIL`, `issues`
+**Fields to update**:
+- `artifact`: Feature/epic name from tasks.md or plan.md
+- `timestamp`: Current ISO-8601 timestamp (e.g., `2026-01-05T10:30:00Z`)
+- `status`: **PASS** if all tasks complete and tests pass, **FAIL** if stopped/incomplete
+- `summary`: 1-2 sentence summary of work completed
+- `next_steps`: List remaining work if status is FAIL (empty array `[]` if PASS)
+- `issues`: Add items to appropriate categories if needed (blockers, defects, concerns, observations, enhancements)
 
-Fix validation errors and re-validate until clean.
+**Critical**: IPC validates automatically. If it fails, fix the YAML syntax and retry.
+**Do not exit without writing this report** - fluxid depends on it to track workflow state.
 
 ---
 

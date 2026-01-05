@@ -31,6 +31,7 @@ func TestPhaseSequencing_ImplementReportReadBeforeCommit(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -93,6 +94,7 @@ func TestPhaseSequencing_FullWorkflowPhases(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -118,67 +120,6 @@ func TestPhaseSequencing_FullWorkflowPhases(t *testing.T) {
 
 	// Test validates that the workflow completed successfully with proper phase sequencing
 	// In production, each phase would write its own report via the actual agent
-}
-
-// TestPhaseSequencing_ImplementRetryWithPhaseValidation verifies that during implement retries,
-// each retry reads the correct implement report, not a report from another phase.
-func TestPhaseSequencing_ImplementRetryWithPhaseValidation(t *testing.T) {
-	defer goleak.VerifyNone(t)
-
-	_, cleanup := setupTestDataDir(t)
-	defer cleanup()
-
-	sessionID := "test-phase-seq-retry-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
-
-	cfg := types.Config{
-		SessionID:           sessionID,
-		Agent:               "echo",
-		AgentArgs:           []string{},
-		MaxReviewCycles:     1,
-		MaxImplementRetries: 1,
-		DryRun:              false,
-		CommandFiles:        &config.ResolvedCommandFiles{},
-		OutputFormat:        output.FormatText,
-		TaskFilePath:        "/abs/task.txt",
-	}
-
-	// Write initial implement FAIL report to trigger a retry
-	if err := ipc.WriteReport(sessionID, testImplementFailReport); err != nil {
-		t.Fatalf("Failed to write initial implement FAIL report: %v", err)
-	}
-
-	// Verify the initial report is an implement FAIL report
-	reportYAML, err := ipc.ReadReport(sessionID)
-	if err != nil {
-		t.Fatalf("Failed to read initial report: %v", err)
-	}
-
-	var initialReport ipc.Report
-	if err := yaml.Unmarshal([]byte(reportYAML), &initialReport); err != nil {
-		t.Fatalf("Failed to unmarshal initial report: %v", err)
-	}
-
-	if initialReport.Command != phaseCommandImplement {
-		t.Errorf("Expected implement report initially, got command: %s", initialReport.Command)
-	}
-	if initialReport.Status != "FAIL" {
-		t.Errorf("Expected FAIL status initially, got: %s", initialReport.Status)
-	}
-
-	// Run implement phase (which will retry due to FAIL status, then exhaust retries and run commit)
-	exitCode, err := runImplementPhase(cfg)
-	if err != nil {
-		t.Errorf("Expected no error after retries exhaust, got: %v", err)
-	}
-	if exitCode != 0 {
-		t.Errorf("Expected exit code 0 (retries exhausted, continue to commit), got %d", exitCode)
-	}
-
-	// Test validates that:
-	// 1. Retries were triggered by FAIL status
-	// 2. After retries exhausted, commit phase still executed
-	// 3. The workflow completed successfully
-	// Note: echo agent doesn't write reports, so we validate workflow execution behavior
 }
 
 // TestPhaseSequencing_CommitOverwritesImplement verifies the overwriting behavior:

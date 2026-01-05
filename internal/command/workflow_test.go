@@ -41,6 +41,7 @@ func TestRunWorkflow_ImmediateAbort(t *testing.T) {
 		Agent:               "echo",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -73,6 +74,7 @@ func TestRunWorkflow_MultipleReviewCycles(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -104,6 +106,7 @@ func TestRunWorkflow_ChecksAbortBeforeReview(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -140,6 +143,7 @@ func TestRunWorkflow_SuccessFirstCycle(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -173,6 +177,25 @@ next_steps:
 		_ = ipc.WriteReport(sessionID, implementReport)
 
 		// Delay to allow implement phase to read the report
+		// before we overwrite it with the commit report
+		<-time.After(100 * time.Millisecond)
+		commitReport := `command: test-commit
+artifact: test-artifact
+timestamp: 2025-12-13T10:00:00Z
+status: PASS
+summary: Commit successful
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+next_steps:
+  - Proceed to review
+`
+		_ = ipc.WriteReport(sessionID, commitReport)
+
+		// Delay to allow commit phase to read the report
 		// before we overwrite it with the review report
 		<-time.After(100 * time.Millisecond)
 		reviewReport := `command: test-review
@@ -223,6 +246,7 @@ func TestRunWorkflow_FailThenPass(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 2,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

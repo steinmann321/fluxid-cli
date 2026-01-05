@@ -114,12 +114,12 @@ After each iteration:
 
 **Speckit/Specify**: `.specify/specs/[###-feature-slug]/` containing `spec.md`, `plan.md`, `tasks.md`
 
-**Paths**:
-```bash
-REPORT_PATH=$(./.fluxid/scripts/command/files.sh --report)
-HISTORY_PATH=$(./.fluxid/scripts/command/files.sh --history)
-SCHEMA_PATH=$(./.fluxid/scripts/command/files.sh --report-schema)
-```
+**IPC Commands**:
+- Read previous report: `fluxid ipc read-report`
+- View history: `fluxid ipc view-history`
+- Get report schema: `fluxid ipc get-report-schema`
+- Write report: `fluxid ipc write-report` (validates automatically)
+- Write history: `fluxid ipc write-history`
 
 **Input**: Feature ID `###-feature-slug` (e.g., `001-todo-main-screen`)
 
@@ -146,12 +146,37 @@ SCHEMA_PATH=$(./.fluxid/scripts/command/files.sh --report-schema)
 - Index clean
 - No branch/tag/remote operations
 
-# Report & Logging
+# Report & Logging - REQUIRED BEFORE EXITING
 
-**Report**: Follow schema exactly
+You MUST write a fluxid report using this exact command format (update values as appropriate):
+
 ```bash
-./.fluxid/scripts/command/validate-report.sh "$REPORT_PATH"
+cat <<'EOF' | fluxid ipc write-report
+command: fluxid.commit-speckit
+artifact: feature-name-here
+timestamp: 2026-01-05T01:00:00Z
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+summary: Brief summary of commit result (e.g., "Commit created successfully with all hooks passing")
+next_steps: []
+EOF
 ```
+
+**Fields to update**:
+- `artifact`: Feature/epic name from spec
+- `timestamp`: Current ISO-8601 timestamp (e.g., `2026-01-05T10:30:00Z`)
+- `status`: **PASS** if commit created and all hooks pass, **FAIL** if hooks fail or no changes
+- `summary`: 1-2 sentence result (e.g., "Commit abc123 created, 15 files changed, all pre-commit hooks passed")
+- `issues`: Document hook failures, unfixable errors, or blockers
+- `next_steps`: List required fixes if status is FAIL (empty array `[]` if PASS)
+
+**Critical**: IPC validates automatically. If it fails, fix the YAML syntax and retry.
+**Do not exit without writing this report** - fluxid depends on it to track workflow state.
 
 **Issue Mapping**:
 - Hook failures → blockers
@@ -169,10 +194,12 @@ If reporting FAIL, must include:
 - Proof that all mandatory phases were completed
 - Specific blocking reason (must match valid stop criteria)
 
-**History**:
+**History**: Write progress and final status using:
 ```bash
-echo "$(date '+%Y-%m-%d %H:%M:%S') - [commit] [feature-id] - [status]: [reason]" >> "$HISTORY_PATH"
+fluxid ipc write-history
 ```
+
+Example entry format: `[commit] [feature-id] - [status]: [reason]`
 
 ---
 

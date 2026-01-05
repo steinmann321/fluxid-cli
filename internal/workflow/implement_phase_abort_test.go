@@ -32,6 +32,7 @@ func TestRunImplementPhase_WithAbort(t *testing.T) {
 		Agent:               "echo",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

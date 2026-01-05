@@ -132,39 +132,48 @@ func (p *Parser) handleEvent(event *Event) {
 	switch event.Event.Type {
 	case "message_start":
 		p.state.textBlockHasContent = false
-
 	case "content_block_start":
-		if event.Event.ContentBlock == nil {
-			return
-		}
-		switch event.Event.ContentBlock.Type {
-		case "text":
-			p.state.inTextBlock = true
-			p.state.textBlockHasContent = false
-		case "tool_use":
-			p.state.inToolBlock = true
-			p.state.currentToolName = event.Event.ContentBlock.Name
-		}
-
+		p.handleContentBlockStart(event)
 	case "content_block_delta":
-		if event.Event.Delta == nil {
-			return
-		}
-		if event.Event.Delta.Type == "text_delta" && event.Event.Delta.Text != "" {
-			p.formatter.WriteTextDelta(event.Event.Delta.Text)
-			p.state.textBlockHasContent = true
-		}
-
+		p.handleContentBlockDelta(event)
 	case "content_block_stop":
-		if p.state.inTextBlock {
-			if p.state.textBlockHasContent {
-				p.formatter.WriteTextBlockEnd()
-			}
-			p.state.inTextBlock = false
-			p.state.textBlockHasContent = false
-		} else if p.state.inToolBlock {
-			p.state.inToolBlock = false
+		p.handleContentBlockStop()
+	}
+}
+
+func (p *Parser) handleContentBlockStart(event *Event) {
+	if event.Event.ContentBlock == nil {
+		return
+	}
+	switch event.Event.ContentBlock.Type {
+	case "text":
+		p.state.inTextBlock = true
+		p.state.textBlockHasContent = false
+	case "tool_use":
+		p.state.inToolBlock = true
+		p.state.currentToolName = event.Event.ContentBlock.Name
+	}
+}
+
+func (p *Parser) handleContentBlockDelta(event *Event) {
+	if event.Event.Delta == nil {
+		return
+	}
+	if event.Event.Delta.Type == "text_delta" && event.Event.Delta.Text != "" {
+		p.formatter.WriteTextDelta(event.Event.Delta.Text)
+		p.state.textBlockHasContent = true
+	}
+}
+
+func (p *Parser) handleContentBlockStop() {
+	if p.state.inTextBlock {
+		if p.state.textBlockHasContent {
+			p.formatter.WriteTextBlockEnd()
 		}
+		p.state.inTextBlock = false
+		p.state.textBlockHasContent = false
+	} else if p.state.inToolBlock {
+		p.state.inToolBlock = false
 	}
 }
 

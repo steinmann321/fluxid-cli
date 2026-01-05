@@ -15,6 +15,7 @@ type Config struct {
 	SessionID           string
 	MaxReviewCycles     int
 	MaxImplementRetries int
+	MaxCommitRetries    int
 	DryRun              bool
 	CommandFiles        *config.ResolvedCommandFiles
 	OutputFormat        output.Format

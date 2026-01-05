@@ -27,6 +27,7 @@ func loadAndResolveConfig() (types.Config, int) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    0,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
@@ -50,7 +51,7 @@ func loadAndResolveConfig() (types.Config, int) {
 	resolved := config.Resolve(
 		projectConfig, homeConfig,
 		args.CLIAgent,
-		args.CLIIterations, args.CLIImplementRetries,
+		args.CLIIterations, args.CLIImplementRetries, nil, // nil for cliCommitRetries - use config/defaults
 	)
 
 	// Resolve and validate command files if configured
@@ -163,6 +164,7 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    0,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
@@ -194,6 +196,7 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		SessionID:           sessionID,
 		MaxReviewCycles:     resolved.Iterations,
 		MaxImplementRetries: resolved.ImplementRetries,
+		MaxCommitRetries:    resolved.CommitRetries,
 		DryRun:              dryRun,
 		CommandFiles:        resolved.CommandFiles,
 		OutputFormat:        outputFormat,

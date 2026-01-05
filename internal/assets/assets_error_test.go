@@ -90,3 +90,208 @@ func TestCopyAssetsToDir_FileExistsWhereDirectoryShouldBe(t *testing.T) {
 		t.Errorf("Error message should mention .fluxid, got: %v", err)
 	}
 }
+
+func TestReplacePlaceholdersBasic(t *testing.T) {
+	t.Parallel()
+
+	content := "path: {{FLUXID_DIR}}/commands"
+	result := replacePlaceholders(content, "/test/path/.fluxid")
+
+	// Verify placeholder was replaced
+	if containsStr(result, "{{FLUXID_DIR}}") {
+		t.Error("Placeholder was not replaced")
+	}
+
+	// Verify result contains the path
+	if !containsStr(result, "/commands") {
+		t.Errorf("Expected path to contain /commands, got: %s", result)
+	}
+}
+
+func TestReplacePlaceholdersMultiple(t *testing.T) {
+	t.Parallel()
+
+	content := `
+implement: {{FLUXID_DIR}}/commands/impl.md
+review: {{FLUXID_DIR}}/commands/review.md
+commit: {{FLUXID_DIR}}/commands/commit.md
+`
+	result := replacePlaceholders(content, "/home/user/.fluxid")
+
+	// Verify all placeholders were replaced
+	if containsStr(result, "{{FLUXID_DIR}}") {
+		t.Error("Some placeholders were not replaced")
+	}
+
+	// Verify all paths are present
+	if !containsStr(result, "/commands/impl.md") {
+		t.Error("impl.md path missing")
+	}
+	if !containsStr(result, "/commands/review.md") {
+		t.Error("review.md path missing")
+	}
+	if !containsStr(result, "/commands/commit.md") {
+		t.Error("commit.md path missing")
+	}
+}
+
+func TestReplacePlaceholdersRelativePath(t *testing.T) {
+	t.Parallel()
+
+	// Test with relative path - should convert to absolute
+	content := "path: {{FLUXID_DIR}}"
+	result := replacePlaceholders(content, ".fluxid")
+
+	// Verify placeholder was replaced
+	if containsStr(result, "{{FLUXID_DIR}}") {
+		t.Error("Placeholder was not replaced")
+	}
+
+	// Result should not be exactly the input
+	if result == content {
+		t.Error("Content was not modified")
+	}
+}
+
+func TestGetDefaultConfigStructure(t *testing.T) {
+	t.Parallel()
+
+	config := GetDefaultConfig()
+
+	// Verify config has expected YAML keys (uncommented ones)
+	expectedKeys := []string{
+		"commands:",
+		"implement:",
+		"review:",
+		"commit:",
+	}
+
+	for _, key := range expectedKeys {
+		if !containsStr(config, key) {
+			t.Errorf("Config missing expected key: %s", key)
+		}
+	}
+
+	// Verify config has expected commented fields
+	commentedFields := []string{
+		"# agent:",
+		"# implement_retries:",
+		"# iterations:",
+	}
+
+	for _, field := range commentedFields {
+		if !containsStr(config, field) {
+			t.Errorf("Config missing expected commented field: %s", field)
+		}
+	}
+}
+
+func TestGetDefaultConfigPlaceholders(t *testing.T) {
+	t.Parallel()
+
+	config := GetDefaultConfig()
+
+	// Verify config contains placeholders
+	if !containsStr(config, "{{FLUXID_DIR}}") {
+		t.Error("Config does not contain {{FLUXID_DIR}} placeholder")
+	}
+
+	// Verify placeholders appear in command paths
+	if !containsStr(config, "{{FLUXID_DIR}}/commands/") {
+		t.Error("Config does not contain command path placeholders")
+	}
+}
+
+func TestCopyAssetsToDir_CommandsCreated(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	counts, err := CopyAssetsToDir(tmpDir)
+	if err != nil {
+		t.Fatalf("CopyAssetsToDir failed: %v", err)
+	}
+
+	// Verify command files were created
+	if counts.Commands == 0 {
+		t.Error("No command files were copied")
+	}
+
+	// Verify commands directory exists
+	commandsDir := filepath.Join(tmpDir, ".fluxid", "commands")
+	if _, err := os.Stat(commandsDir); os.IsNotExist(err) {
+		t.Error("Commands directory was not created")
+	}
+
+	// Verify at least one command file exists
+	entries, err := os.ReadDir(commandsDir)
+	if err != nil {
+		t.Fatalf("Failed to read commands dir: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Error("No command files in commands directory")
+	}
+}
+
+func TestCopyAssetsToDir_TemplatesCreated(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	counts, err := CopyAssetsToDir(tmpDir)
+	if err != nil {
+		t.Fatalf("CopyAssetsToDir failed: %v", err)
+	}
+
+	// Verify template files were created
+	if counts.Templates == 0 {
+		t.Error("No template files were copied")
+	}
+
+	// Verify templates directory exists
+	templatesDir := filepath.Join(tmpDir, ".fluxid", "templates")
+	if _, err := os.Stat(templatesDir); os.IsNotExist(err) {
+		t.Error("Templates directory was not created")
+	}
+
+	// Verify template files exist
+	entries, err := os.ReadDir(templatesDir)
+	if err != nil {
+		t.Fatalf("Failed to read templates dir: %v", err)
+	}
+	if len(entries) == 0 {
+		t.Error("No template files in templates directory")
+	}
+}
+
+func TestCopyAssetsToDir_ConfigYamlCreated(t *testing.T) {
+	t.Parallel()
+
+	tmpDir := t.TempDir()
+
+	_, err := CopyAssetsToDir(tmpDir)
+	if err != nil {
+		t.Fatalf("CopyAssetsToDir failed: %v", err)
+	}
+
+	// Verify config.yaml exists
+	configPath := filepath.Join(tmpDir, ".fluxid", "config.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Error("config.yaml was not created")
+	}
+
+	// Verify config.yaml has content
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Failed to read config.yaml: %v", err)
+	}
+	if len(content) == 0 {
+		t.Error("config.yaml is empty")
+	}
+
+	// Verify placeholders were replaced in config
+	configStr := string(content)
+	if containsStr(configStr, "{{FLUXID_DIR}}") {
+		t.Error("config.yaml still contains unreplaced placeholders")
+	}
+}

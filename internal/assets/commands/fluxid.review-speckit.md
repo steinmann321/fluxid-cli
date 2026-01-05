@@ -12,10 +12,15 @@ Paranoid skeptic and impartial judge. Not a collaborator—you observe, verify, 
 - Feature Specs: `.specify/specs/[###-feature-slug]/` containing `spec.md`, `plan.md`, `tasks.md`
 
 **Input from Previous Workflow Steps**:
-```bash
-REPORT_PATH=$(./.fluxid/scripts/command/files.sh --report)
-HISTORY_PATH=$(./.fluxid/scripts/command/files.sh --history)
-```
+- Read previous report: `fluxid ipc read-report`
+- View history: `fluxid ipc view-history`
+
+**IPC Commands**:
+- Read report: `fluxid ipc read-report`
+- View history: `fluxid ipc view-history`
+- Get report schema: `fluxid ipc get-report-schema`
+- Write report: `fluxid ipc write-report` (validates automatically)
+- Write history: `fluxid ipc write-history`
 
 **Review Scope**:
 Reviews ONLY newly completed tasks (delta between current and last committed `tasks.md`). Review current codebase state.
@@ -114,33 +119,46 @@ Reviews ONLY newly completed tasks (delta between current and last committed `ta
 
 **Verdict**: All YES = `PASS`, Any NO = `FAIL`
 
-## 6. Report Generation
+## 6. Report Generation - REQUIRED BEFORE EXITING
 
-**Report File**:
+You MUST write a fluxid report using this exact command format (update values as appropriate):
+
 ```bash
-REPORT_PATH=$(./.fluxid/scripts/command/files.sh --report)
+cat <<'EOF' | fluxid ipc write-report
+command: fluxid.review-speckit
+artifact: feature-name-here
+timestamp: 2026-01-05T01:00:00Z
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+summary: Brief summary of review verdict and key findings
+next_steps: []
+EOF
 ```
 
-**Schema**:
+**Fields to update**:
+- `artifact`: Feature/epic name from spec
+- `timestamp`: Current ISO-8601 timestamp (e.g., `2026-01-05T10:30:00Z`)
+- `status`: **PASS** if all gates pass (constitution, tests, quality), **FAIL** if any gate fails
+- `summary`: 1-2 sentence verdict (e.g., "All 5 constitution principles satisfied, 20/20 tests pass, no blockers")
+- `issues`: Document any blockers, defects, concerns found during review
+- `next_steps`: List required fixes if status is FAIL (empty array `[]` if PASS)
+
+**Critical**: IPC validates automatically. If it fails, fix the YAML syntax and retry.
+**Do not exit without writing this report** - fluxid depends on it to track workflow state.
+
+## 7. History Logging
+
+**Write to history**:
 ```bash
-SCHEMA_PATH=$(./.fluxid/scripts/command/files.sh --report-schema)
+fluxid ipc write-history
 ```
 
-## 7. Report Validation (MANDATORY)
-
-**What to validate**:
-```bash
-REPORT_PATH=$(./.fluxid/scripts/command/files.sh --report)
-./.fluxid/scripts/command/validate-report.sh "$REPORT_PATH"
-```
-
-## 8. History Logging
-
-**What to log**:
-```bash
-HISTORY_PATH=$(./.fluxid/scripts/command/files.sh --history)
-echo "[timestamp] | [feature-id] | REVIEW | [status] | [reason]" >> "$HISTORY_PATH"
-```
+Entry format: `[feature-id] | REVIEW | [status] | [reason]`
 
 # Principles
 

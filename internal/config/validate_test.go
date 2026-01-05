@@ -260,6 +260,7 @@ func TestResolve(t *testing.T) {
 				nil,
 				testCase.cliIterations,
 				testCase.cliImplementRetries,
+				nil, // cliCommitRetries - use config/defaults
 			)
 
 			if result.Agent != testCase.wantAgent {

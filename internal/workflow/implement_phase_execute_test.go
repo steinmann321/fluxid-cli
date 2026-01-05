@@ -24,6 +24,7 @@ func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,

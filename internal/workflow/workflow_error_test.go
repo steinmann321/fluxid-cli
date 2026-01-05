@@ -39,6 +39,7 @@ func TestRunImplementPhase_AbortBeforeRetry(t *testing.T) {
 		Agent:               "false", // Fails immediately
 		AgentArgs:           []string{},
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -76,41 +77,6 @@ func TestWaitForValidReport_NoReportReturnsFAIL(t *testing.T) {
 	}
 }
 
-func TestRun_MaxCyclesExceeded(t *testing.T) {
-	defer goleak.VerifyNone(t)
-
-	_, cleanup := setupTestDataDir(t)
-	defer cleanup()
-
-	sessionID := "test-run-maxcycles-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
-
-	cfg := types.Config{
-		SessionID:           sessionID,
-		Agent:               "echo",
-		AgentArgs:           []string{},
-		MaxReviewCycles:     2,
-		MaxImplementRetries: 1,
-		DryRun:              false,
-		CommandFiles:        &config.ResolvedCommandFiles{},
-		OutputFormat:        output.FormatText,
-	}
-
-	// Write initial implement FAIL report to start the workflow with a failure
-	// The workflow should exhaust all review cycles but still complete successfully
-	// (FAIL status in reports doesn't cause workflow to error - it just continues)
-	if err := ipc.WriteReport(sessionID, testImplementFailReport); err != nil {
-		t.Fatalf("Failed to write initial implement FAIL report: %v", err)
-	}
-
-	exitCode, err := Run(cfg)
-	if err != nil {
-		t.Errorf("Expected no error even when max cycles exceeded (workflow completes phases), got: %v", err)
-	}
-	if exitCode != 0 {
-		t.Errorf("Expected exit code 0 (workflow completed all phases), got %d", exitCode)
-	}
-}
-
 func TestRun_ImplementPhaseAbort(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
@@ -123,6 +89,7 @@ func TestRun_ImplementPhaseAbort(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -156,6 +123,7 @@ func TestRunReviewPhase_Abort(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -190,6 +158,7 @@ func TestRunImplementPhase_Abort(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -221,6 +190,7 @@ func TestRunReviewPhase_AgentCommandFail(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,

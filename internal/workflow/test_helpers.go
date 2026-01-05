@@ -87,21 +87,6 @@ next_steps:
   - Complete
 `
 
-const testFailReport = `command: test-command
-artifact: test-artifact
-timestamp: 2025-12-13T10:00:00Z
-status: FAIL
-summary: Test failed
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-next_steps:
-  - Retry
-`
-
 // Phase-specific test report templates for implement, commit, and review phases.
 // These templates ensure tests properly validate phase-specific report handling.
 //
@@ -121,21 +106,6 @@ next_steps:
   - Continue to commit phase
 `
 
-const testImplementFailReport = `command: fluxid.implement
-artifact: test-artifact
-timestamp: 2025-12-13T10:00:00Z
-status: FAIL
-summary: Implement phase failed
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-next_steps:
-  - Retry implement phase
-`
-
 // #nosec G101 -- False positive: test data, not credentials
 const testCommitPassReport = `command: fluxid.commit
 artifact: test-artifact
@@ -150,4 +120,19 @@ issues:
   enhancements: []
 next_steps:
   - Continue to review phase
+`
+
+const testCommitFailReport = `command: fluxid.commit
+artifact: test-artifact
+timestamp: 2025-12-13T10:00:00Z
+status: FAIL
+summary: Commit phase failed
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+next_steps:
+  - Retry commit phase
 `

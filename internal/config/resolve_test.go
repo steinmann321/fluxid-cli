@@ -10,7 +10,7 @@ func TestResolveWithAllCLIOverrides(t *testing.T) {
 	iterations := 30
 	retries := 10
 
-	resolved := Resolve(nil, nil, nil, &iterations, &retries)
+	resolved := Resolve(nil, nil, nil, &iterations, &retries, nil)
 
 	if resolved.Iterations != 30 {
 		t.Errorf("Expected Iterations=30, got %d", resolved.Iterations)
@@ -28,6 +28,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 		Agent:            strPtr("home-agent"),
 		Iterations:       intPtr(10),
 		ImplementRetries: intPtr(5),
+		CommitRetries:    nil,
 		Commands:         nil,
 	}
 
@@ -35,12 +36,13 @@ func TestResolveWithMixedSources(t *testing.T) {
 		Agent:            nil,
 		Iterations:       intPtr(20),
 		ImplementRetries: nil,
+		CommitRetries:    nil,
 		Commands:         nil,
 	}
 
 	cliIterations := 30
 
-	resolved := Resolve(project, home, nil, &cliIterations, nil)
+	resolved := Resolve(project, home, nil, &cliIterations, nil, nil)
 
 	if resolved.Agent != "home-agent" {
 		t.Errorf("Expected Agent=home-agent, got %s", resolved.Agent)
@@ -58,7 +60,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 func TestResolveDefaultValues(t *testing.T) {
 	t.Parallel()
 
-	resolved := Resolve(nil, nil, nil, nil, nil)
+	resolved := Resolve(nil, nil, nil, nil, nil, nil)
 
 	if resolved.Agent != "claude" {
 		t.Errorf("Expected Agent=claude (default), got %s", resolved.Agent)
@@ -71,6 +73,10 @@ func TestResolveDefaultValues(t *testing.T) {
 	if resolved.ImplementRetries != 3 {
 		t.Errorf("Expected ImplementRetries=3 (default), got %d", resolved.ImplementRetries)
 	}
+
+	if resolved.CommitRetries != 100 {
+		t.Errorf("Expected CommitRetries=100 (default), got %d", resolved.CommitRetries)
+	}
 }
 
 func TestResolveProjectOverridesHome(t *testing.T) {
@@ -80,6 +86,7 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 		Agent:            strPtr("home-agent"),
 		Iterations:       intPtr(10),
 		ImplementRetries: intPtr(5),
+		CommitRetries:    nil,
 		Commands:         nil,
 	}
 
@@ -87,10 +94,11 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 		Agent:            strPtr("opencode"),
 		Iterations:       intPtr(15),
 		ImplementRetries: intPtr(7),
+		CommitRetries:    nil,
 		Commands:         nil,
 	}
 
-	resolved := Resolve(project, home, nil, nil, nil)
+	resolved := Resolve(project, home, nil, nil, nil, nil)
 
 	if resolved.Agent != "opencode" {
 		t.Errorf("Expected Agent=opencode, got %s", resolved.Agent)

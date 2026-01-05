@@ -24,6 +24,7 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -59,6 +60,7 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -112,6 +114,7 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

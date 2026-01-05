@@ -106,6 +106,7 @@ func TestPrintJSON(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     5,
 		MaxImplementRetries: 2,
+		MaxCommitRetries:    100,
 		TaskFile:            "",
 	}
 
@@ -150,6 +151,7 @@ func TestPrintYAML(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     5,
 		MaxImplementRetries: 2,
+		MaxCommitRetries:    100,
 		TaskFile:            "",
 	}
 
@@ -188,6 +190,7 @@ func TestPrintJSONToWriter_Success(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		TaskFile:            "/path/to/task.txt",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
@@ -218,6 +221,7 @@ func TestPrintJSONToWriter_Error(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    100,
 		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
@@ -241,6 +245,7 @@ func TestPrintYAMLToWriter_Success(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		TaskFile:            "/path/to/task.txt",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
@@ -271,6 +276,7 @@ func TestPrintYAMLToWriter_Error(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    100,
 		TaskFile:            "",
 		CommandFiles:        nil,
 		AgentArgs:           nil,
@@ -294,6 +300,7 @@ func TestPrintTextToWriter_WithCommandFiles(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		TaskFile:            "",
 		CommandFiles: &CommandFilesJSON{
 			Implement: "/path/to/implement.md",
@@ -334,6 +341,7 @@ func TestPrintTextToWriter_WithoutCommandFiles(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     10,
 		MaxImplementRetries: 3,
+		MaxCommitRetries:    100,
 		TaskFile:            "/path/to/task.txt",
 		CommandFiles:        nil,
 		AgentArgs:           nil,

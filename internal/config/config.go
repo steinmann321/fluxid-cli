@@ -24,6 +24,7 @@ type Commands struct {
 type HomeConfig struct {
 	Agent            *string   `yaml:"agent"`
 	ImplementRetries *int      `yaml:"implement_retries"`
+	CommitRetries    *int      `yaml:"commit_retries"`
 	Iterations       *int      `yaml:"iterations"`
 	Commands         *Commands `yaml:"commands"`
 }
@@ -33,6 +34,7 @@ type HomeConfig struct {
 type ProjectConfig struct {
 	Agent            *string   `yaml:"agent"`
 	ImplementRetries *int      `yaml:"implement_retries"`
+	CommitRetries    *int      `yaml:"commit_retries"`
 	Iterations       *int      `yaml:"iterations"`
 	Commands         *Commands `yaml:"commands"`
 }
@@ -48,6 +50,7 @@ type ResolvedCommandFiles struct {
 type ResolvedConfig struct {
 	Agent            string
 	ImplementRetries int
+	CommitRetries    int
 	Iterations       int
 	CommandFiles     *ResolvedCommandFiles
 }
@@ -56,6 +59,7 @@ type ResolvedConfig struct {
 const (
 	DefaultAgent            = "claude"
 	DefaultImplementRetries = 3
+	DefaultCommitRetries    = 100
 	DefaultIterations       = 20
 )
 
@@ -181,6 +185,7 @@ func LoadDefaultConfig() (*ProjectConfig, *HomeConfig, error) {
 type CustomConfig struct {
 	Agent            *string   `yaml:"agent"`
 	ImplementRetries *int      `yaml:"implement_retries"`
+	CommitRetries    *int      `yaml:"commit_retries"`
 	Iterations       *int      `yaml:"iterations"`
 	Commands         *Commands `yaml:"commands"`
 }
@@ -227,6 +232,10 @@ func validateCustomConfig(cfg *CustomConfig) error {
 		return fmt.Errorf("got %d: %w", *cfg.ImplementRetries, errValidationImplementRetries)
 	}
 
+	if cfg.CommitRetries != nil && *cfg.CommitRetries < 1 {
+		return fmt.Errorf("got %d: %w", *cfg.CommitRetries, errValidationCommitRetries)
+	}
+
 	if cfg.Iterations != nil && *cfg.Iterations < 1 {
 		return fmt.Errorf("got %d: %w", *cfg.Iterations, errValidationIterations)
 	}
@@ -245,7 +254,7 @@ func validateCustomConfig(cfg *CustomConfig) error {
 	return nil
 }
 
-//nolint:ireturn // Generic function intentionally returns interface type
+//nolint:ireturn // Generic function correctly returns type parameter T
 func resolveField[T any](
 	cliValue *T,
 	projectValue *T,
@@ -271,18 +280,20 @@ func Resolve(
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
 	cliAgent *string,
-	cliIterations, cliImplementRetries *int,
+	cliIterations, cliImplementRetries, cliCommitRetries *int,
 ) *ResolvedConfig {
 	resolved := &ResolvedConfig{
 		Agent:            DefaultAgent,
 		ImplementRetries: DefaultImplementRetries,
+		CommitRetries:    DefaultCommitRetries,
 		Iterations:       DefaultIterations,
 		CommandFiles:     nil,
 	}
 
 	// Extract all config values
 	agentValues := extractAgentValues(projectConfig, homeConfig)
-	retriesValues := extractRetriesValues(projectConfig, homeConfig)
+	implementRetriesValues := extractImplementRetriesValues(projectConfig, homeConfig)
+	commitRetriesValues := extractCommitRetriesValues(projectConfig, homeConfig)
 	iterationsValues := extractIterationsValues(projectConfig, homeConfig)
 
 	// Resolve each field using the helper
@@ -290,7 +301,10 @@ func Resolve(
 		cliAgent, agentValues.project, agentValues.home, DefaultAgent,
 	)
 	resolved.ImplementRetries = resolveField(
-		cliImplementRetries, retriesValues.project, retriesValues.home, DefaultImplementRetries,
+		cliImplementRetries, implementRetriesValues.project, implementRetriesValues.home, DefaultImplementRetries,
+	)
+	resolved.CommitRetries = resolveField(
+		cliCommitRetries, commitRetriesValues.project, commitRetriesValues.home, DefaultCommitRetries,
 	)
 	resolved.Iterations = resolveField(
 		cliIterations, iterationsValues.project, iterationsValues.home, DefaultIterations,
@@ -318,7 +332,7 @@ func extractAgentValues(
 	return values
 }
 
-func extractRetriesValues(
+func extractImplementRetriesValues(
 	projectConfig *ProjectConfig,
 	homeConfig *HomeConfig,
 ) configValues[int] {
@@ -328,6 +342,20 @@ func extractRetriesValues(
 	}
 	if homeConfig != nil {
 		values.home = homeConfig.ImplementRetries
+	}
+	return values
+}
+
+func extractCommitRetriesValues(
+	projectConfig *ProjectConfig,
+	homeConfig *HomeConfig,
+) configValues[int] {
+	var values configValues[int]
+	if projectConfig != nil {
+		values.project = projectConfig.CommitRetries
+	}
+	if homeConfig != nil {
+		values.home = homeConfig.CommitRetries
 	}
 	return values
 }

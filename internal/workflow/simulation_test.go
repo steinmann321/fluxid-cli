@@ -11,8 +11,6 @@ import (
 	"testing"
 )
 
-const builtInPrompt = "built-in prompt"
-
 func TestRunSimulation(t *testing.T) {
 	// Capture log output
 	var buf bytes.Buffer
@@ -25,6 +23,7 @@ func TestRunSimulation(t *testing.T) {
 		Agent:               "claude",
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 2,
+		MaxCommitRetries:    100,
 		DryRun:              true,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -69,6 +68,7 @@ func TestGetCommandFilePath_NoCommandFiles(t *testing.T) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
@@ -88,6 +88,7 @@ func TestGetCommandFilePath_WithCommandFiles(t *testing.T) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "/path/to/implement.md",
@@ -125,6 +126,7 @@ func TestGetCommandFilePath_PartialCommandFiles(t *testing.T) {
 		SessionID:           "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles: &config.ResolvedCommandFiles{
 			ImplementPath: "/path/to/implement.md",

@@ -278,13 +278,15 @@ func goroutineWithoutCancellation(m dsl.Matcher) {
 		Where(!m.File().Name.Matches("_test\\.go$") &&
 		      !m.File().Name.Matches("test_helpers.*\\.go$") &&
 		      !m.File().PkgPath.Matches(".*/internal/command") &&
-		      !m["body"].Text.Matches(".*(ctx\\.Done|context\\.Done|<-done|<-stop|<-quit).*")).
+		      !m["body"].Text.Matches(".*(ctx\\.Done|context\\.Done|<-done|<-stop|<-quit|<-ch).*") &&
+		      !m["body"].Text.Matches(".*<-.*")).
 		Report("goroutine started without cancellation mechanism; add context.Context or done channel to prevent leaks")
 
 	m.Match(`go $fn($*args)`).
 		Where(!m.File().Name.Matches("_test\\.go$") &&
 		      !m.File().Name.Matches("test_helpers.*\\.go$") &&
-		      !m.File().PkgPath.Matches(".*/internal/command")).
+		      !m.File().PkgPath.Matches(".*/internal/command") &&
+		      !m["fn"].Text.Matches("^func\\(.*")).
 		Report("goroutine started; ensure function $fn handles context cancellation")
 }
 

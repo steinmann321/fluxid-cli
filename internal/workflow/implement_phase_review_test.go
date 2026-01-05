@@ -24,6 +24,7 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -58,6 +59,7 @@ func TestRunReviewPhase_Success(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
+		MaxCommitRetries:    100,
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

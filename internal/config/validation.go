@@ -12,6 +12,7 @@ var (
 	errValidationAgentEmpty       = errors.New("agent cannot be empty")
 	errAgentUnsupported           = errors.New("unsupported agent")
 	errValidationImplementRetries = errors.New("implement_retries must be a positive integer (≥1)")
+	errValidationCommitRetries    = errors.New("commit_retries must be a positive integer (≥1)")
 	errValidationIterations       = errors.New("iterations must be a positive integer (≥1)")
 	errCommandImplementRequired   = errors.New("commands.implement is required when commands are specified")
 	errCommandReviewRequired      = errors.New("commands.review is required when commands are specified")
@@ -45,6 +46,10 @@ func validateHomeConfig(cfg *HomeConfig) error {
 		return fmt.Errorf("got %d: %w", *cfg.ImplementRetries, errValidationImplementRetries)
 	}
 
+	if cfg.CommitRetries != nil && *cfg.CommitRetries < 1 {
+		return fmt.Errorf("got %d: %w", *cfg.CommitRetries, errValidationCommitRetries)
+	}
+
 	if cfg.Iterations != nil && *cfg.Iterations < 1 {
 		return fmt.Errorf("got %d: %w", *cfg.Iterations, errValidationIterations)
 	}
@@ -67,6 +72,10 @@ func validateHomeConfig(cfg *HomeConfig) error {
 func validateProjectConfig(cfg *ProjectConfig) error {
 	if cfg.ImplementRetries != nil && *cfg.ImplementRetries < 1 {
 		return fmt.Errorf("got %d: %w", *cfg.ImplementRetries, errValidationImplementRetries)
+	}
+
+	if cfg.CommitRetries != nil && *cfg.CommitRetries < 1 {
+		return fmt.Errorf("got %d: %w", *cfg.CommitRetries, errValidationCommitRetries)
 	}
 
 	if cfg.Iterations != nil && *cfg.Iterations < 1 {
