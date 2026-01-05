@@ -21,8 +21,8 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	if counts.Commands != 9 {
 		t.Errorf("Expected 9 command files, got %d", counts.Commands)
 	}
-	if counts.Templates != 2 {
-		t.Errorf("Expected 2 template files, got %d", counts.Templates)
+	if counts.Templates != 3 {
+		t.Errorf("Expected 3 template files, got %d", counts.Templates)
 	}
 
 	// Verify structure created
@@ -66,8 +66,8 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read templates dir: %v", err)
 	}
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 template files, got %d", len(entries))
+	if len(entries) != 3 {
+		t.Errorf("Expected 3 template files, got %d", len(entries))
 	}
 
 	// Verify specific template files exist
@@ -79,6 +79,11 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	reportExample := filepath.Join(templatesDir, "report-example.yaml")
 	if _, err := os.Stat(reportExample); os.IsNotExist(err) {
 		t.Error("report-example.yaml not created")
+	}
+
+	historySchema := filepath.Join(templatesDir, "history-schema.yaml")
+	if _, err := os.Stat(historySchema); os.IsNotExist(err) {
+		t.Error("history-schema.yaml not created")
 	}
 }
 
@@ -130,7 +135,7 @@ func TestCopyAssetsToDir_FileContents(t *testing.T) {
 
 	// Verify template files have content
 	templatesDir := filepath.Join(tmpDir, ".fluxid", "templates")
-	templateFiles := []string{"report-schema.yaml", "report-example.yaml"}
+	templateFiles := []string{"report-schema.yaml", "report-example.yaml", "history-schema.yaml"}
 
 	for _, file := range templateFiles {
 		path := filepath.Join(templatesDir, file)

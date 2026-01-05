@@ -5,7 +5,7 @@ description: "Tasks for Report & History File-Based Interface Refactor"
 # Tasks: Report & History File-Based Interface
 
 **Input**: Design documents from `/specs/001-report-history-refactor/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, quickstart.md (schemas at internal/assets/templates/)
 
 **Tests**: Test-Driven Development enforced per Constitution I. Each implementation task has corresponding test task to be written first (Red-Green-Refactor cycle).
 
@@ -31,10 +31,10 @@ Go CLI project structure:
 
 **Purpose**: Create foundational storage package and schema infrastructure
 
-- [ ] T001 Create directory structure `internal/storage/` and `internal/assets/schemas/`
-- [ ] T002 [P] Create JSON Schema file for report in `internal/assets/schemas/report.json` using content from contracts/report-schema.json
-- [ ] T003 [P] Create JSON Schema file for history in `internal/assets/schemas/history.json` using content from contracts/history-schema.json
-- [ ] T004 Add `github.com/xeipuuv/gojsonschema` dependency via `go get`
+- [ ] T001 Create directory structure `internal/storage/` and `internal/assets/templates/`
+- [ ] T002 [P] Verify existing JSON Schema file for report in `internal/assets/templates/report-schema.yaml` includes: all required fields (command, artifact, timestamp, status, issues), all optional fields (next_steps, summary), type constraints, enum values, and additionalProperties:false per FR-026, FR-027, FR-028. File already exists - validate completeness only.
+- [ ] T003 [P] Verify existing JSON Schema file for history in `internal/assets/templates/history-schema.yaml` includes: array type, required fields (timestamp, step, status, summary), optional field (details), enum values, and additionalProperties:false per FR-029, FR-030, FR-031, FR-032. File already exists - validate completeness only.
+- [ ] T004 Add JSON Schema validator dependency via `go get github.com/xeipuuv/gojsonschema` (validates YAML files against JSON Schema draft-07, ensures 100% schema compatibility including additionalProperties enforcement per D-002)
 
 ---
 
@@ -53,12 +53,13 @@ Go CLI project structure:
 
 **Step 2: Implement to Pass Tests (GREEN)**
 
-- [ ] T009 Implement schema embedding and retrieval in `internal/storage/schema.go` (embed report.json and history.json, provide GetReportSchema() and GetHistorySchema() functions)
+- [ ] T009 Implement schema embedding and retrieval in `internal/storage/schema.go` (embed report-schema.yaml and history-schema.yaml from internal/assets/templates/, provide GetReportSchema() and GetHistorySchema() functions)
 - [ ] T010 [P] Implement YAML security validator in `internal/storage/security.go` (reject anchors &, aliases *, merge keys <<)
 - [ ] T011 [P] Implement session path validator in `internal/storage/paths.go` (validate UUID format, prevent path traversal, ensure within session root, use os.TempDir() for cross-platform temp directory)
 - [ ] T012 Implement report file reader in `internal/storage/report.go` with ReadReport(sessionID string) function that reads and parses existing report file at session-specific path
-- [ ] T013 Implement history file reader in `internal/storage/history.go` with ReadHistory(sessionID string) function including FIFO eviction logic (removes oldest 30% of complete entries by count when file >10MB)
-- [ ] T014 Implement JSON Schema validator in `internal/storage/validate.go` with ValidateReport(filePath string) and ValidateHistory(filePath string) functions that validate existing files on disk
+- [ ] T013 Implement history file reader in `internal/storage/history.go` with ReadHistory(sessionID string) function including FIFO eviction logic (removes oldest 30% of complete entries by count using ceiling function for minimum 1 entry removal when file >10MB, per FR-024)
+- [ ] T014 Implement JSON Schema validator in `internal/storage/validate.go` with ValidateReport(filePath string) and ValidateHistory(filePath string) functions that validate existing YAML files against JSON Schema (ensures 100% schema compatibility including additionalProperties:false checks). Implement error formatting per FR-004a with format "[field_path]: [violation] (expected: [constraint], got: [value])" and exit codes per FR-004b (0=success, 1=validation failure, 2=operational failure including schema load failure per FR-025a)
+- [ ] T014a [P] Implement observability in all command handlers per FR-041, FR-042, FR-043: errors to stderr with sufficient context (file paths, field paths, constraint details, session IDs), silent success (no stderr output on success), stdout reserved for data output only
 
 **Checkpoint**: Foundation ready with full E2E test coverage - user story implementation can now begin in parallel
 
@@ -100,7 +101,7 @@ Go CLI project structure:
 **Step 2: Implement to Pass Tests (GREEN)**
 
 - [ ] T023 [P] [US2] Implement `--validate` flag handler in `internal/command/report.go` (resolve session path, read existing file, call storage.ValidateReport(filePath), format errors with field paths)
-- [ ] T024 [US2] Implement error formatter in `internal/storage/validate.go` to convert JSON Schema errors to instructive messages with format "[field_path]: [violation] (expected: [constraint], got: [value])"
+- [ ] T024 [US2] Implement error formatter in `internal/storage/validate.go` to convert JSON Schema validation errors to instructive messages with format "[field_path]: [violation] (expected: [constraint], got: [value])" per FR-004a, with exit codes per FR-004b (0=success, 1=validation failure, 2=operational failure)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - agents can write and validate report files
 
@@ -110,15 +111,15 @@ Go CLI project structure:
 
 **Goal**: Enable agents to programmatically discover report file structure without hardcoding
 
-**Independent Test**: Agent runs `fluxid report --get-schema`, parses JSON Schema output, verifies all required fields documented
+**Independent Test**: Agent runs `fluxid report --get-schema`, parses YAML schema output, verifies all required fields documented
 
 **Step 1: Write Failing E2E Test (RED)**
 
-- [ ] T025 [US3] Add E2E test in `e2e-tests/tests/report_schema_test.go` for schema retrieval (valid JSON output, parseable as JSON Schema Draft 7, all required fields present)
+- [ ] T025 [US3] Add E2E test in `e2e-tests/tests/report_schema_test.go` for schema retrieval (valid YAML output, parseable as YAML schema, all required fields present)
 
 **Step 2: Implement to Pass Test (GREEN)**
 
-- [ ] T026 [P] [US3] Implement `--get-schema` flag handler in `internal/command/report.go` (call storage.GetReportSchema(), output JSON to stdout)
+- [ ] T026 [P] [US3] Implement `--get-schema` flag handler in `internal/command/report.go` (call storage.GetReportSchema(), output YAML schema to stdout)
 
 **Checkpoint**: All P1/P2 report functionality complete - agents have full self-service report capabilities
 
@@ -151,15 +152,15 @@ Go CLI project structure:
 
 **Goal**: Support agent autonomy for history recording by providing schema programmatically
 
-**Independent Test**: Agent runs `fluxid history --get-schema`, parses JSON Schema, verifies required fields documented
+**Independent Test**: Agent runs `fluxid history --get-schema`, parses YAML schema, verifies required fields documented
 
 **Step 1: Write Failing E2E Test (RED)**
 
-- [ ] T034 [US5] Add E2E test in `e2e-tests/tests/history_schema_test.go` for schema retrieval (valid JSON output, parseable as JSON Schema Draft 7, required fields present)
+- [ ] T034 [US5] Add E2E test in `e2e-tests/tests/history_schema_test.go` for schema retrieval (valid YAML output, parseable as YAML schema, required fields present)
 
 **Step 2: Implement to Pass Test (GREEN)**
 
-- [ ] T035 [P] [US5] Implement `--get-schema` flag handler in `internal/command/history.go` (call storage.GetHistorySchema(), output JSON to stdout)
+- [ ] T035 [P] [US5] Implement `--get-schema` flag handler in `internal/command/history.go` (call storage.GetHistorySchema(), output YAML schema to stdout)
 
 **Checkpoint**: All history functionality complete - agents have full self-service history capabilities
 
@@ -188,12 +189,12 @@ Go CLI project structure:
 
 **⚠️ CRITICAL**: Only proceed after ALL previous phases complete and ALL E2E tests pass
 
-- [ ] T038 Remove IPC command files: `internal/command/ipc.go`, `internal/command/ipc_handlers.go`, `internal/command/ipc_abort.go`, `internal/command/ipc_history.go`
-- [ ] T039 Remove IPC storage package: `internal/ipc/storage.go`, `internal/ipc/schema.yaml`, and entire `internal/ipc/` directory (verify exact file count before removal per plan.md)
-- [ ] T040 Remove IPC E2E tests: `e2e-tests/tests/m03_e05_*.go` (abort test), `e2e-tests/tests/m04_e0*_*.go` (history IPC tests - 6 files total per spec.md)
+- [ ] T038 Remove IPC command files if present in main branch: `internal/command/ipc.go`, `internal/command/ipc_handlers.go`, `internal/command/ipc_abort.go`, `internal/command/ipc_history.go` (verify existence before removal)
+- [ ] T039 Remove IPC storage package if present in main branch: `internal/ipc/storage.go`, `internal/ipc/schema.yaml`, and entire `internal/ipc/` directory (verify existence and exact file count before removal)
+- [ ] T040 Remove IPC E2E tests if present in main branch: verify and document actual E2E test files for IPC functionality before removal (feature branch may not have IPC tests yet)
 - [ ] T041 [P] Update `internal/command/root_signal.go` to remove abort flag integration if present
 - [ ] T042 [P] Update `internal/command/root_config_loader.go` to remove IPC-specific session handling if present
-- [ ] T043 Verify breaking change complete: `grep -r "ipc" internal/command internal/storage` returns 0 matches, E2E test count reduced by exactly 7 tests (1 from M03, 6 from M04), and `go build` succeeds
+- [ ] T043 Verify breaking change complete: `grep -r "ipc" internal/command internal/storage` returns 0 matches, and `go build` succeeds
 - [ ] T044 Run full E2E test suite and verify all tests pass with new file-based interface
 
 **Checkpoint**: Breaking change complete - old IPC system fully removed, new file-based system proven
@@ -248,7 +249,7 @@ Go CLI project structure:
 ### Parallel Opportunities
 
 - **Phase 1 (Setup)**: T002 [P] and T003 [P] can run in parallel (different schema files)
-- **Phase 2 (Foundational)**: T006 [P] and T007 [P] can run in parallel (independent utilities)
+- **Phase 2 (Foundational)**: T005 [P], T006 [P], T007 [P], T008 [P] can run in parallel (independent E2E tests), then T010 [P], T011 [P], T014a [P] can run in parallel (independent utilities)
 - **Phase 3 (US1)**: T011 [P] and T012 [P] can run in parallel initially (same file but different functions)
 - **Phase 4 (US2)**: T017 [P] can be worked on independently (extends report command)
 - **Phase 5 (US3)**: T020 [P] can be worked on independently (extends report command)
@@ -264,9 +265,16 @@ Go CLI project structure:
 ## Parallel Example: Foundation Phase
 
 ```bash
-# Launch independent foundation components in parallel:
-Task T006: "YAML security validator in internal/storage/security.go"
-Task T007: "Session path validator in internal/storage/paths.go"
+# Launch independent foundation E2E tests in parallel (RED phase):
+Task T005: "E2E test for storage.ReadReport() scenarios"
+Task T006: "E2E test for storage.ReadHistory() with FIFO eviction"
+Task T007: "E2E test for YAML security validator"
+Task T008: "E2E test for session path validator"
+
+# Then launch independent implementations in parallel (GREEN phase):
+Task T010: "YAML security validator in internal/storage/security.go"
+Task T011: "Session path validator in internal/storage/paths.go"
+Task T014a: "Observability implementation in command handlers"
 # These have no dependencies on each other and work on different files
 ```
 
@@ -290,9 +298,9 @@ Task T029-T030: "User Story 5 - Agent retrieves history schema"
 
 ### MVP First (User Story 1 Only)
 
-1. Complete Phase 1: Setup (4 tasks)
-2. Complete Phase 2: Foundational (6 tasks - CRITICAL)
-3. Complete Phase 3: User Story 1 (6 tasks)
+1. Complete Phase 1: Setup (4 tasks: T001-T004)
+2. Complete Phase 2: Foundational (11 tasks: T005-T014a - CRITICAL)
+3. Complete Phase 3: User Story 1 (6 tasks: T015-T020)
 4. **STOP and VALIDATE**: Test US1 independently with E2E test
 5. Verify agents can write reports and fluxid processes them
 
@@ -311,7 +319,7 @@ Task T029-T030: "User Story 5 - Agent retrieves history schema"
 
 With multiple developers:
 
-1. Team completes Setup + Foundational together (10 tasks)
+1. Team completes Setup + Foundational together (15 tasks: T001-T014a)
 2. Once Foundational is done:
    - **Developer A**: Report track (US1 → US2 → US3)
    - **Developer B**: History track (US4 → US5)
@@ -337,9 +345,9 @@ With multiple developers:
 
 ## Task Summary
 
-**Total Tasks**: 49 (T001-T049)
+**Total Tasks**: 50 (T001-T049 + T014a)
 - Phase 1 (Setup): 4 tasks (T001-T004)
-- Phase 2 (Foundational - TDD): 10 tasks (4 E2E tests first [T005-T008], then 6 implementations [T009-T014]) ⚠️ BLOCKS ALL USER STORIES
+- Phase 2 (Foundational - TDD): 11 tasks (4 E2E tests first [T005-T008], then 7 implementations [T009-T014a]) ⚠️ BLOCKS ALL USER STORIES
 - Phase 3 (US1 - P1 - TDD): 6 tasks (1 E2E test [T015], then 5 implementations [T016-T020]) 🎯 MVP
 - Phase 4 (US2 - P1 - TDD): 4 tasks (2 E2E tests [T021-T022], then 2 implementations [T023-T024])
 - Phase 5 (US3 - P2 - TDD): 2 tasks (1 E2E test [T025], then 1 implementation [T026])
@@ -351,7 +359,7 @@ With multiple developers:
 
 **TDD Compliance**: ✅ ALL phases now follow Red-Green-Refactor cycle with E2E tests written BEFORE implementation
 
-**Parallel Opportunities**: 19 tasks marked [P] can run in parallel within their phase
+**Parallel Opportunities**: 20 tasks marked [P] can run in parallel within their phase (T002, T003, T005, T006, T007, T008, T010, T011, T014a, T016, T017, T020, T022, T023, T024, T029, T030, T031, T036, T037, T040, T041)
 
 **Independent Test Criteria**:
 - US1: Agent writes report file → fluxid reads → workflow proceeds
@@ -361,7 +369,7 @@ With multiple developers:
 - US5: Agent retrieves history schema → parses successfully
 - US6: Developer validates files → receives actionable errors
 
-**MVP Scope (Recommended)**: Phase 1 + Phase 2 + Phase 3 (20 tasks: T001-T020) delivers core agent-to-fluxid report communication with full TDD E2E coverage
+**MVP Scope (Recommended)**: Phase 1 + Phase 2 + Phase 3 (21 tasks: T001-T020 + T014a) delivers core agent-to-fluxid report communication with full TDD E2E coverage
 
 **Format Validation**: ✅ ALL tasks follow required checklist format: `- [ ] [ID] [P?] [Story?] Description with file paths`
 

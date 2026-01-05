@@ -450,8 +450,8 @@ print("Report data is valid!")
 ## Next Steps
 
 - Review [data-model.md](./data-model.md) for detailed structure documentation
-- Review [contracts/report-schema.json](./contracts/report-schema.json) for full JSON Schema
-- Review [contracts/history-schema.json](./contracts/history-schema.json) for history schema
+- Review [internal/assets/templates/report-schema.yaml](../../internal/assets/templates/report-schema.yaml) for full JSON Schema
+- Review [internal/assets/templates/history-schema.yaml](../../internal/assets/templates/history-schema.yaml) for history schema
 - See [spec.md](./spec.md) for complete requirements and acceptance scenarios
 
 ## Support

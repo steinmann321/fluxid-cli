@@ -441,6 +441,6 @@ func readSecureYAML(filePath string, v interface{}) error {
 ## Next Steps
 
 Data model complete. Continue Phase 1:
-- Generate JSON Schema contracts in `contracts/` directory
+- JSON Schema files already exist at `internal/assets/templates/report-schema.yaml` and `internal/assets/templates/history-schema.yaml`
 - Generate quickstart guide for agent integration
 - Update agent context files

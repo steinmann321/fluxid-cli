@@ -1,15 +1,19 @@
 <!--
 Sync Impact Report:
-Version Change: 1.0.0 → Initial creation
-Modified Principles: N/A (initial creation)
-Added Sections: All sections (initial creation)
+Version Change: 1.0.0 → 1.0.1
+Modified Principles: None
+Added Sections: None
 Removed Sections: None
 Templates Requiring Updates:
-  ✅ .specify/templates/plan-template.md - Constitution Check section aligns
-  ✅ .specify/templates/spec-template.md - Requirements structure compatible
-  ✅ .specify/templates/tasks-template.md - Task structure aligns with sequential workflow
+  ✅ .specify/templates/plan-template.md - No changes required
+  ✅ .specify/templates/spec-template.md - No changes required
+  ✅ .specify/templates/tasks-template.md - No changes required
+Changes Made:
+  - Fixed constitution violation C1 by correcting tasks.md references to schema file locations
+  - Changed T002 and T003 from "Create...by converting contracts/..." to "Verify existing...in internal/assets/templates/"
+  - Schema files already exist at correct location: internal/assets/templates/history-schema.yaml and internal/assets/templates/report-schema.yaml
 Follow-up TODOs:
-  - RATIFICATION_DATE set to today (2026-01-05) as initial adoption
+  None - all issues resolved
 -->
 
 # fluxid Constitution
@@ -197,4 +201,4 @@ All pull requests MUST verify constitution compliance before merge. Regular cons
 
 For runtime development guidance, refer to `/CLAUDE.md` which provides context-specific implementation notes. The constitution defines **what** principles govern the project; CLAUDE.md provides **how** to apply them during development.
 
-**Version**: 1.0.0 | **Ratified**: 2026-01-05 | **Last Amended**: 2026-01-05
+**Version**: 1.0.1 | **Ratified**: 2026-01-05 | **Last Amended**: 2026-01-05

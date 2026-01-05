@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Strategic Failure Log
+description:  Minimal workflow history file, designed to log the strategic reasons for a failure, preventing subsequent sessions from repeating flawed approaches.
+
+type: array
+items:
+  type: object
+  description: A single event from a workflow step.
+  required:
+    - timestamp
+    - step
+    - status
+    - summary
+  properties:
+    timestamp:
+      type: string
+      format: date-time
+      description: The ISO 8601 timestamp (UTC) of the event.
+    step:
+      type: string
+      description: The name of the workflow step that was executed.
+      example: "implement-auth"
+    status:
+      type: string
+      description: The final outcome of the step.
+      enum: [SUCCESS, FAIL]
+    summary:
+      type: string
+      description: A brief statement of the step's high-level goal.
+      example: "Implement the user authentication feature."
+    details:
+      type: string
+      description: A concise description of the specific *approach taken* and the fundamental *reason it failed*.
+    

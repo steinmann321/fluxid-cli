@@ -14,10 +14,10 @@ Replace stdio-based IPC system with file-based report/history interface. Externa
 **Language/Version**: Go 1.25
 **Primary Dependencies**:
 - `gopkg.in/yaml.v3` (existing - YAML parsing, needs security constraints configured)
-- `github.com/xeipuuv/gojsonschema` (new - JSON Schema validation for report/history validation commands)
+- `github.com/xeipuuv/gojsonschema` (new - JSON Schema (draft-07) validation for report/history validation commands, ensures 100% schema compatibility including additionalProperties enforcement)
 - `github.com/google/uuid` (existing - session ID generation)
 
-**Storage**: File-based YAML storage in session-specific directories (report.yaml, history.yaml)
+**Storage**: File-based YAML storage at `<OS temp folder>/fluxid/` with session ID in filename (report-<session-id>.yaml, history-<session-id>.yaml)
 **Testing**: Go testing (`go test`), E2E test suite (existing framework in `e2e-tests/`)
 **Target Platform**: Cross-platform CLI (Linux, macOS, Windows)
 **Project Type**: Single CLI project with workflow orchestration
@@ -29,11 +29,11 @@ Replace stdio-based IPC system with file-based report/history interface. Externa
 - YAML security: disable anchors, aliases, merge keys to prevent complexity attacks
 
 **Scale/Scope**:
-- Single CLI binary with embedded schemas
+- Single CLI binary with embedded JSON Schema documents
 - 6 new CLI commands (report --get-file/--get-schema/--validate, history --get-file/--get-schema/--validate)
-- Remove 4 command files + 1 directory (internal/ipc) + 7 E2E test files
+- Remove 4 command files + 1 directory (internal/ipc) + any existing IPC E2E test files
 - Update 5 integration points (signal handler, workflow, config loader, root command, output)
-- 2 JSON Schema documents (report schema, history schema)
+- 2 JSON Schema (draft-07) documents embedded at internal/assets/templates/ (report-schema.yaml, history-schema.yaml outputted as YAML format)
 
 ## Constitution Check
 
@@ -170,8 +170,9 @@ specs/[###-feature]/
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+
+Note: Schemas are embedded at internal/assets/templates/report-schema.yaml and history-schema.yaml
 ```
 
 ### Source Code (repository root)
@@ -196,22 +197,21 @@ fluxid-cli/
 │   └── types/               # Shared types
 │       └── config.go
 ├── internal/assets/
-│   └── schemas/             # NEW: embedded JSON Schema files
-│       ├── report.json     # Report JSON Schema
-│       └── history.json    # History JSON Schema
+│   └── templates/           # NEW: embedded JSON Schema files (outputted as YAML)
+│       ├── report-schema.yaml   # Report JSON Schema (draft-07)
+│       └── history-schema.yaml  # History JSON Schema (draft-07)
 └── e2e-tests/
     └── tests/
         ├── report_*.go     # NEW: E2E tests for report commands
         └── history_*.go    # NEW: E2E tests for history commands
 
 # Files to REMOVE (breaking change):
-internal/command/ipc*.go               # All IPC command handlers (6 files)
-internal/ipc/                          # Entire IPC package (12 files)
-e2e-tests/tests/m03-e05*.go           # Abort E2E test (1 file)
-e2e-tests/tests/m04-e0*.go            # History IPC E2E tests (6 files)
+internal/command/ipc*.go               # All IPC command handlers (if exist in main branch)
+internal/ipc/                          # Entire IPC package (if exists in main branch)
+# Note: E2E test removal count TBD - verify in main branch before removal
 ```
 
-**Structure Decision**: Single Go CLI project. New storage package replaces internal/ipc package with file-based operations. Command layer gets new report.go and history.go handlers. JSON Schemas embedded in binary via internal/assets/schemas/. E2E tests reorganized: remove 7 IPC-related tests, add comprehensive file-based workflow tests.
+**Structure Decision**: Single Go CLI project. New storage package replaces internal/ipc package with file-based operations. Command layer gets new report.go and history.go handlers. JSON Schema (draft-07) documents embedded in binary via internal/assets/templates/ and outputted as YAML format. E2E tests reorganized: remove any existing IPC tests, add comprehensive file-based workflow tests.
 
 ## Complexity Tracking
 

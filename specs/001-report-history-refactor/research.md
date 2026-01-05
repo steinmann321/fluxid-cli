@@ -318,6 +318,6 @@ All "NEEDS CLARIFICATION" items from Technical Context have been resolved:
 
 Phase 0 complete. Proceed to Phase 1: Design & Contracts
 - Generate `data-model.md` defining report/history structures
-- Generate `contracts/report-schema.json` and `contracts/history-schema.json`
+- Schemas already exist at `internal/assets/templates/report-schema.yaml` and `internal/assets/templates/history-schema.yaml`
 - Generate `quickstart.md` for agent integration guide
 - Update agent context files

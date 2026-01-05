@@ -56,11 +56,11 @@ An external agent needs the report schema to understand required fields and stru
 
 **Why this priority**: Enables agent autonomy and reduces documentation dependency. Agents can discover schema programmatically.
 
-**Independent Test**: Can be fully tested by running `fluxid report --get-schema`, parsing output as JSON Schema, and verifying all required fields are documented.
+**Independent Test**: Can be fully tested by running `fluxid report --get-schema`, parsing output as YAML schema, and verifying all required fields are documented.
 
 **Acceptance Scenarios**:
 
-1. **Given** any context, **When** agent runs `fluxid report --get-schema`, **Then** system outputs complete JSON Schema to stdout
+1. **Given** any context, **When** agent runs `fluxid report --get-schema`, **Then** system outputs complete YAML schema to stdout
 2. **Given** schema output, **When** agent parses it, **Then** all required fields (command, artifact, timestamp, status, issues) are defined with types and constraints
 3. **Given** schema output, **When** agent examines status field, **Then** enum values PASS and FAIL are specified
 
@@ -88,11 +88,11 @@ An external agent needs the history schema to understand required structure for 
 
 **Why this priority**: Supports agent autonomy for history recording. Less critical than report schema since history is advisory rather than workflow-critical.
 
-**Independent Test**: Can be fully tested by running `fluxid history --get-schema`, parsing output as JSON Schema, and verifying timestamp, step, status, and summary fields are documented.
+**Independent Test**: Can be fully tested by running `fluxid history --get-schema`, parsing output as YAML schema, and verifying timestamp, step, status, and summary fields are documented.
 
 **Acceptance Scenarios**:
 
-1. **Given** any context, **When** agent runs `fluxid history --get-schema`, **Then** system outputs complete JSON Schema to stdout
+1. **Given** any context, **When** agent runs `fluxid history --get-schema`, **Then** system outputs complete YAML schema to stdout
 2. **Given** schema output, **When** agent parses it, **Then** required fields (timestamp, step, status, summary) are defined with types
 3. **Given** schema output, **When** agent examines status field, **Then** enum values SUCCESS and FAIL are specified
 
@@ -136,13 +136,15 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 **Report Management:**
 
-- **FR-001**: System MUST provide `fluxid report --get-schema` command that outputs complete JSON Schema for report file structure to stdout
+- **FR-001**: System MUST provide `fluxid report --get-schema` command that outputs complete JSON Schema (draft-07) for report file structure as YAML to stdout. Complete schema includes: all required fields with types and constraints, all optional fields, examples, and additionalProperties:false enforcement
 - **FR-002**: System MUST provide `fluxid report --get-file` command that returns absolute path to session's report file
 - **FR-003**: System MUST ensure report file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
 - **FR-004**: System MUST provide `fluxid report --validate` command that validates current session's report against schema
-- **FR-005**: Report validation MUST produce instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])" for human readability and as JSON array with {field, violation, constraint, value} objects for programmatic parsing
+- **FR-004a**: All validation commands MUST produce instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])" for human readability and as JSON array with {field, violation, constraint, value} objects for programmatic parsing
+- **FR-004b**: System MUST use standardized exit codes: 0 for successful validation, 1 for validation failures (schema violations), 2 for operational failures (file not found, permission denied, schema load failure)
+- **FR-005**: Report validation MUST produce error messages per FR-004a format and exit codes per FR-004b
 - **FR-006**: Report validation MUST succeed with exit code 0 for valid reports
-- **FR-007**: Report validation MUST fail with non-zero exit code and error message for invalid reports
+- **FR-007**: Report validation MUST fail with exit codes 1 or 2 per FR-004b and error message for invalid reports
 - **FR-008**: System MUST NOT provide any report write functionality (delegated to external systems)
 - **FR-009**: System MUST read report file during workflow execution to determine PASS/FAIL status
 - **FR-010**: Report file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/report-<session-id>.yaml`
@@ -152,18 +154,19 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 **History Management:**
 
-- **FR-014**: System MUST provide `fluxid history --get-schema` command that outputs complete JSON Schema for history structure to stdout
+- **FR-014**: System MUST provide `fluxid history --get-schema` command that outputs complete JSON Schema (draft-07) for history array structure as YAML to stdout. Complete schema includes: all required fields with types and constraints, all optional fields, examples, and additionalProperties:false enforcement
 - **FR-015**: System MUST provide `fluxid history --get-file` command that returns absolute path to session's history file
 - **FR-016**: System MUST ensure history file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
 - **FR-017**: System MUST provide `fluxid history --validate` command that validates current session's history against schema
-- **FR-018**: History validation MUST produce instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])" for human readability and as JSON array with {field, violation, constraint, value} objects for programmatic parsing
+- **FR-018**: History validation MUST produce error messages per FR-004a format and exit codes per FR-004b
 - **FR-019**: History validation MUST succeed with exit code 0 for valid history
-- **FR-020**: History validation MUST fail with non-zero exit code and error message for invalid history
+- **FR-020**: History validation MUST fail with exit codes 1 or 2 per FR-004b and error message for invalid history
 - **FR-021**: System MUST NOT provide any history write functionality (delegated to external systems)
 - **FR-022**: History file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/history-<session-id>.yaml`
 - **FR-023**: System MUST read history file during workflow execution to provide context to agents
-- **FR-024**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of complete entries (FIFO eviction by entry count, removing only whole event objects to preserve valid YAML array structure) before reading when size exceeds limit
-- **FR-025**: System MUST reject history write attempts where a single entry exceeds 10MB with clear error instructing agent to split entries
+- **FR-024**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of complete entries (FIFO eviction by entry count using ceiling function for minimum 1 entry removal, removing only whole event objects to preserve valid YAML array structure) before reading when size exceeds limit
+- **FR-025**: System MUST reject during validation (via `--validate` command) when a single history entry exceeds 10MB with clear error instructing agent to split entries
+- **FR-025a**: System MUST fail fast with exit code 2 and clear error message when embedded schema files (report-schema.yaml, history-schema.yaml) fail to load from binary assets, indicating internal system error requiring binary rebuild
 
 **Schema Definitions:**
 
@@ -191,9 +194,9 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 **Observability:**
 
-- **FR-041**: Commands MUST output errors to stderr when operations fail
-- **FR-042**: Commands MUST NOT log or output any messages for successful operations (silent success)
-- **FR-043**: Error messages MUST include sufficient context to diagnose failures (file path, validation field, error reason) without verbose logging
+- **FR-041**: Commands MUST output all errors to stderr when operations fail (validation errors, file I/O errors, schema load errors). Stdout reserved exclusively for data output (file paths, schemas)
+- **FR-042**: Commands MUST NOT log or output any messages to stderr for successful operations (silent success). Exit code 0 is the only success indicator besides stdout data output
+- **FR-043**: Error messages MUST include sufficient context to diagnose failures: file path for I/O errors, field path for validation errors, constraint details for schema violations, session ID for context errors
 
 ### Key Entities
 
@@ -201,9 +204,9 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 - **History File**: YAML array of workflow events. Located at `<OS temp folder>/fluxid/history-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows). Each entry records timestamp, step name, outcome (SUCCESS/FAIL), summary, and failure details. Written by external agents, read by fluxid workflow.
 
-- **Report Schema**: JSON Schema document defining report file structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
+- **Report Schema**: JSON Schema (draft-07) document defining report file structure. Embedded in fluxid binary at `internal/assets/templates/report-schema.yaml` (JSON Schema outputted as YAML format). Outputs via `--get-schema` command. Used for validation.
 
-- **History Schema**: JSON Schema document defining history file structure. Embedded in fluxid binary. Outputs via `--get-schema` command. Used for validation.
+- **History Schema**: JSON Schema (draft-07) document defining history file structure. Embedded in fluxid binary at `internal/assets/templates/history-schema.yaml` (JSON Schema outputted as YAML format). Outputs via `--get-schema` command. Used for validation.
 
 - **Session Context**: Unique identifier (UUID format) scoping report/history files to single workflow run. Passed to agents via environment variable (FLUXID_SESSION_ID). Determines file paths in format `<OS temp folder>/fluxid/{report,history}-<session-id>.yaml`.
 
@@ -217,7 +220,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 - **SC-004**: Workflow loop progression continues to work correctly (PASS status exits, FAIL status retries) with file-based approach
 - **SC-005**: Zero IPC-related code remains in codebase after refactor (verified by grep for "ipc" in command/storage layers)
 - **SC-006**: All existing E2E tests for removed IPC functionality are deleted from repository
-- **SC-007**: Schema retrieval commands (`--get-schema`) output valid, parseable JSON Schema in 100% of cases
+- **SC-007**: Schema retrieval commands (`--get-schema`) output valid, parseable YAML schema in 100% of cases
 - **SC-008**: File existence guarantee (`--get-file` creates file if missing) succeeds in 100% of cases
 - **SC-009**: Validation commands provide actionable error messages with specific field names and expected values (format: "[field_path]: [violation] (expected: [constraint], got: [value])")
 - **SC-010**: Successful command operations produce no output to stderr (silent success except for data output to stdout)
@@ -225,20 +228,20 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 ## Assumptions *(mandatory)*
 
 - **A-001**: External agents (Claude, OpenCode, etc.) are capable of file I/O operations to write YAML
-- **A-002**: External agents can parse JSON Schema to understand report/history structure
+- **A-002**: External agents can parse YAML schema to understand report/history structure
 - **A-003**: Session ID is available via environment variable (FLUXID_SESSION_ID) during agent execution
 - **A-004**: File system supports standard POSIX operations (create directory, write file, read file)
 - **A-005**: Workflow execution is 100% sequential - agent writes report/history and exits, then fluxid reads files. No concurrent file access between agent and fluxid is possible, eliminating need for file locking or atomic write patterns.
 - **A-006**: Report and history files under 10MB can be read entirely into memory; files exceeding 10MB will have oldest entries truncated (FIFO eviction) before reading
-- **A-007**: External agents will handle retry logic if file writes fail due to permission or disk space issues
-- **A-008**: JSON Schema format is sufficient for schema documentation (agents can parse JSON Schema)
+- **A-007**: External agents start, execute once, and exit with report status; fluxid workflow controller handles retry logic by restarting agents when report status is FAIL (limited by retry count configuration)
+- **A-008**: YAML schema format is sufficient for schema documentation (agents can parse YAML schema)
 - **A-009**: Validation is performed on demand via CLI command rather than automatically on write (since fluxid doesn't write)
 - **A-010**: Agents obtain file paths exclusively from `--get-file` commands; agents do not specify or construct paths themselves
 
 ## Dependencies *(include if relevant)*
 
 - **D-001**: Go YAML parser library (e.g., `gopkg.in/yaml.v3`) for reading report/history files during workflow execution; must support disabling anchors/aliases/merge keys for security
-- **D-002**: JSON Schema validator library (e.g., `github.com/xeipuuv/gojsonschema`) for implementing `--validate` commands
+- **D-002**: JSON Schema validator library `github.com/xeipuuv/gojsonschema` for implementing `--validate` commands. Validates YAML files against JSON Schema (draft-07) documents. Ensures 100% schema compatibility including additionalProperties:false enforcement
 - **D-003**: Go standard library `os` package for file path operations and directory creation
 - **D-004**: Existing workflow execution logic remains unchanged (dependencies preserved)
 
@@ -265,8 +268,8 @@ This is a **breaking change** that removes existing functionality. Migration req
 1. **Phase 1 - Add New Commands** (before removal):
    - Implement `fluxid report --get-schema/--get-file/--validate`
    - Implement `fluxid history --get-schema/--get-file/--validate`
-   - Convert report schema from YAML to JSON Schema format
-   - Create history JSON Schema
+   - Create report YAML schema at `internal/assets/templates/report-schema.yaml`
+   - Create history YAML schema at `internal/assets/templates/history-schema.yaml`
    - Embed both schemas in binary
    - Update workflow to read report/history files directly (remove IPC calls)
 
@@ -276,9 +279,8 @@ This is a **breaking change** that removes existing functionality. Migration req
    - Delete `internal/command/ipc_abort.go`
    - Delete `internal/command/ipc_history.go`
    - Delete entire `internal/ipc/` directory (all files including storage.go, schema.yaml)
-   - Delete E2E test `e2e-tests/tests/m03_e05_*.go` (abort test, 1 file)
-   - Delete E2E tests `e2e-tests/tests/m04_e0*_*.go` (history IPC tests, 6 files)
-   - **Total removal**: 4 command files + 1 directory (internal/ipc) + 7 E2E test files
+   - Delete E2E tests for IPC functionality if present in main branch (verify actual file count before removal; feature branch may not have IPC tests yet)
+   - **Total removal**: 4 command files + 1 directory (internal/ipc) + any existing E2E test files for deprecated IPC commands
 
 3. **Phase 3 - Update Documentation**:
    - Update agent integration guides
@@ -297,8 +299,8 @@ This is a **breaking change** that removes existing functionality. Migration req
 
 - **Report/history write operations**: Explicitly delegated to external systems. Fluxid only provides schema, validation, and read access.
 - **Concurrency control for file writes**: External agents must handle concurrent writes if multiple agents run simultaneously. Fluxid only reads.
-- **Abort flag mechanism**: Previously part of IPC system. Separate evaluation needed for whether abort functionality should be preserved with different interface.
+- **Abort mechanism changes**: Process termination via Ctrl+C (SIGINT/SIGTERM) must remain functional for instant user abort. Signal handling and graceful shutdown are preserved from existing implementation. This refactor only changes report/history interface, not abort behavior.
 - **Report/history file cleanup**: Session lifecycle management (when to delete old files) is separate concern.
 - **Encryption or access control for report/history files**: Standard file system permissions sufficient.
 - **Versioning of schemas**: Initial implementation provides current schema only. Schema evolution strategy is future work.
-- **Alternative output formats**: Commands output YAML for reports/history and JSON Schema for schemas. No XML, JSON data output, or other formats.
+- **Alternative output formats**: Commands output YAML for reports/history and YAML schema for schemas. No XML, JSON data output, or other formats.
