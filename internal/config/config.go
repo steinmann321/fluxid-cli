@@ -254,7 +254,7 @@ func validateCustomConfig(cfg *CustomConfig) error {
 	return nil
 }
 
-//nolint:ireturn // Generic function correctly returns type parameter T
+//nolint:ireturn,nolintlint // Generic function returns type parameter T
 func resolveField[T any](
 	cliValue *T,
 	projectValue *T,
