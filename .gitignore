@@ -23,6 +23,9 @@ bin/
 .fluxid/
 /fluxid/
 
+# fluxid binary (prevent accidentally committing binary to root)
+/fluxid
+
 # Test binary, built with `go test -c`
 *.test
 
