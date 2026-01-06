@@ -44,7 +44,7 @@ fluxid-cli/
 - Dependency injection where appropriate
 
 ### 3. File-Based Communication
-- Replace stdio IPC with file operations
+- File operations for agent communication
 - Deterministic file paths
 - YAML for structured data
 
@@ -537,6 +537,6 @@ go install ./cmd/fluxid  # Installs to $GOPATH/bin
 ### Design Constraints
 
 - **Maintain pure Go:** No runtime shell dependencies
-- **Keep file-based interface:** No return to stdio IPC
+- **File-based interface only:** Agent communication via file operations
 - **Preserve security:** Strict validation always
 - **Stay stateless:** No persistent daemon or database

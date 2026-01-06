@@ -4,11 +4,11 @@ A workflow controller that orchestrates coding agents through structured IMPLEME
 
 ## Overview
 
-**fluxid** is a CLI tool that wraps coding agents (Claude, Codex, OpenCode) and manages iterative development workflows. It handles session management, tracks workflow history, validates agent outputs, and provides file-based communication primitives.
+**fluxid** lets coding agents (Claude, Codex, OpenCode) tackle complex tasks that exceed their context limits. It runs your agent through structured implement-review cycles, automatically tracking progress, validating outputs, and managing state between iterations until the task is complete.
 
 **Key Features:**
 - Orchestrates implement/review/commit cycles automatically
-- File-based interface for agent communication (no stdio IPC)
+- File-based interface for agent communication
 - Session-scoped storage with YAML validation
 - Configurable retry limits and iteration counts
 - Dry-run mode for workflow simulation
@@ -112,7 +112,7 @@ Create with `fluxid init`. See [Configuration](docs/configuration.md) for detail
 
 ## File-Based Interface
 
-Agents communicate via file operations instead of stdio:
+Agents communicate via file operations:
 
 ```bash
 # Agent gets file paths

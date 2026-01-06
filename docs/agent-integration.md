@@ -4,7 +4,7 @@ Guide for integrating coding agents with fluxid's file-based interface.
 
 ## Overview
 
-Agents communicate with fluxid through **file operations** instead of stdio IPC. This provides:
+Agents communicate with fluxid through **file operations**. This provides:
 - **Reliability:** No parsing ambiguity
 - **Debuggability:** Files can be inspected directly
 - **Simplicity:** Standard file I/O, no custom protocol
