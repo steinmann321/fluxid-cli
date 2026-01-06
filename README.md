@@ -52,7 +52,7 @@ fluxid --claude --file=/path/to/task.md
        │
        ↓
 ┌─────────────┐
-│   REVIEW    │  Agent reviews implementation
+│   REVIEW    │  Agent evaluates quality and completeness
 └──────┬──────┘
        │
        ├─ PASS → Workflow complete
@@ -61,10 +61,10 @@ fluxid --claude --file=/path/to/task.md
 
 **How it works:**
 1. Agent receives task via command file
-2. Agent implements, writes `report.yaml` with status
+2. Agent implements changes, writes `report.yaml` with status
 3. If PASS: workflow creates commit and proceeds to review
-4. If FAIL: workflow retries implementation
-5. Review phase evaluates quality, loops back if needed
+4. If FAIL: workflow retries implementation (up to configured limit)
+5. Review phase evaluates quality and completeness, loops back to IMPLEMENT if defects found
 
 ## Usage
 
