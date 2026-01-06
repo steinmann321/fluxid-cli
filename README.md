@@ -112,30 +112,20 @@ Create with `fluxid init`. See [Configuration](docs/configuration.md) for detail
 
 ## File-Based Interface
 
-Agents communicate via file operations:
+Agents (LLMs) receive structured context to generate workflow outputs:
 
 ```bash
-# Agent gets file paths
-REPORT=$(fluxid report --get-file)
-HISTORY=$(fluxid history --get-file)
+# Get file path where agent writes results
+fluxid report --get-file
 
-# Agent writes YAML
-cat > "$REPORT" <<EOF
-command: implement
-artifact: src/main.go
-timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-status: PASS
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-EOF
+# Get schema defining the required YAML structure
+fluxid report --get-schema
 
-# Optional validation
+# Validate agent-generated output
 fluxid report --validate
 ```
+
+The agent (Claude, Codex, OpenCode) receives these commands, generates valid YAML according to the schema, and writes it to the specified file path.
 
 See [Agent Integration](docs/agent-integration.md) for complete guide.
 
