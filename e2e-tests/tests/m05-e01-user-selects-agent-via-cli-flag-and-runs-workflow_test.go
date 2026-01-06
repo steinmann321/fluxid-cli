@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -19,7 +20,6 @@ const uuidV4Pattern = `([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 //nolint:funlen // E2E test with agent selection validation
 func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -100,7 +100,6 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 //nolint:funlen // E2E test with flag validation checks
 func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -197,7 +196,6 @@ func TestM05E01ExactlyOneAgentFlagRequired(t *testing.T) {
 //nolint:funlen // E2E test with PATH resolution validation
 func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -279,8 +277,6 @@ func TestM05E01AgentBinaryPathResolution(t *testing.T) {
 
 // TestM05E01AgentArgsPassthrough validates agent-specific args are forwarded.
 func TestM05E01AgentArgsPassthrough(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -290,8 +286,6 @@ func TestM05E01AgentArgsPassthrough(t *testing.T) {
 
 // TestM05E01OrchestrationMatchesBaseline validates workflow orchestration is unchanged.
 func TestM05E01OrchestrationMatchesBaseline(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

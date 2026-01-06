@@ -10,6 +10,8 @@ import (
 )
 
 // runInvalidReportTest runs a test for an invalid report and returns the error output.
+//
+//nolint:unused // Helper function for future test scenarios
 func runInvalidReportTest(t *testing.T, sessionID, invalidReport string) string {
 	t.Helper()
 
@@ -35,6 +37,8 @@ func runInvalidReportTest(t *testing.T, sessionID, invalidReport string) string 
 }
 
 // writeValidReport writes a valid report for testing purposes.
+//
+//nolint:unused // Helper function for future test scenarios
 func writeValidReport(t *testing.T, binPath, sessionID, report string) {
 	t.Helper()
 
@@ -52,6 +56,8 @@ func writeValidReport(t *testing.T, binPath, sessionID, report string) {
 }
 
 // readReport reads the current report for a session.
+//
+//nolint:unused // Helper function for future test scenarios
 func readReport(t *testing.T, binPath, sessionID string) string {
 	t.Helper()
 

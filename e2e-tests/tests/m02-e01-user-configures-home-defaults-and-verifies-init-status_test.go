@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -10,8 +11,6 @@ import (
 // TestM02E01HomeConfigApplied validates that ~/.fluxid/config.yaml is read
 // and values are applied correctly.
 func TestM02E01HomeConfigApplied(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -32,8 +31,6 @@ iterations: 10`
 // TestM02E01DefaultsWhenNoHomeConfig validates that defaults are used when
 // ~/.fluxid/config.yaml doesn't exist.
 func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -62,8 +59,6 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 // TestM02E01PartialHomeConfig validates that partial config files work correctly,
 // with omitted keys using defaults.
 func TestM02E01PartialHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -83,8 +78,6 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 // TestM02E01InvalidTypeInConfig validates that invalid types are rejected with
 // clear error messages.
 func TestM02E01InvalidTypeInConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -106,8 +99,6 @@ func TestM02E01InvalidTypeInConfig(t *testing.T) {
 // TestM02E01InvalidValueInConfig validates that invalid values (e.g., zero or negative)
 // are rejected with clear error messages.
 func TestM02E01InvalidValueInConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -129,8 +120,6 @@ func TestM02E01InvalidValueInConfig(t *testing.T) {
 // TestM02E01CLIOverridesHomeConfig validates that CLI flags override home config values
 // and source is correctly reported as "cli".
 func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -149,8 +138,6 @@ func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
 // TestM02E01InitializationStatusFormat validates that the initialization status
 // section appears with the expected format and all required fields.
 func TestM02E01InitializationStatusFormat(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -198,8 +185,6 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 // TestM02E01NoProjectStateModification validates that running fluxid with only
 // home config doesn't create or modify files in the current directory.
 func TestM02E01NoProjectStateModification(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

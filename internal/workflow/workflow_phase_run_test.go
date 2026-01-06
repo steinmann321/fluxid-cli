@@ -3,12 +3,10 @@ package workflow
 
 import (
 	"fluxid-cli/internal/config"
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/types"
-	"fmt"
 	"testing"
-	"time"
 
 	"go.uber.org/goleak"
 )
@@ -19,7 +17,7 @@ func TestRunImplementPhase_Success(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-impl-success-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionPhaseRun
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -35,7 +33,7 @@ func TestRunImplementPhase_Success(t *testing.T) {
 
 	// Write implement PASS report immediately before calling runImplementPhase
 	// This ensures deterministic test behavior without timing dependencies
-	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testImplementPassReport); err != nil {
 		t.Fatalf("Failed to write implement report: %v", err)
 	}
 
@@ -54,7 +52,7 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-impl-commit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionPhaseRun
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -70,7 +68,7 @@ func TestRunImplementPhase_WithCommitViaRun(t *testing.T) {
 
 	// Write implement PASS report immediately before calling runImplementPhase
 	// This ensures deterministic test behavior without timing dependencies
-	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testImplementPassReport); err != nil {
 		t.Fatalf("Failed to write implement report: %v", err)
 	}
 
@@ -89,7 +87,7 @@ func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-review-success-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionPhaseRun
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -105,7 +103,7 @@ func TestRunReviewPhase_SuccessViaRun(t *testing.T) {
 
 	// Write review PASS report before calling runReviewPhase
 	// With immediate checking, report must exist before the phase executes
-	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testPassReport); err != nil {
 		t.Fatalf("Failed to write review report: %v", err)
 	}
 
@@ -125,7 +123,7 @@ func TestRunCommitPhase_SuccessViaRun(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-commit-success-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "550e8400-e29b-41d4-a716-446655440000"
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -154,7 +152,7 @@ func TestRunImplementPhase_WithCommandFile(t *testing.T) {
 	tmpDir, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-implement-cmdfile-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionPhaseRun
 
 	cmdFiles := &config.ResolvedCommandFiles{
 		ImplementPath: tmpDir + "/implement.md",
@@ -174,7 +172,7 @@ func TestRunImplementPhase_WithCommandFile(t *testing.T) {
 
 	// Write implement PASS report immediately before calling runImplementPhase
 	// This ensures deterministic test behavior without timing dependencies
-	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testImplementPassReport); err != nil {
 		t.Fatalf("Failed to write implement report: %v", err)
 	}
 

@@ -134,17 +134,25 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 ### Functional Requirements
 
+**Validation Contract:**
+
+All validation commands (`report --validate` and `history --validate`) MUST adhere to this common contract:
+- **Error Format**: Instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])"
+- **Exit Codes**: 0 for successful validation, 1 for validation failures (schema violations), 2 for operational failures (file not found, permission denied, schema load failure)
+- **Success Behavior**: Exit code 0 without error output for valid files
+- **Failure Behavior**: Exit with appropriate code and descriptive error messages to stderr
+
 **Report Management:**
 
 - **FR-001**: System MUST provide `fluxid report --get-schema` command that outputs complete YAML schema for report file structure to stdout. Complete schema includes: all required fields with types and constraints, all optional fields, examples, and strict validation rules
 - **FR-002**: System MUST provide `fluxid report --get-file` command that returns absolute path to session's report file
 - **FR-003**: System MUST ensure report file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
-- **FR-004**: System MUST provide `fluxid report --validate` command that validates current session's report against schema. Validation MUST produce instructive error messages in format "[field_path]: [violation] (expected: [constraint], got: [value])" by default, or as JSON array with {field, violation, constraint, value} objects when `--format=json` flag is provided for programmatic parsing. System MUST use standardized exit codes: 0 for successful validation, 1 for validation failures (schema violations), 2 for operational failures (file not found, permission denied, schema load failure)
+- **FR-004**: System MUST provide `fluxid report --validate` command that validates current session's report against schema per Validation Contract
 - **FR-005**: Report validation MUST succeed with exit code 0 for valid reports
 - **FR-006**: Report validation MUST fail with exit codes 1 or 2 per FR-004 and error message for invalid reports
 - **FR-007**: System MUST NOT provide any report write functionality (delegated to external systems)
 - **FR-008**: System MUST read report file during workflow execution to determine PASS/FAIL status
-- **FR-009**: Report file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/report-<session-id>.yaml`
+- **FR-009**: Report file location MUST be deterministic per File Path Convention (see Key Entities)
 - **FR-010**: System MUST reject report and history files containing YAML anchors, aliases, or merge keys with clear error message to prevent complexity attacks
 - **FR-011**: System MUST validate all report and history file paths are within `<OS temp folder>/fluxid/` directory boundaries (reject path traversal attempts, validate session ID is valid UUID)
 - **FR-012**: System MUST NOT accept agent-provided file paths; fluxid alone determines and manages report and history file locations
@@ -154,13 +162,13 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 - **FR-013**: System MUST provide `fluxid history --get-schema` command that outputs complete YAML schema for history array structure to stdout. Complete schema includes: all required fields with types and constraints, all optional fields, examples, and strict validation rules
 - **FR-014**: System MUST provide `fluxid history --get-file` command that returns absolute path to session's history file
 - **FR-015**: System MUST ensure history file and parent directories exist when `--get-file` is called (create if missing within `<OS temp folder>/fluxid/` directory)
-- **FR-016**: System MUST provide `fluxid history --validate` command that validates current session's history against schema. Validation MUST produce error messages per FR-004 format and exit codes
+- **FR-016**: System MUST provide `fluxid history --validate` command that validates current session's history against schema per Validation Contract
 - **FR-017**: History validation MUST succeed with exit code 0 for valid history
-- **FR-018**: History validation MUST fail with exit codes 1 or 2 per FR-004 and error message for invalid history
+- **FR-018**: History validation MUST fail with exit codes 1 or 2 per FR-016 and error message for invalid history
 - **FR-019**: System MUST NOT provide any history write functionality (delegated to external systems)
-- **FR-020**: History file location MUST be deterministic based on session ID in format `<OS temp folder>/fluxid/history-<session-id>.yaml`
+- **FR-020**: History file location MUST be deterministic per File Path Convention (see Key Entities)
 - **FR-021**: System MUST read history file during workflow execution to provide context to agents
-- **FR-022**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of complete entries (FIFO eviction by entry count using ceiling function: ceiling(entry_count * 0.30) ensures minimum 1 entry removed when entry_count >= 4, removing only whole event objects to preserve valid YAML array structure) before reading when size exceeds limit
+- **FR-022**: System MUST enforce 10MB maximum size for history files by removing oldest 30% of complete entries (FIFO eviction by entry count, removing only whole event objects to preserve valid YAML array structure) before reading when size exceeds limit
 - **FR-023**: System MUST reject during validation (via `--validate` command) when a single history entry exceeds 10MB with clear error instructing agent to split entries
 - **FR-024**: System MUST fail fast with exit code 2 and clear error message when embedded schema files (report-schema.yaml, history-schema.yaml) fail to load from binary assets, indicating internal system error requiring binary rebuild
 
@@ -196,9 +204,11 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 
 ### Key Entities
 
-- **Report File**: YAML file containing workflow phase results (implement or review). Located at `<OS temp folder>/fluxid/report-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows). Contains status (PASS/FAIL), issues categorized by severity, and optional next steps. Written by external agents, read by fluxid workflow.
+**File Path Convention**: All report and history files MUST follow the path format `<OS temp folder>/fluxid/{report,history}-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows) and session-id is a valid UUID. This path convention ensures session isolation and cross-platform compatibility.
 
-- **History File**: YAML array of workflow events. Located at `<OS temp folder>/fluxid/history-<session-id>.yaml` where OS temp folder is platform-specific (e.g., `/tmp` on Unix, `%TEMP%` on Windows). Each entry records timestamp, step name, outcome (SUCCESS/FAIL), summary, and failure details. Written by external agents, read by fluxid workflow.
+- **Report File**: YAML file containing workflow phase results (implement or review). Located per File Path Convention. Contains status (PASS/FAIL), issues categorized by severity, and optional next steps. Written by external agents, read by fluxid workflow.
+
+- **History File**: YAML array of workflow events. Located per File Path Convention. Each entry records timestamp, step name, outcome (SUCCESS/FAIL), summary, and failure details. Written by external agents, read by fluxid workflow.
 
 - **Report Schema**: YAML schema document defining report file structure with required fields, optional fields, type constraints, and validation rules. Embedded in fluxid binary at `internal/assets/templates/report-schema.yaml`. Outputs via `--get-schema` command. Used for validation.
 
@@ -237,7 +247,7 @@ A developer troubleshooting workflow failures needs to manually inspect or valid
 ## Dependencies *(include if relevant)*
 
 - **D-001**: Go YAML parser library (e.g., `gopkg.in/yaml.v3`) for reading report/history files during workflow execution; must support disabling anchors/aliases/merge keys for security
-- **D-002**: Custom YAML validation implementation using schema definitions embedded in binary; validates YAML files against schema documents with strict field, type, and constraint checking
+- **D-002**: Custom YAML validation implementation using YAML schema documents (report-schema.yaml, history-schema.yaml) embedded in binary at internal/assets/templates/; validates YAML files by enforcing schema-defined rules including required field presence, type constraints, enum value validation, and structural correctness without external validator dependencies
 - **D-003**: Go standard library `os` package for file path operations and directory creation
 - **D-004**: Existing workflow execution logic remains unchanged (dependencies preserved)
 

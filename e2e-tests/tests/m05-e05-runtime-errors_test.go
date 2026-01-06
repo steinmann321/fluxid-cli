@@ -15,7 +15,6 @@ import (
 //nolint:funlen // E2E test with runtime error handling
 func TestM05E05AgentNotInPathError(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -99,7 +98,6 @@ func TestM05E05AgentNotInPathError(t *testing.T) {
 //nolint:funlen // E2E test with process spawning validation
 func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -180,7 +178,6 @@ func TestM05E05NoChildProcessSpawnedOnError(t *testing.T) {
 //nolint:funlen // E2E test with error message validation
 func TestM05E05ErrorMessagesAreConciseAndActionable(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 

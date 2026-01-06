@@ -3,15 +3,14 @@
 package workflow
 
 import (
-	"fluxid-cli/internal/ipc"
-	"fmt"
+	"fluxid-cli/internal/storage"
 	"testing"
 	"time"
 )
 
 func TestWaitForValidReport_WithValidReport(t *testing.T) {
 	// Test waitForValidReport when a valid report already exists
-	sessionID := "test-wait-valid-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "1fe62fe0-40e6-44bf-9da8-f1202e432c25"
 
 	// Write a valid PASS report before calling waitForValidReport
 	validReport := `command: "test"
@@ -32,7 +31,7 @@ summary: "All tests passed"
 
 func TestWaitForValidReport_WithFailReport(t *testing.T) {
 	// Test waitForValidReport when report has FAIL status
-	sessionID := "test-wait-fail-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "1fe62fe0-40e6-44bf-9da8-f1202e432c25"
 
 	// Write a valid FAIL report before calling waitForValidReport
 	failReport := `command: "test"
@@ -58,7 +57,7 @@ func testWaitForValidReportHelper(t *testing.T, sessionID, reportYAML, expectedS
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	if err := ipc.WriteReport(sessionID, reportYAML); err != nil {
+	if err := storage.WriteReport(sessionID, reportYAML); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 

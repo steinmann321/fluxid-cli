@@ -182,3 +182,119 @@ func TestCopyAssetsToDir_ConfigContent(t *testing.T) {
 		}
 	}
 }
+
+const testPlaceholderContent = "Test {{FLUXID_DIR}} placeholder"
+
+func TestReplacePlaceholders_WithValidPath(t *testing.T) {
+	t.Parallel()
+
+	content := testPlaceholderContent
+	fluxidDir := "/test/path"
+
+	result := replacePlaceholders(content, fluxidDir)
+
+	// Should replace with absolute path
+	if !containsStr(result, "/test/path") {
+		t.Errorf("Expected path to be replaced, got: %s", result)
+	}
+	if containsStr(result, "{{FLUXID_DIR}}") {
+		t.Error("Placeholder should be replaced")
+	}
+}
+
+func TestReplacePlaceholders_WithRelativePath(t *testing.T) {
+	t.Parallel()
+
+	content := testPlaceholderContent
+	fluxidDir := "relative/path"
+
+	result := replacePlaceholders(content, fluxidDir)
+
+	// Should handle relative path conversion
+	if containsStr(result, "{{FLUXID_DIR}}") {
+		t.Error("Placeholder should be replaced")
+	}
+}
+
+func TestReplacePlaceholders_NoPlaceholder(t *testing.T) {
+	t.Parallel()
+
+	content := "Test content without placeholder"
+	fluxidDir := "/test/path"
+
+	result := replacePlaceholders(content, fluxidDir)
+
+	if result != content {
+		t.Errorf("Expected unchanged content, got: %s", result)
+	}
+}
+
+func TestReplacePlaceholders_MultiplePlaceholders(t *testing.T) {
+	t.Parallel()
+
+	content := "{{FLUXID_DIR}}/foo and {{FLUXID_DIR}}/bar"
+	fluxidDir := "/test"
+
+	result := replacePlaceholders(content, fluxidDir)
+
+	// Count occurrences of placeholder - should be 0
+	count := 0
+	for i := 0; i < len(result)-len("{{FLUXID_DIR}}"); i++ {
+		if result[i:i+len("{{FLUXID_DIR}}")] == "{{FLUXID_DIR}}" {
+			count++
+		}
+	}
+
+	if count != 0 {
+		t.Errorf("Expected all placeholders replaced, found %d remaining", count)
+	}
+}
+
+func TestCopyAssetsToDir_InvalidPath2(t *testing.T) {
+	t.Parallel()
+
+	// Use invalid path that can't be written to
+	invalidPath := "/root/definitely-cannot-write-here-" + t.Name()
+
+	_, err := CopyAssetsToDir(invalidPath)
+	if err == nil {
+		t.Error("Expected error when copying to invalid path")
+	}
+}
+
+func TestCopyAssetsToDir_EmptyPath2(t *testing.T) {
+	t.Parallel()
+
+	// Empty path should fail
+	_, err := CopyAssetsToDir("")
+	if err == nil {
+		t.Error("Expected error when copying to empty path")
+	}
+}
+
+func TestReplacePlaceholders_ErrorPath(t *testing.T) {
+	t.Parallel()
+
+	// Test when filepath.Abs fails by providing a path that can't be made absolute
+	content := testPlaceholderContent
+	fluxidDir := ""
+
+	result := replacePlaceholders(content, fluxidDir)
+
+	// Should still replace even with empty path
+	if containsStr(result, "{{FLUXID_DIR}}") {
+		t.Error("Placeholder should be replaced even with empty path")
+	}
+}
+
+func TestCopyAssetsToDir_DirectoryCreationError(t *testing.T) {
+	t.Parallel()
+
+	// Try to create directory in a location that doesn't exist
+	invalidPath := "/nonexistent-root-" + t.Name() + "/path/to/create"
+
+	_, err := CopyAssetsToDir(invalidPath)
+	if err == nil {
+		t.Error("Expected error when creating directory in invalid location")
+	}
+}

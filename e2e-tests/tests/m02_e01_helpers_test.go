@@ -1,4 +1,3 @@
-//nolint:gocritic // Test helper with string concatenation
 package tests
 
 import (
@@ -46,7 +45,7 @@ func writeHomeConfig(t *testing.T, fluxidDir, content string) {
 		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 			content += "\n"
 		}
-		content = content + fmt.Sprintf(`commands:
+		content += fmt.Sprintf(`commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md
@@ -196,7 +195,7 @@ func createProjectWithConfig(t *testing.T, content string) string {
 		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 			content += "\n"
 		}
-		content = content + fmt.Sprintf(`commands:
+		content += fmt.Sprintf(`commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md

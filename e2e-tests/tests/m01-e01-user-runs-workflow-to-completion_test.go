@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -14,8 +15,6 @@ import (
 // TestM01E01UserRunsWorkflowToCompletion validates the full workflow execution
 // with default settings and verifies exit code 0.
 func TestM01E01UserRunsWorkflowToCompletion(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -29,8 +28,6 @@ func TestM01E01UserRunsWorkflowToCompletion(t *testing.T) {
 
 // TestM01E01SessionIDUniqueness verifies that each run generates a unique UUID v4.
 func TestM01E01SessionIDUniqueness(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -91,8 +88,6 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 // TestM01E01ClaudeArgsPassthrough verifies that arbitrary Claude arguments
 // are accepted and passed through correctly.
 func TestM01E01ClaudeArgsPassthrough(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -103,8 +98,6 @@ func TestM01E01ClaudeArgsPassthrough(t *testing.T) {
 // TestM01E01WithoutClaudeFlag verifies that when no agent flag is provided,
 // the system uses the default agent (claude) and completes successfully.
 func TestM01E01WithoutClaudeFlag(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root) // Create stub claude since it's the default agent
@@ -153,8 +146,6 @@ func TestM01E01WithoutClaudeFlag(t *testing.T) {
 // TestM01E01SessionIDPropagation verifies that FLUXID_SESSION_ID environment
 // variable is propagated to child Claude processes.
 func TestM01E01SessionIDPropagation(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

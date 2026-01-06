@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -12,8 +13,6 @@ import (
 
 // TestM06E01DryRunSimulationBasic validates basic dry-run functionality.
 func TestM06E01DryRunSimulationBasic(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -70,8 +69,6 @@ func TestM06E01DryRunSimulationBasic(t *testing.T) {
 
 // TestM06E01DryRunNoAgentProcessSpawned validates that no agent process is created.
 func TestM06E01DryRunNoAgentProcessSpawned(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -115,8 +112,6 @@ func TestM06E01DryRunNoAgentProcessSpawned(t *testing.T) {
 
 // TestM06E01DryRunWithCommitPhase validates commit phase always appears in v2.0.
 func TestM06E01DryRunWithCommitPhase(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -150,8 +145,6 @@ func TestM06E01DryRunWithCommitPhase(t *testing.T) {
 
 // TestM06E01DryRunWithConfigValues validates dry-run uses resolved configuration.
 func TestM06E01DryRunWithConfigValues(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -193,8 +186,6 @@ func TestM06E01DryRunWithConfigValues(t *testing.T) {
 
 // TestM06E01DryRunWithInvalidConfigFails validates configuration errors are caught.
 func TestM06E01DryRunWithInvalidConfigFails(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

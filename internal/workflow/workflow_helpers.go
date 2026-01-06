@@ -4,7 +4,7 @@ package workflow
 import (
 	"context"
 	"errors"
-	"fluxid-cli/internal/ipc"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/stream"
 	"fluxid-cli/internal/types"
 	"fmt"
@@ -13,8 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 func runPhase(config types.Config, phase string, prompt string) (int, error) {
@@ -129,49 +127,26 @@ func composePrompt(cfg types.Config, phase string, basePrompt string) string {
 }
 
 // checkReportStatus checks for a valid report immediately after agent exits.
-// Since the agent writes reports synchronously via 'fluxid ipc write-report',
+// Since the agent writes reports directly to files via 'fluxid report --get-file',
 // the report either exists or it doesn't when the agent process completes.
 // Returns the status ("PASS" or "FAIL") or treats missing/invalid reports as FAIL.
+//
+//nolint:unparam // Error return maintained for interface consistency
 func waitForValidReport(sessionID string, phase string) (string, error) {
-	// Check for abort flag
-	aborted, err := ipc.CheckAbortFlag(sessionID)
+	// Abort flag functionality removed per 001-report-history-refactor
+	// Abort mechanism is out of scope and requires separate evaluation
+
+	// Read report from file-based storage
+	report, err := storage.ReadReport(sessionID)
 	if err != nil {
-		log.Printf("Warning: failed to check abort flag while checking %s report: %v", phase, err)
-	}
-	if aborted {
-		return "", &AbortError{
-			ExitCode: exitCodeInterrupted,
-			Message:  fmt.Sprintf("workflow aborted while checking %s report", phase),
-		}
-	}
-
-	// Read report from IPC storage
-	reportYAML, err := ipc.ReadReport(sessionID)
-	if err != nil {
-		return "", fmt.Errorf("failed to read report: %w", err)
-	}
-
-	// If no report exists, treat as FAIL
-	// Agent either didn't write one, or the IPC write command failed
-	if reportYAML == "" {
-		log.Printf("No %s report found - agent did not write report", phase)
+		// If report doesn't exist or is invalid, treat as FAIL
+		// Agent either didn't write one, or the file is malformed
+		log.Printf("Failed to read %s report (treating as FAIL): %v", phase, err)
 		return statusFail, nil
 	}
 
-	// Validate report
-	if err := ipc.ValidateReport(reportYAML); err != nil {
-		log.Printf("Invalid %s report (treating as FAIL): %v", phase, err)
-		return statusFail, nil
-	}
-
-	// Parse report to extract status
-	var report ipc.Report
-	if err := yaml.Unmarshal([]byte(reportYAML), &report); err != nil {
-		log.Printf("Failed to parse %s report (treating as FAIL): %v", phase, err)
-		return statusFail, nil
-	}
-
-	// Valid report found
+	// Valid report found - the storage.ReadReport() function already validates
+	// the report structure, so if we reach here, the report is valid
 	log.Printf("Valid %s report received with status: %s", phase, report.Status)
 	return report.Status, nil
 }

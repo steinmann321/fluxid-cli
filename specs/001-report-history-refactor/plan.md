@@ -14,7 +14,7 @@ Replace stdio-based IPC system with file-based report/history interface. Externa
 **Language/Version**: Go 1.25
 **Primary Dependencies**:
 - `gopkg.in/yaml.v3` (existing - YAML parsing, needs security constraints configured)
-- Custom YAML validation (new - validates YAML files against embedded schema documents with strict field, type, and constraint checking)
+- Custom YAML validation (new - pure Go implementation that validates YAML files by enforcing rules from embedded YAML schema documents at internal/assets/templates/; checks required fields, types, enum values, and structure without external validator dependencies)
 - `github.com/google/uuid` (existing - session ID generation)
 
 **Storage**: File-based YAML storage at `<OS temp folder>/fluxid/` with session ID in filename (report-<session-id>.yaml, history-<session-id>.yaml)
@@ -112,7 +112,7 @@ User requested "less BIG flows are better than lots of small flows" → consolid
 
 **Compliance**: New file-based interface is more explicit than stdio IPC:
 - Agent obtains file paths via explicit CLI commands (`--get-file`)
-- Schema structure documented via JSON Schema (`--get-schema`)
+- Schema structure documented via YAML schema documents (`--get-schema`)
 - Validation explicit via CLI command (`--validate`)
 - No implicit temp directory management, no hidden stdio protocols
 
@@ -124,11 +124,11 @@ FR-012, FR-013 enforce explicit path management: fluxid alone determines and man
 **Status**: ✅ PASS
 
 **Compliance**: Requirements explicitly mandate instructive errors:
-- FR-005: Report validation error message format requirements
-- FR-018: History validation error message format requirements
-- FR-041/FR-042/FR-043: Error output requirements (stderr, silent success, sufficient context)
+- FR-004: Report validation error message format requirements per Validation Contract
+- FR-016: History validation error message format requirements per Validation Contract
+- FR-040/FR-041/FR-042: Error output requirements (stderr, silent success, sufficient context)
 
-New validation using JSON Schema validator will provide field-level error messages per specified format.
+Custom YAML validator will provide field-level error messages per Validation Contract format.
 
 ---
 
@@ -136,7 +136,7 @@ New validation using JSON Schema validator will provide field-level error messag
 **Status**: ✅ PASS
 
 **Compliance**: New commands follow CLI-first design:
-- Parseable output: JSON Schema to stdout, file paths to stdout
+- Parseable output: YAML schemas to stdout, file paths to stdout
 - Exit codes: 0 for success, non-zero for failure
 - Stdin/stdout/stderr adherence: data to stdout, errors to stderr
 - No interactive prompts
@@ -191,15 +191,15 @@ fluxid-cli/
 │   │   ├── report.go       # Report file operations
 │   │   ├── history.go      # History file operations
 │   │   ├── schema.go       # Schema embedding and retrieval
-│   │   └── validate.go     # YAML validation with JSON Schema
+│   │   └── validate.go     # Custom YAML validation using schema rules
 │   ├── workflow/            # MODIFY: remove abort checks, update report reading
 │   │   └── workflow.go
 │   └── types/               # Shared types
 │       └── config.go
 ├── internal/assets/
-│   └── templates/           # NEW: embedded JSON Schema files (outputted as YAML)
-│       ├── report-schema.yaml   # Report JSON Schema (draft-07)
-│       └── history-schema.yaml  # History JSON Schema (draft-07)
+│   └── templates/           # NEW: embedded YAML schema documents
+│       ├── report-schema.yaml   # Report schema (YAML format)
+│       └── history-schema.yaml  # History schema (YAML format)
 └── e2e-tests/
     └── tests/
         ├── report_*.go     # NEW: E2E tests for report commands
@@ -211,7 +211,7 @@ internal/ipc/                          # Entire IPC package (if exists in main b
 # Note: E2E test removal count TBD - verify in main branch before removal
 ```
 
-**Structure Decision**: Single Go CLI project. New storage package replaces internal/ipc package with file-based operations. Command layer gets new report.go and history.go handlers. YAML schema documents embedded in binary via internal/assets/templates/ using Go embed directives. E2E tests reorganized: remove any existing IPC tests, add comprehensive file-based workflow tests.
+**Structure Decision**: Single Go CLI project. New storage package replaces internal/ipc package with file-based operations. Command layer gets new report.go and history.go handlers. YAML schema documents embedded in binary via internal/assets/templates/ using Go embed directives. Custom validation logic enforces schema rules without external library dependencies. E2E tests reorganized: remove any existing IPC tests, add comprehensive file-based workflow tests.
 
 ## Complexity Tracking
 

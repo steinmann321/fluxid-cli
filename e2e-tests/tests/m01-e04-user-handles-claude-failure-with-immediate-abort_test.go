@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -157,9 +158,9 @@ func TestM01E04FailureInDifferentPhases(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			runPhaseFailureTest(t, tc.failOnInvoke, tc.expectedExitCode)
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			runPhaseFailureTest(t, testCase.failOnInvoke, testCase.expectedExitCode)
 		})
 	}
 }

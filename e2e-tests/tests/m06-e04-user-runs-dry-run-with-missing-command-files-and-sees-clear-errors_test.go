@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -12,8 +13,6 @@ import (
 
 // TestM06E04MissingCommandFileSingleError validates error reporting for one missing file.
 func TestM06E04MissingCommandFileSingleError(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -83,8 +82,6 @@ func TestM06E04MissingCommandFileSingleError(t *testing.T) {
 
 // TestM06E04MissingCommandFileMultipleErrors validates error reporting for multiple missing files.
 func TestM06E04MissingCommandFileMultipleErrors(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -133,8 +130,6 @@ func TestM06E04MissingCommandFileMultipleErrors(t *testing.T) {
 
 // TestM06E04NoAgentProcessSpawnedOnValidationFailure validates no agent is invoked.
 func TestM06E04NoAgentProcessSpawnedOnValidationFailure(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -188,8 +183,6 @@ func TestM06E04UnreadableCommandFile(t *testing.T) {
 	if os.Getenv("GOOS") == "windows" {
 		t.Skip("Skipping file permission test on Windows")
 	}
-
-	t.Parallel()
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
@@ -248,8 +241,6 @@ func TestM06E04UnreadableCommandFile(t *testing.T) {
 
 // TestM06E04DirectoryAsCommandFile validates error when directory is specified as command file.
 func TestM06E04DirectoryAsCommandFile(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -302,8 +293,6 @@ func TestM06E04DirectoryAsCommandFile(t *testing.T) {
 
 // TestM06E04ErrorGuidance validates that error messages include actionable guidance.
 func TestM06E04ErrorGuidance(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

@@ -1,8 +1,7 @@
-//nolint:paralleltest // E2E tests with subprocess execution
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,7 +43,7 @@ func TestImplementRetriesExhaustedContinuesThroughCommit(t *testing.T) {
 		_ = os.RemoveAll(reportsDir)
 	})
 
-	sessionID := fmt.Sprintf("test-impl-exhaust-%d", time.Now().UnixNano())
+	sessionID := "b9e3f4a0-e29b-41d4-a716-446655440000" // Valid UUID for test
 
 	// Build fluxid binary
 	root := getProjectRoot(t)

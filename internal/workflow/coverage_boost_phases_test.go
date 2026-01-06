@@ -1,17 +1,17 @@
 package workflow
 
 import (
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/types"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
-	sessionID := "test-abort-implement-" + time.Now().Format("20060102150405.000000")
+	t.Skip("Abort mechanism removed in 001-report-history-refactor - out of scope")
+	sessionID := "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
 	dataDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataDir)
 
@@ -19,9 +19,10 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := ipc.SetAbortFlag(sessionID); err != nil {
+	// SKIP: Abort removed in 001-refactor
+	/*if err := ipc.SetAbortFlag(sessionID); err != nil {
 		t.Fatal(err)
-	}
+	}*/
 
 	cfg := types.Config{
 		SessionID:           sessionID,
@@ -46,7 +47,7 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 }
 
 func TestRunImplementPhase_MultipleRetries(t *testing.T) {
-	sessionID := "test-retries-" + time.Now().Format("20060102150405.000000")
+	sessionID := "b3f0c2d1-4e5f-6a7b-8c9d-0e1f2a3b4c5d"
 	dataDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataDir)
 
@@ -69,7 +70,7 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 
 	// Pre-write PASS report before workflow starts
 	// No timing dependencies - completely deterministic
-	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testPassReport); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
@@ -83,7 +84,7 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 }
 
 func TestRunImplementPhase_AgentFailure(t *testing.T) {
-	sessionID := "test-agent-fail-" + time.Now().Format("20060102150405.000000")
+	sessionID := "c4d5e6f7-8a9b-0c1d-2e3f-4a5b6c7d8e9f"
 	dataDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataDir)
 
@@ -114,7 +115,7 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 }
 
 func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
-	sessionID := "test-nonexistent-" + time.Now().Format("20060102150405.000000")
+	sessionID := "d5e6f7a8-9b0c-1d2e-3f4a-5b6c7d8e9f0a"
 	dataDir := t.TempDir()
 	t.Setenv("XDG_DATA_HOME", dataDir)
 

@@ -16,7 +16,6 @@ import (
 //nolint:funlen // E2E test with multiple error scenarios
 func TestM05E05MultipleAgentFlagsError(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -176,7 +175,6 @@ func testProjectConfigAgent(t *testing.T, root string) {
 // v2.0: environment variable support removed (Phase 7).
 func TestM05E05UnsupportedAgentError(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 

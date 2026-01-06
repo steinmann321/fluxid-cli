@@ -21,6 +21,8 @@ func standardCommandFilesConfigFor(dir string) string {
 
 // testContext creates a context with timeout for testing.
 // This helper avoids direct context.Background() calls in test files.
+//
+//nolint:unused // Helper function for future test scenarios
 func testContext(timeout time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), timeout)
 }

@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -11,8 +12,6 @@ import (
 // TestM02E02ProjectOverridesHome validates that project config overrides home config
 // and the initialization status correctly shows "source: project" for overridden values.
 func TestM02E02ProjectOverridesHome(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -38,8 +37,6 @@ iterations: 15`
 // TestM02E02ProjectOnlyConfig validates that project config works when home config
 // doesn't exist, with correct source attribution.
 func TestM02E02ProjectOnlyConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -76,8 +73,6 @@ func TestM02E02ProjectOnlyConfig(t *testing.T) {
 // TestM02E02NoProjectConfigOutsideProject validates that running fluxid outside
 // a project directory (no ./.fluxid/config.yaml) uses home config only.
 func TestM02E02NoProjectConfigOutsideProject(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -103,8 +98,6 @@ implement_retries: 4
 // TestM02E02PartialProjectOverride validates that partial project config only
 // overrides specified fields, with remaining fields using home or defaults.
 func TestM02E02PartialProjectOverride(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -129,8 +122,6 @@ func TestM02E02PartialProjectOverride(t *testing.T) {
 // TestM02E02CLIOverridesProjectAndHome validates that CLI flags take precedence
 // over both project and home config.
 func TestM02E02CLIOverridesProjectAndHome(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -158,8 +149,6 @@ implement_retries: 7`
 // TestM02E02InvalidProjectConfig validates that invalid project config
 // produces a clear error message.
 func TestM02E02InvalidProjectConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 

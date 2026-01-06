@@ -1,5 +1,4 @@
-//nolint:paralleltest // Tests use shared error output
-package errors
+package errors_test
 
 import (
 	"bytes"
@@ -7,8 +6,11 @@ import (
 	"io"
 	"os"
 	"testing"
+
+	fluxiderr "fluxid-cli/internal/errors"
 )
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestNewConfigError(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -29,14 +31,15 @@ func TestNewConfigError(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			err := NewConfigError(testCase.description)
+			err := fluxiderr.NewConfigError(testCase.description)
 			if err.Error() != testCase.want {
-				t.Errorf("NewConfigError() = %q, want %q", err.Error(), testCase.want)
+				t.Errorf("fluxiderr.NewConfigError() = %q, want %q", err.Error(), testCase.want)
 			}
 		})
 	}
 }
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestNewArgsError(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -57,14 +60,15 @@ func TestNewArgsError(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			err := NewArgsError(testCase.description)
+			err := fluxiderr.NewArgsError(testCase.description)
 			if err.Error() != testCase.want {
-				t.Errorf("NewArgsError() = %q, want %q", err.Error(), testCase.want)
+				t.Errorf("fluxiderr.NewArgsError() = %q, want %q", err.Error(), testCase.want)
 			}
 		})
 	}
 }
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestNewWorkflowError(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -80,14 +84,15 @@ func TestNewWorkflowError(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			err := NewWorkflowError(testCase.description)
+			err := fluxiderr.NewWorkflowError(testCase.description)
 			if err.Error() != testCase.want {
-				t.Errorf("NewWorkflowError() = %q, want %q", err.Error(), testCase.want)
+				t.Errorf("fluxiderr.NewWorkflowError() = %q, want %q", err.Error(), testCase.want)
 			}
 		})
 	}
 }
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestNewIPCError(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -103,14 +108,15 @@ func TestNewIPCError(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			err := NewIPCError(testCase.description)
+			err := fluxiderr.NewIPCError(testCase.description)
 			if err.Error() != testCase.want {
-				t.Errorf("NewIPCError() = %q, want %q", err.Error(), testCase.want)
+				t.Errorf("fluxiderr.NewIPCError() = %q, want %q", err.Error(), testCase.want)
 			}
 		})
 	}
 }
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestComponentError(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -146,17 +152,18 @@ func TestComponentError(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			err := &ComponentError{
+			err := &fluxiderr.ComponentError{
 				Component:   testCase.component,
 				Description: testCase.desc,
 			}
 			if err.Error() != testCase.want {
-				t.Errorf("ComponentError.Error() = %q, want %q", err.Error(), testCase.want)
+				t.Errorf("fluxiderr.ComponentError.Error() = %q, want %q", err.Error(), testCase.want)
 			}
 		})
 	}
 }
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestLogError(t *testing.T) {
 	tests := []struct {
 		name string
@@ -165,7 +172,7 @@ func TestLogError(t *testing.T) {
 	}{
 		{
 			name: "ComponentError",
-			err:  NewConfigError("test error"),
+			err:  fluxiderr.NewConfigError("test error"),
 			want: "error: config: test error\n",
 		},
 		{
@@ -182,7 +189,7 @@ func TestLogError(t *testing.T) {
 			reader, writer, _ := os.Pipe()
 			os.Stderr = writer
 
-			LogError(testCase.err)
+			fluxiderr.LogError(testCase.err)
 
 			_ = writer.Close()
 			os.Stderr = old
@@ -198,10 +205,11 @@ func TestLogError(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Uses shared error output buffer
 func TestWrappedError(t *testing.T) {
 	//nolint:err113 // Test code using simple error for verification
 	baseErr := errors.New("base error")
-	configErr := NewConfigError("wrapped: " + baseErr.Error())
+	configErr := fluxiderr.NewConfigError("wrapped: " + baseErr.Error())
 
 	want := "error: config: wrapped: base error"
 	if configErr.Error() != want {

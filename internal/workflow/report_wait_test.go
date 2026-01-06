@@ -2,8 +2,7 @@
 package workflow
 
 import (
-	"fluxid-cli/internal/ipc"
-	"fmt"
+	"fluxid-cli/internal/storage"
 	"testing"
 	"time"
 
@@ -13,7 +12,7 @@ import (
 func TestWaitForValidReport_NoReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
-	sessionID := "test-no-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "0ab7dd40-6bef-47d5-b6df-fed5cb8ad688"
 
 	// Don't write any report - should return FAIL immediately
 	status, err := waitForValidReport(sessionID, "implement")
@@ -29,7 +28,7 @@ func TestWaitForValidReport_Success(t *testing.T) {
 	// Test waitForValidReport with a valid report
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
-	sessionID := "test-wait-report-success"
+	sessionID := "d1e2f3a4-5b6c-7d8e-9f0a-1b2c3d4e5f6a"
 
 	// Write a valid report
 	validReport := `command: test-implement
@@ -46,7 +45,7 @@ issues:
 next_steps:
   - Continue to next phase
 `
-	if err := ipc.WriteReport(sessionID, validReport); err != nil {
+	if err := storage.WriteReport(sessionID, validReport); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
@@ -64,7 +63,7 @@ func TestWaitForValidReport_Fail(t *testing.T) {
 	// Test waitForValidReport with a FAIL status
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
-	sessionID := "test-wait-report-fail"
+	sessionID := "e2f3a4b5-6c7d-8e9f-0a1b-2c3d4e5f6a7b"
 
 	// Write a valid FAIL report
 	failReport := `command: test-implement
@@ -81,7 +80,7 @@ issues:
 next_steps:
   - Retry implementation
 `
-	if err := ipc.WriteReport(sessionID, failReport); err != nil {
+	if err := storage.WriteReport(sessionID, failReport); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
@@ -105,7 +104,7 @@ func TestWaitForValidReport_ReadError(t *testing.T) {
 
 	t.Skip("TODO: Fix test - abort flag checking interferes with read error testing")
 	// Test waitForValidReport with a read error scenario
-	sessionID := "test-read-error"
+	sessionID := "f3a4b5c6-7d8e-9f0a-1b2c-3d4e5f6a7b8c"
 
 	// Set invalid XDG_DATA_HOME to cause read errors
 	t.Setenv("XDG_DATA_HOME", "/dev/null/invalid")
@@ -136,15 +135,16 @@ func TestWaitForValidReport_ReadError(t *testing.T) {
 }
 
 func TestWaitForValidReport_CheckAbortError(t *testing.T) {
+	t.Skip("Abort mechanism removed in 001-report-history-refactor - out of scope")
 	defer goleak.VerifyNone(t)
 
 	// Test abort flag check error path (warning logged but execution continues)
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
-	sessionID := "test-wait-abort-check-err"
+	sessionID := "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c"
 
 	// Write report immediately to ensure deterministic test behavior
-	err := ipc.WriteReport(sessionID, testPassReport)
+	err := storage.WriteReport(sessionID, testPassReport)
 	if err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}

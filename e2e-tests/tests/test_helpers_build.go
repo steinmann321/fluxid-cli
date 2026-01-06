@@ -1,3 +1,4 @@
+//nolint:funlen // Test helper: setup code justifies length
 package tests
 
 import (
@@ -105,10 +106,11 @@ elif [[ "$PROMPT" == *"Review the implementation"* ]]; then
 fi
 
 # Write a valid PASS report so workflow can proceed
-# This allows tests to pass with the report-based workflow
+# Using new file-based interface
 FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+REPORT_FILE=$("$FLUXID_BIN" report --get-file)
+cat > "$REPORT_FILE" <<REPORT_EOF
 command: $COMMAND
 artifact: stub-test
 timestamp: $TIMESTAMP
