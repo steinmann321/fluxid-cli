@@ -1,15 +1,6 @@
 # Agent Integration
 
-How to integrate external coding agents (Claude, Codex, OpenCode) with fluxid's file-based workflow protocol.
-
-## What is an Agent?
-
-An **agent** is an external AI coding assistant like:
-- `claude` (Claude CLI from Anthropic)
-- `codex` (OpenAI Codex)
-- `opencode` (OpenCode AI)
-
-These are **separate command-line tools** that receive prompts and execute coding tasks.
+How coding agents are integrated with fluxid.
 
 ## How fluxid Invokes Agents
 
@@ -27,9 +18,9 @@ When you run `fluxid --claude --file=task.md`, fluxid:
           -p "<composed-prompt>"
    ```
 4. **Sets environment variables**:
-   - `FLUXID_SESSION_ID=<session-id>`
-   - `FLUXID_TASK_FILE=<task-file-path>`
-   - `FLUXID_SESSION_ROOT=<session-root>` (optional)
+   - `FLUXID_SESSION_ID=<session-id>` - UUID identifying the current session
+   - `FLUXID_TASK_FILE=<task-file-path>` - Absolute path to the task file
+   - `FLUXID_SESSION_ROOT=<session-root>` - Override for session directory location (default: .fluxid/sessions/, fallback: $TMPDIR/fluxid)
 5. **Streams agent output** to stdout/stderr
 6. **Reads report.yaml** after agent completes to get status
 
@@ -238,7 +229,10 @@ Agents receive these from fluxid automatically:
 
 - **FLUXID_SESSION_ID**: Current session identifier (UUID)
 - **FLUXID_TASK_FILE**: Absolute path to task file
-- **FLUXID_SESSION_ROOT**: Session storage root directory (optional)
+- **FLUXID_SESSION_ROOT**: Override for session directory location
+  - If set: Uses this directory for session storage
+  - If not set: Default is `.fluxid/sessions/` in current directory, with fallback to `$TMPDIR/fluxid`
+  - Example: `FLUXID_SESSION_ROOT=/custom/path` stores sessions in `/custom/path/<session-id>/`
 
 ## Error Handling
 
