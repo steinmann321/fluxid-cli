@@ -20,6 +20,7 @@ func TestExecuteCommitPhase_Error(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent-xyz",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -49,6 +50,7 @@ func TestRun_AbortAfterImplement(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
@@ -88,6 +90,7 @@ func TestExecuteImplementPhase_Error(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent-xyz",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -162,6 +165,7 @@ func TestRunImplementPhase_NonZeroExitFromImplement(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "nonexistent-command-xyz",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -190,6 +194,7 @@ func TestRunCommitPhaseWithRetry_ExecuteError(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent-commit",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -223,7 +228,7 @@ func TestWaitForValidReport_AbortDuringWait(t *testing.T) {
 		t.Fatalf("Failed to set abort flag: %v", err)
 	}*/
 
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err == nil {
 		t.Error("Expected error due to abort")
 	}
@@ -246,7 +251,7 @@ func TestCheckImplementReportStatus_AbortFlag(t *testing.T) {
 		t.Fatalf("Failed to set abort flag: %v", err)
 	}*/
 
-	exitCode, err := checkImplementReportStatus(sessionID, 1)
+	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
 	if err == nil {
 		t.Error("Expected error due to abort")
 	}
@@ -263,7 +268,7 @@ func TestCheckImplementReportStatus_ReadError(t *testing.T) {
 	// Use empty session ID to trigger read error
 	// In the refactored design, read errors are treated as FAIL status (not as errors)
 	// This allows the retry mechanism to handle transient failures
-	exitCode, err := checkImplementReportStatus("", 1)
+	exitCode, err := checkImplementReportStatus("", "", 1)
 	if err != nil {
 		t.Errorf("Expected no error (read errors treated as FAIL status), got: %v", err)
 	}
@@ -340,6 +345,7 @@ func TestRunReviewPhaseError(t *testing.T) {
 	cfg := types.Config{
 		Agent:           "nonexistent-agent-xyz",
 		SessionID:       sessionID,
+		SessionRoot:     "",
 		MaxReviewCycles: 1,
 		TaskFilePath:    "",
 		CommandFiles:    nil,

@@ -16,7 +16,7 @@ func TestWaitForValidReport_InvalidReport(t *testing.T) {
 	// Write invalid YAML report - should return FAIL immediately
 	_ = storage.WriteReport(sessionID, "invalid: yaml: [content")
 
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error when report invalid (should return FAIL), got: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestWaitForValidReport_AbortFlagSet(t *testing.T) {
 	// Set abort flag before checking report
 	// SKIP: _ = ipc.SetAbortFlag // Abort removed in 001-refactor(sessionID)
 
-	_, err := waitForValidReport(sessionID, "implement")
+	_, err := waitForValidReport(sessionID, "", "implement")
 	if err == nil {
 		t.Error("Expected error due to abort, got nil")
 	}
@@ -62,7 +62,7 @@ func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestWaitForValidReport_MalformedReport(t *testing.T) {
 	// Write malformed YAML that can't be parsed - should return FAIL
 	_ = storage.WriteReport(sessionID, "command: test\nstatus: PASS\ninvalid_structure")
 
-	status, err := waitForValidReport(sessionID, "review")
+	status, err := waitForValidReport(sessionID, "", "review")
 	if err != nil {
 		t.Errorf("Expected no error when report malformed (should return FAIL), got: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestWaitForValidReport_CheckAbortFlagError(t *testing.T) {
 	}
 
 	// This should successfully read the report
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestWaitForValidReport_ReadReportError(t *testing.T) {
 	}
 
 	// This test validates that waitForValidReport properly reads a valid report
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -156,7 +156,7 @@ issues:
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -188,7 +188,7 @@ issues:
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}

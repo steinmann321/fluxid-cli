@@ -60,7 +60,7 @@ func TestReadHistory_FIFOEvictionLargeFile(t *testing.T) {
 	}
 
 	// ReadHistory should trigger FIFO eviction
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}

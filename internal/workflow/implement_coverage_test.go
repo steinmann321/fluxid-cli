@@ -19,6 +19,7 @@ func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentFalse, // Will fail on commit phase
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
@@ -48,6 +49,7 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentFalse,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 2,
@@ -79,6 +81,7 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,

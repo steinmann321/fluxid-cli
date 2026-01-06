@@ -25,6 +25,7 @@ func loadAndResolveConfig() (types.Config, int) {
 		Agent:               "",
 		AgentArgs:           nil,
 		SessionID:           "",
+		SessionRoot:         "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
 		MaxCommitRetries:    0,
@@ -162,6 +163,7 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		Agent:               "",
 		AgentArgs:           nil,
 		SessionID:           "",
+		SessionRoot:         "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
 		MaxCommitRetries:    0,
@@ -175,6 +177,8 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 	if sessionID == "" {
 		sessionID = uuid.New().String()
 	}
+	// Read optional session root override
+	sessionRoot := os.Getenv("FLUXID_SESSION_ROOT")
 	// Determine dry-run mode
 	dryRun := args.CLIDryRun != nil && *args.CLIDryRun
 	// Determine output format
@@ -194,6 +198,7 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		Agent:               resolved.Agent,
 		AgentArgs:           args.AgentArgs,
 		SessionID:           sessionID,
+		SessionRoot:         sessionRoot,
 		MaxReviewCycles:     resolved.Iterations,
 		MaxImplementRetries: resolved.ImplementRetries,
 		MaxCommitRetries:    resolved.CommitRetries,

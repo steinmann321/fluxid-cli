@@ -47,7 +47,7 @@ config:
 	}
 
 	// ReadReport should fail with SecurityError
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Fatal("Expected security error for YAML with anchors")
 	}
@@ -123,7 +123,7 @@ next_steps: []
 	}
 
 	// ReadReport should fail with multiple validation errors
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Fatal("Expected validation errors for multiple missing fields")
 	}

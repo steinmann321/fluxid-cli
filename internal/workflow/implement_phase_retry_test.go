@@ -16,6 +16,7 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 	// Test that implement phase fails immediately when agent command doesn't exist
 	cfg := types.Config{
 		SessionID:           "test-retries-session",
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent-xyz",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
@@ -45,6 +46,7 @@ func TestRunImplementPhase_NonZeroExitCode(t *testing.T) {
 	// Test that implement phase aborts on non-zero exit code
 	cfg := types.Config{
 		SessionID:           "test-nonzero-exit",
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
@@ -81,6 +83,7 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
@@ -119,7 +122,7 @@ func TestCheckImplementReportStatus_PassStatus(t *testing.T) {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, 1)
+	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -155,7 +158,7 @@ summary: "Implementation failed"
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, 1)
+	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
 	if err != nil {
 		t.Errorf("Expected no error for FAIL status (signals retry), got: %v", err)
 	}
@@ -177,7 +180,7 @@ func TestCheckImplementReportStatus_InvalidReport(t *testing.T) {
 		t.Fatalf("Failed to write invalid report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, 1)
+	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
 	// Invalid report is treated as FAIL status, which returns -1 (retry signal) with no error
 	if err != nil {
 		t.Errorf("Expected no error (invalid report treated as FAIL), got: %v", err)
@@ -196,6 +199,7 @@ func TestExecuteImplementPhase_Success(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
@@ -225,6 +229,7 @@ func TestExecuteImplementPhase_Failure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
@@ -266,6 +271,7 @@ func TestExecuteCommit_Success(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,

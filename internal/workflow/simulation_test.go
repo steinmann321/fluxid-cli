@@ -20,6 +20,7 @@ func TestRunSimulation(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-sim-session",
+		SessionRoot:         "",
 		Agent:               "claude",
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 2,
@@ -66,6 +67,7 @@ func TestGetCommandFilePath_NoCommandFiles(t *testing.T) {
 		Agent:               "",
 		AgentArgs:           nil,
 		SessionID:           "",
+		SessionRoot:         "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
 		MaxCommitRetries:    100,
@@ -86,6 +88,7 @@ func TestGetCommandFilePath_WithCommandFiles(t *testing.T) {
 		Agent:               "",
 		AgentArgs:           nil,
 		SessionID:           "",
+		SessionRoot:         "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
 		MaxCommitRetries:    100,
@@ -124,6 +127,7 @@ func TestGetCommandFilePath_PartialCommandFiles(t *testing.T) {
 		Agent:               "",
 		AgentArgs:           nil,
 		SessionID:           "",
+		SessionRoot:         "",
 		MaxReviewCycles:     0,
 		MaxImplementRetries: 0,
 		MaxCommitRetries:    100,

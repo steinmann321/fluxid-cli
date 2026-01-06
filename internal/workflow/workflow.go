@@ -84,7 +84,7 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		// Check implement report status IMMEDIATELY after implement phase
 		// CRITICAL: This must happen BEFORE executeCommit(), otherwise the commit phase
 		// will overwrite the implement report with a commit report
-		if exitCode, err := checkImplementReportStatus(cfg.SessionID, retry); err != nil {
+		if exitCode, err := checkImplementReportStatus(cfg.SessionID, cfg.SessionRoot, retry); err != nil {
 			return exitCode, err
 		} else if exitCode == 0 {
 			// Implement phase succeeded, run commit and return success
@@ -134,8 +134,8 @@ func executeCommit(cfg types.Config) (int, error) {
 	return runCommitPhaseWithRetry(cfg)
 }
 
-func checkImplementReportStatus(sessionID string, _ int) (int, error) {
-	status, err := waitForValidReport(sessionID, "implement")
+func checkImplementReportStatus(sessionID string, sessionRoot string, _ int) (int, error) {
+	status, err := waitForValidReport(sessionID, sessionRoot, "implement")
 	if err != nil {
 		// Note: AbortError handling removed per 001-report-history-refactor
 		// If abort functionality is needed in future, restore error type checking here
@@ -168,7 +168,7 @@ func runCommitPhaseWithRetry(cfg types.Config) (int, error) {
 		}
 
 		// Check commit report status IMMEDIATELY after commit phase
-		if exitCode, err := checkCommitReportStatus(cfg.SessionID, retry); err != nil {
+		if exitCode, err := checkCommitReportStatus(cfg.SessionID, cfg.SessionRoot, retry); err != nil {
 			return exitCode, err
 		} else if exitCode == 0 {
 			// Commit phase succeeded (REPORT says PASS)
@@ -205,8 +205,8 @@ func executeCommitPhase(cfg types.Config, retry int) (int, error) {
 	return 0, nil
 }
 
-func checkCommitReportStatus(sessionID string, _ int) (int, error) {
-	status, err := waitForValidReport(sessionID, "commit")
+func checkCommitReportStatus(sessionID string, sessionRoot string, _ int) (int, error) {
+	status, err := waitForValidReport(sessionID, sessionRoot, "commit")
 	if err != nil {
 		// Note: AbortError handling removed per 001-report-history-refactor
 		// If abort functionality is needed in future, restore error type checking here
@@ -242,7 +242,7 @@ func runReviewPhase(cfg types.Config) (string, int, error) {
 	}
 
 	// Wait for valid review report and check status
-	status, err := waitForValidReport(cfg.SessionID, "review")
+	status, err := waitForValidReport(cfg.SessionID, cfg.SessionRoot, "review")
 	if err != nil {
 		// Note: AbortError handling removed per 001-report-history-refactor
 		// If abort functionality is needed in future, restore error type checking here

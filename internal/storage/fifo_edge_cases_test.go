@@ -61,7 +61,7 @@ func TestReadHistory_FIFOWithSmallHistory(t *testing.T) {
 	}
 
 	// ReadHistory should handle edge case: keep at least 1 entry
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestReadHistory_FIFOWithExactlyOneEvent(t *testing.T) {
 	}
 
 	// ReadHistory should handle edge case: single event, can't remove it
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestReadHistory_FIFOWithFourEvents(t *testing.T) {
 	}
 
 	// ReadHistory should perform eviction
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}

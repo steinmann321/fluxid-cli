@@ -28,6 +28,10 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	// Set environment variables for session tracking and task file
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+config.SessionID)
 	cmd.Env = append(cmd.Env, "FLUXID_TASK_FILE="+config.TaskFilePath)
+	// Pass FLUXID_SESSION_ROOT to agent if set in config
+	if config.SessionRoot != "" {
+		cmd.Env = append(cmd.Env, "FLUXID_SESSION_ROOT="+config.SessionRoot)
+	}
 
 	// Create pipes for stdout and stderr
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -132,12 +136,12 @@ func composePrompt(cfg types.Config, phase string, basePrompt string) string {
 // Returns the status ("PASS" or "FAIL") or treats missing/invalid reports as FAIL.
 //
 //nolint:unparam // Error return maintained for interface consistency
-func waitForValidReport(sessionID string, phase string) (string, error) {
+func waitForValidReport(sessionID string, sessionRoot string, phase string) (string, error) {
 	// Abort flag functionality removed per 001-report-history-refactor
 	// Abort mechanism is out of scope and requires separate evaluation
 
 	// Read report from file-based storage
-	report, err := storage.ReadReport(sessionID)
+	report, err := storage.ReadReport(sessionID, sessionRoot)
 	if err != nil {
 		// If report doesn't exist or is invalid, treat as FAIL
 		// Agent either didn't write one, or the file is malformed

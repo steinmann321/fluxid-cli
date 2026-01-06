@@ -31,7 +31,7 @@ func TestReadHistory_CreatesEmptyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestReadHistory_ParsesValidHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestReadHistory_CorruptedFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = storage.ReadHistory(sessionID)
+	_, err = storage.ReadHistory(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for corrupted history file")
 	}

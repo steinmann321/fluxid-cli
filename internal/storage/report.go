@@ -57,15 +57,16 @@ type Issue struct {
 //
 // Parameters:
 //   - sessionID: The session identifier (must be valid UUID)
+//   - sessionRoot: Optional session root override (from FLUXID_SESSION_ROOT in CLI layer)
 //
 // Returns:
 //   - Parsed Report structure
 //   - Error if validation or parsing fails
 //
 //nolint:cyclop,err113 // Validation function: complexity and context-specific errors required
-func ReadReport(sessionID string) (*Report, error) {
+func ReadReport(sessionID string, sessionRoot string) (*Report, error) {
 	// Step 1: Resolve report file path
-	filePath, err := ResolveSessionPath(sessionID, "report.yaml", "")
+	filePath, err := ResolveSessionPath(sessionID, "report.yaml", sessionRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve report path: %w", err)
 	}

@@ -21,6 +21,7 @@ func TestRun_SingleCycleSuccess(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -55,6 +56,7 @@ func TestRun_AbortBeforeImplement(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
@@ -90,6 +92,7 @@ func TestRun_MultipleReviewCycles(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     3,
@@ -126,6 +129,7 @@ func TestRun_WithAgentArgs(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{"-n", "test"},
 		MaxReviewCycles:     1,
@@ -160,6 +164,7 @@ func TestRun_ReadReportFailure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -186,6 +191,7 @@ func TestRun_AllReviewCyclesExhausted(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
@@ -220,6 +226,7 @@ func TestRun_ImplementPhaseError(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentFalse, // Agent that fails
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -250,6 +257,7 @@ func TestRun_ReviewPhaseError(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho, // Use echo to pass implement/commit
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,

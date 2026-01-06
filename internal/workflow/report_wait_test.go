@@ -15,7 +15,7 @@ func TestWaitForValidReport_NoReport(t *testing.T) {
 	sessionID := "0ab7dd40-6bef-47d5-b6df-fed5cb8ad688"
 
 	// Don't write any report - should return FAIL immediately
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error when report missing (should return FAIL), got: %v", err)
 	}
@@ -50,7 +50,7 @@ next_steps:
 	}
 
 	// Wait for the report
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -85,7 +85,7 @@ next_steps:
 	}
 
 	// Wait for the report
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestWaitForValidReport_ReadError(t *testing.T) {
 	defer close(done)
 
 	go func() {
-		status, err := waitForValidReport(sessionID, "test")
+		status, err := waitForValidReport(sessionID, "", "test")
 		done <- struct {
 			status string
 			err    error
@@ -150,7 +150,7 @@ func TestWaitForValidReport_CheckAbortError(t *testing.T) {
 	}
 
 	// waitForValidReport should complete successfully even if abort check has issues
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error despite abort check issues, got: %v", err)
 	}

@@ -13,6 +13,7 @@ type Config struct {
 	Agent               string
 	AgentArgs           []string
 	SessionID           string
+	SessionRoot         string // Optional session root override from FLUXID_SESSION_ROOT
 	MaxReviewCycles     int
 	MaxImplementRetries int
 	MaxCommitRetries    int

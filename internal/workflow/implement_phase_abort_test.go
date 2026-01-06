@@ -29,6 +29,7 @@ func TestRunImplementPhase_WithAbort(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,

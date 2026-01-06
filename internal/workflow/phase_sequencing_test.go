@@ -24,6 +24,7 @@ func TestPhaseSequencing_ImplementReportReadBeforeCommit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -40,7 +41,7 @@ func TestPhaseSequencing_ImplementReportReadBeforeCommit(t *testing.T) {
 	}
 
 	// Verify the report has the correct command field BEFORE runImplementPhase
-	reportBefore, err := storage.ReadReport(sessionID)
+	reportBefore, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("Failed to read initial report: %v", err)
 	}
@@ -82,6 +83,7 @@ func TestPhaseSequencing_FullWorkflowPhases(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -130,7 +132,7 @@ func TestPhaseSequencing_CommitOverwritesImplement(t *testing.T) {
 	}
 
 	// Verify implement report exists
-	implementReport, err := storage.ReadReport(sessionID)
+	implementReport, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("Failed to read implement report: %v", err)
 	}
@@ -145,7 +147,7 @@ func TestPhaseSequencing_CommitOverwritesImplement(t *testing.T) {
 	}
 
 	// Verify that the report is now a commit report (implement report was overwritten)
-	commitReport, err := storage.ReadReport(sessionID)
+	commitReport, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("Failed to read report after commit: %v", err)
 	}

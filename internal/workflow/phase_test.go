@@ -13,6 +13,7 @@ func TestRunCommitPhase(t *testing.T) {
 	// We can't easily test the full flow without mocking, so we test error handling
 	cfg := types.Config{
 		SessionID:           "test-session",
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -41,6 +42,7 @@ func TestRunReviewPhase(t *testing.T) {
 	// We can't easily test the full flow without mocking, so we test error handling
 	cfg := types.Config{
 		SessionID:           "test-session",
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -72,6 +74,7 @@ func TestRunPhase_ExitCodeExtraction(t *testing.T) {
 	// We use false command which always exits with code 1
 	cfg := types.Config{
 		SessionID:           "test-exit-code-session",
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -100,6 +103,7 @@ func TestRunPhase_Success(t *testing.T) {
 	// We use true command which always exits with code 0
 	cfg := types.Config{
 		SessionID:           "test-success-session",
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -124,6 +128,7 @@ func TestRunCommitPhase_CommitDisabled(t *testing.T) {
 	// Test that commit phase works when enabled
 	cfg := types.Config{
 		SessionID:           "test-commit-disabled",
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -148,6 +153,7 @@ func TestRunReviewPhase_NonZeroExitCode(t *testing.T) {
 	// Test that review phase fails on non-zero exit code
 	cfg := types.Config{
 		SessionID:           "test-review-nonzero",
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -175,6 +181,7 @@ func TestRunCommitPhase_Success(t *testing.T) {
 	// Test successful commit phase
 	cfg := types.Config{
 		SessionID:           "test-commit-success",
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,

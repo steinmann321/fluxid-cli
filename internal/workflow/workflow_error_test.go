@@ -35,6 +35,7 @@ func TestRunImplementPhase_AbortBeforeRetry(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false", // Fails immediately
 		AgentArgs:           []string{},
 		MaxImplementRetries: 3,
@@ -68,7 +69,7 @@ func TestWaitForValidReport_NoReportReturnsFAIL(t *testing.T) {
 	sessionID := testSessionWorkflowError
 
 	// Don't write any report - should return FAIL immediately
-	status, err := waitForValidReport(sessionID, "test-phase")
+	status, err := waitForValidReport(sessionID, "", "test-phase")
 	if err != nil {
 		t.Errorf("Expected no error when report missing (should return FAIL), got: %v", err)
 	}
@@ -86,6 +87,7 @@ func TestRun_ImplementPhaseAbort(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -122,6 +124,7 @@ func TestRunReviewPhase_Abort(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -159,6 +162,7 @@ func TestRunImplementPhase_Abort(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -192,6 +196,7 @@ func TestRunReviewPhase_AgentCommandFail(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "/bin/false", // Command that always fails
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,

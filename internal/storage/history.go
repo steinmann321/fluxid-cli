@@ -53,15 +53,16 @@ type History []HistoryEvent
 //
 // Parameters:
 //   - sessionID: The session identifier (must be valid UUID)
+//   - sessionRoot: Optional session root override (from FLUXID_SESSION_ROOT in CLI layer)
 //
 // Returns:
 //   - Parsed History array (may be empty if file is new or after eviction)
 //   - Error if validation or parsing fails
 //
 //nolint:cyclop // Complexity inherent to validation/workflow logic
-func ReadHistory(sessionID string) (History, error) {
+func ReadHistory(sessionID string, sessionRoot string) (History, error) {
 	// Step 1: Resolve history file path
-	filePath, err := ResolveSessionPath(sessionID, "history.yaml", "")
+	filePath, err := ResolveSessionPath(sessionID, "history.yaml", sessionRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve history path: %w", err)
 	}

@@ -2,8 +2,11 @@
 package tests
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -190,6 +193,7 @@ func TestM02E01NoProjectStateModification(t *testing.T) {
 	createStubClaude(t, root)
 
 	tmpWorkDir := t.TempDir()
+	tmpSessionRoot := t.TempDir() // Separate directory for session files
 	configContent := `iterations: 5
 `
 	tmpHome := setupHomeWithConfig(t, configContent)
@@ -200,8 +204,23 @@ func TestM02E01NoProjectStateModification(t *testing.T) {
 		t.Fatalf("Failed to read working dir before: %v", err)
 	}
 
-	// Run fluxid from the temporary working directory (using custom exec for Dir)
-	runFluxidInDir(t, root, tmpHome, tmpWorkDir)
+	// Run fluxid from the temporary working directory with session root outside workdir
+	binPath := filepath.Join(root, "bin", "fluxid")
+	cmd := exec.CommandContext(t.Context(), binPath)
+	cmd.Dir = tmpWorkDir
+	cmd.Env = append(os.Environ(),
+		"HOME="+tmpHome,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
+		"FLUXID_SESSION_ROOT="+tmpSessionRoot,
+	)
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
+	}
 
 	// List files after running fluxid
 	filesAfter, err := os.ReadDir(tmpWorkDir)
@@ -209,9 +228,14 @@ func TestM02E01NoProjectStateModification(t *testing.T) {
 		t.Fatalf("Failed to read working dir after: %v", err)
 	}
 
-	// Verify no files were created or modified
+	// Verify no files were created or modified in working directory
 	if len(filesAfter) != len(filesBefore) {
-		t.Errorf("Expected no files to be created in working directory, but file count changed from %d to %d",
-			len(filesBefore), len(filesAfter))
+		var newFiles []string
+		for _, f := range filesAfter {
+			newFiles = append(newFiles, f.Name())
+		}
+		t.Errorf(
+			"Expected no files in working directory, but file count changed from %d to %d. Created: %v",
+			len(filesBefore), len(filesAfter), newFiles)
 	}
 }

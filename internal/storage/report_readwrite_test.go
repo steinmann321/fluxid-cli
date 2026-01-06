@@ -85,7 +85,7 @@ next_steps: []
 	}
 
 	// Try to read it
-	_, err = storage.ReadReport(sessionID)
+	_, err = storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for corrupted file")
 	}
@@ -111,7 +111,7 @@ func TestReadReport_EmptyFile(t *testing.T) {
 	}
 
 	// ReadReport should return error for empty file
-	_, err = storage.ReadReport(sessionID)
+	_, err = storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for empty file")
 	}
@@ -144,7 +144,7 @@ next_steps:
 		t.Fatalf("WriteReport failed: %v", err)
 	}
 
-	report, err := storage.ReadReport(sessionID)
+	report, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadReport failed: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestReadReport_FileNotExist(t *testing.T) {
 	// Use unique session ID to avoid conflict with other tests
 	sessionID := "550e8400-e29b-41d4-a716-446655440099"
 
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	// ReadReport returns error for non-existent file (tested in E2E)
 	if err == nil {
 		t.Error("Expected error for non-existent report")

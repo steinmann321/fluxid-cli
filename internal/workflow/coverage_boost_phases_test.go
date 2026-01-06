@@ -26,6 +26,7 @@ func TestRunImplementPhase_AbortDuringImplement(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
@@ -57,6 +58,7 @@ func TestRunImplementPhase_MultipleRetries(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
@@ -94,6 +96,7 @@ func TestRunImplementPhase_AgentFailure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -125,6 +128,7 @@ func TestRunImplementPhase_NonexistentAgent(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent-12345",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -151,6 +155,7 @@ func TestRunCommitPhase_Disabled(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-commit-disabled",
+		SessionRoot:         "",
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -177,6 +182,7 @@ func TestRunCommitPhase_Enabled(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-commit-enabled",
+		SessionRoot:         "",
 		Agent:               testAgentTrue,
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,

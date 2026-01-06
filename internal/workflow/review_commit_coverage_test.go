@@ -20,6 +20,7 @@ func TestRunCommitPhase_AgentFailure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        testAgentFalse,
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -45,6 +46,7 @@ func TestRunCommitPhase_AgentFailsZeroExit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        "/nonexistent/command/path", // Will fail to execute
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -69,6 +71,7 @@ func TestRunReviewPhase_AgentNonZeroExit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        testAgentFalse,
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -97,6 +100,7 @@ func TestRunReviewPhase_AgentFailsZeroExit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        "/nonexistent/command/path",
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -126,6 +130,7 @@ func TestRunReviewPhase_ReportWaitAbort(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        testAgentEcho,
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -179,7 +184,7 @@ issues:
 	}
 
 	// waitForValidReport should immediately return FAIL for invalid structure
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error (should return FAIL status), got: %v", err)
 	}
@@ -197,6 +202,7 @@ func TestRunReviewPhase_Success2(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        testAgentEcho,
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -244,6 +250,7 @@ func TestRunReviewPhase_FailStatus(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:    sessionID,
+		SessionRoot:  "",
 		Agent:        testAgentEcho,
 		AgentArgs:    []string{},
 		DryRun:       false,
@@ -306,6 +313,7 @@ func TestExecuteCommitPhase_Success(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -335,6 +343,7 @@ func TestExecuteCommitPhase_Failure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentFalse,
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,

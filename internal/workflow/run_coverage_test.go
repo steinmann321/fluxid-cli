@@ -26,6 +26,7 @@ func TestRun_AbortAfterImplementPhase(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
@@ -69,6 +70,7 @@ func TestRun_ReviewCycleFAILContinuation(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxReviewCycles:     3,

@@ -21,6 +21,7 @@ func TestRunCommitPhaseWithRetry_SuccessFirstAttempt(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -53,6 +54,7 @@ func TestRunCommitPhaseWithRetry_AllRetriesFail(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -86,6 +88,7 @@ func TestRunCommitPhaseWithRetry_AbortDuringRetry(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -122,7 +125,7 @@ func TestCheckCommitReportStatus_Pass(t *testing.T) {
 		t.Fatalf("Failed to write commit report: %v", err)
 	}
 
-	exitCode, err := checkCommitReportStatus(sessionID, 1)
+	exitCode, err := checkCommitReportStatus(sessionID, "", 1)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -142,7 +145,7 @@ func TestCheckCommitReportStatus_Fail(t *testing.T) {
 		t.Fatalf("Failed to write commit FAIL report: %v", err)
 	}
 
-	exitCode, err := checkCommitReportStatus(sessionID, 1)
+	exitCode, err := checkCommitReportStatus(sessionID, "", 1)
 	if err != nil {
 		t.Errorf("Expected no error for FAIL status, got: %v", err)
 	}
@@ -164,7 +167,7 @@ func TestCheckCommitReportStatus_AbortDuringCheck(t *testing.T) {
 		t.Fatalf("Failed to set abort flag: %v", err)
 	}*/
 
-	exitCode, err := checkCommitReportStatus(sessionID, 1)
+	exitCode, err := checkCommitReportStatus(sessionID, "", 1)
 	if err == nil {
 		t.Error("Expected error due to abort")
 	}

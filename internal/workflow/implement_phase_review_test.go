@@ -20,6 +20,7 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -55,6 +56,7 @@ func TestRunReviewPhase_Success(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,

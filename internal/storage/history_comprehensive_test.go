@@ -13,7 +13,7 @@ import (
 func TestReadHistory_InvalidSessionID(t *testing.T) {
 	invalidSessionID := "../../../etc/passwd"
 
-	_, err := storage.ReadHistory(invalidSessionID)
+	_, err := storage.ReadHistory(invalidSessionID, "")
 	if err == nil {
 		t.Error("Expected error for invalid session ID")
 	}
@@ -30,7 +30,7 @@ func TestReadHistory_EmptyFileReturnsEmptyArray(t *testing.T) {
 	sessionID := "550e8400-e29b-41d4-a716-446655440301"
 
 	// ReadHistory creates empty file if it doesn't exist
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestReadHistory_MalformedYAML(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = storage.ReadHistory(sessionID)
+	_, err = storage.ReadHistory(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for malformed YAML")
 	}
@@ -86,7 +86,7 @@ func TestReadHistory_WithSecurityViolation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = storage.ReadHistory(sessionID)
+	_, err = storage.ReadHistory(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for YAML with anchors")
 	}
@@ -127,7 +127,7 @@ func TestReadHistory_ValidHistoryWithMultipleEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
@@ -263,7 +263,7 @@ issues:
 		t.Fatal(err)
 	}
 
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for malformed YAML")
 	}
@@ -291,7 +291,7 @@ issues:
 		t.Fatal(err)
 	}
 
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for empty command")
 	}
@@ -319,7 +319,7 @@ issues:
 		t.Fatal(err)
 	}
 
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for empty artifact")
 	}

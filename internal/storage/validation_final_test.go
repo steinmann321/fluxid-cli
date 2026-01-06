@@ -217,7 +217,7 @@ issues:
 		t.Fatal(err)
 	}
 
-	_, err := storage.ReadReport(sessionID)
+	_, err := storage.ReadReport(sessionID, "")
 	if err == nil {
 		t.Error("Expected error for report with missing status after parsing")
 	}
@@ -230,7 +230,7 @@ func TestReadHistory_EmptyFileCreation(t *testing.T) {
 	sessionID := "550e8400-e29b-41d4-a716-446655440604"
 
 	// ReadHistory should create empty file if it doesn't exist
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}

@@ -14,6 +14,7 @@ func TestExecuteWorkflowWithJSONFormat(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-json-session",
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -36,6 +37,7 @@ func TestExecuteWorkflowWithYAMLFormat(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-yaml-session",
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -58,6 +60,7 @@ func TestExecuteWorkflowWithTextFormat(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-text-session",
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -80,6 +83,7 @@ func TestExecuteWorkflowDryRunMode(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-dry-run",
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
@@ -103,6 +107,7 @@ func TestExecuteWorkflowWithInvalidAgent(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           "test-invalid-agent",
+		SessionRoot:         "",
 		Agent:               "nonexistent-agent-xyz",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,

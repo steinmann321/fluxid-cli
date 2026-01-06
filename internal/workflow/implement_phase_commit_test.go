@@ -20,6 +20,7 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -56,6 +57,7 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -110,6 +112,7 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,

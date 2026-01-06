@@ -43,7 +43,7 @@ func TestReportWriteAndRead(t *testing.T) {
 	}
 
 	// Read it back
-	report, err := storage.ReadReport(sessionID)
+	report, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadReport failed: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestHistoryRead(t *testing.T) {
 	}
 
 	// Read empty history
-	history, err := storage.ReadHistory(sessionID)
+	history, err := storage.ReadHistory(sessionID, "")
 	if err != nil {
 		t.Fatalf("ReadHistory failed: %v", err)
 	}
