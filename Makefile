@@ -54,6 +54,7 @@ uninstall-user: ## Uninstall fluxid from ~/bin
 clean: ## Remove build artifacts
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(BUILD_DIR) .tmp
+	@rm -f coverage*.out .tmp*.out
 	@echo "✓ Cleaned"
 
 test: ## Run all tests
