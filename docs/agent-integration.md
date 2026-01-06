@@ -28,7 +28,21 @@ When you run `fluxid --claude --file=task.md`, fluxid:
 
 ### Agent Must Write Report
 
-After completing a task, the agent MUST write a valid `report.yaml` file. fluxid reads this file to determine workflow status (PASS/FAIL).
+The agent MUST write a valid `report.yaml` file in ALL cases:
+
+1. **Task completed successfully** → Write report with `status: PASS`
+2. **Task partially done or blocked** → Write report with `status: FAIL`
+3. **Agent exhausted/fatigued** → Write report with `status: FAIL` documenting current state
+
+**Critical from implement-e2e command:**
+> "If, after doing your best, you still cannot reach green, **stop implementing and produce a clear, validated FAIL report** that documents the current state and concrete next steps. Better stop working than start cheating."
+
+A FAIL report must document:
+- How far the implementation got
+- What blocks further progress
+- What work remains (concrete next steps)
+
+fluxid reads this file to determine workflow status and decide whether to retry.
 
 ### Get Report File Path
 
@@ -108,6 +122,37 @@ summary: "Implementation complete"  # Brief summary
 - **next_steps**: array of strings (optional)
 - **summary**: string (optional)
 - **Additional properties**: NOT ALLOWED (schema strict validation)
+
+### Critical Prompt Instructions
+
+**From implement-e2e command (section 7):**
+
+```markdown
+## Decide PASS vs FAIL
+
+- If the primary user journey runs end-to-end and tests pass with meaningful assertions:
+  - Mark the status as `PASS` in the report.
+  - Still record any remaining TODOs or refinements in the history file.
+
+- If the flow is only partially implemented or tests still fail:
+  - Mark the status as `FAIL` in the report.
+  - Describe clearly:
+    - How far the implementation/test gets
+    - What breaks and why
+    - What work remains (grouped into next steps vs larger follow-ups)
+  - Make sure the failure is well-documented, not ambiguous.
+
+**CRITICAL**: You aim for fully passing, meaningful tests. **Never mark a test as
+"passing" by weakening assertions, hiding failures, or lowering the bar.** You are
+expected to push implementation as far as reasonably possible in this session; you
+only stop when further progress would require disproportionate effort, unresolved
+external dependencies, or would force you to compromise on quality. If, after doing
+your best, you still cannot reach green, **stop implementing and produce a clear,
+validated FAIL report** that documents the current state and concrete next steps.
+Better stop working than start cheating — **ALWAYS**.
+```
+
+This instruction ensures agents write FAIL reports when exhausted, blocked, or unable to complete the task, rather than continuing indefinitely or producing invalid work.
 
 ## History File (Optional)
 
