@@ -89,9 +89,8 @@ fi
 
 # Write a valid PASS report so workflow can proceed
 # Using new file-based interface
-FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-REPORT_FILE=$("$FLUXID_BIN" report --get-file)
+REPORT_FILE=$(fluxid report --get-file)
 cat > "$REPORT_FILE" <<REPORT_EOF
 command: $COMMAND
 artifact: stub-test
@@ -134,19 +133,23 @@ func createStubAgentsInDir(t *testing.T, dir string, stubScript string) string {
 	return dir
 }
 
-// stubOnce ensures createStubClaude runs exactly once across all parallel tests.
-// This prevents race conditions where multiple tests try to write to the same
-// stub binary files simultaneously, causing "exec format error" failures.
+// stubMutex protects stub creation from race conditions during parallel test execution.
+// Unlike sync.Once, this allows stubs to be recreated when needed (for -count=N).
 //
-//nolint:gochecknoglobals // Global required for sync.Once to work across all parallel tests
-var stubOnce sync.Once
+//nolint:gochecknoglobals // Global mutex required for cross-test synchronization
+var stubMutex sync.Mutex
 
 // createStubClaude creates stub agent binaries for testing in the shared bin/ directory.
-// Uses sync.Once to ensure it runs exactly once, preventing race conditions
-// when multiple parallel tests call this function simultaneously.
+// Uses a mutex to prevent race conditions when multiple parallel tests call this function,
+// while detecting when fluxid binary changes to force stub recreation.
 //
 // Deprecated: Tests that need custom stubs (failing, conditional, etc.) should use
 // createStubAgentsInDir with a test-specific temp directory to avoid race conditions.
+//
+// FLAKINESS FIX (2026-01-06):
+// Replaced sync.Once with mutex + timestamp comparison. sync.Once prevented stub recreation
+// across -count iterations, causing 90% test failures. The mutex prevents race conditions
+// while timestamp comparison detects when fluxid binary changes, forcing stub recreation.
 //
 // RACE CONDITION FIX:
 // Previously, 62+ parallel tests all called createStubClaude(), causing concurrent
@@ -156,9 +159,29 @@ var stubOnce sync.Once
 func createStubClaude(t *testing.T, root string) {
 	t.Helper()
 
-	stubOnce.Do(func() {
-		binDir := filepath.Join(root, "bin")
-		stubScript := getWorkingStubScript()
-		createStubAgentsInDir(t, binDir, stubScript)
-	})
+	stubMutex.Lock()
+	defer stubMutex.Unlock()
+
+	binDir := filepath.Join(root, "bin")
+	stubPath := filepath.Join(binDir, "claude")
+	fluxidPath := filepath.Join(binDir, "fluxid")
+
+	// Check if stubs need recreation by comparing timestamps
+	// If fluxid is newer than stubs, recreate them
+	stubInfo, stubErr := os.Stat(stubPath)
+	fluxidInfo, fluxidErr := os.Stat(fluxidPath)
+
+	needsRecreation := stubErr != nil || // Stub doesn't exist
+		fluxidErr != nil || // Fluxid doesn't exist (create stubs anyway)
+		stubInfo.ModTime().Before(fluxidInfo.ModTime()) || // Stub older than fluxid
+		stubInfo.Mode()&0o111 == 0 // Stub not executable
+
+	if !needsRecreation {
+		// Stubs are fresh and valid
+		return
+	}
+
+	// Create fresh stubs
+	stubScript := getWorkingStubScript()
+	createStubAgentsInDir(t, binDir, stubScript)
 }
