@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (

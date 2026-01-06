@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -38,8 +39,6 @@ type CommandFilesYAML struct {
 
 // TestM06E03YAMLOutputBasic validates basic YAML output functionality.
 func TestM06E03YAMLOutputBasic(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -96,8 +95,6 @@ func TestM06E03YAMLOutputBasic(t *testing.T) {
 
 // TestM06E03YAMLOutputWithConfig validates YAML output with configuration values.
 func TestM06E03YAMLOutputWithConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -120,8 +117,6 @@ func TestM06E03YAMLOutputWithConfig(t *testing.T) {
 
 // TestM06E03DefaultFormatIsText validates that default output format is text when flag omitted.
 func TestM06E03DefaultFormatIsText(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -138,8 +133,6 @@ func TestM06E03DefaultFormatIsText(t *testing.T) {
 //
 //nolint:dupl // Test functions intentionally similar for different error cases
 func TestM06E03UnknownFormatRejected(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -183,8 +176,6 @@ func TestM06E03UnknownFormatRejected(t *testing.T) {
 
 // TestM06E03YAMLWithDryRun validates YAML output works with dry-run mode.
 func TestM06E03YAMLWithDryRun(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -205,8 +196,6 @@ func TestM06E03YAMLWithDryRun(t *testing.T) {
 
 // TestM06E03YAMLOutputStructure validates the complete YAML structure.
 func TestM06E03YAMLOutputStructure(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

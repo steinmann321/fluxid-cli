@@ -62,27 +62,10 @@ func buildFluxid(t *testing.T, root string) {
 	}
 }
 
-// stubOnce ensures createStubClaude runs exactly once across all parallel tests.
-// This prevents race conditions where multiple tests try to write to the same
-// stub binary files simultaneously, causing "exec format error" failures.
-//
-//nolint:gochecknoglobals // Global required for sync.Once to work across all parallel tests
-var stubOnce sync.Once
-
-// createStubClaude creates stub agent binaries for testing.
-// Uses sync.Once to ensure it runs exactly once, preventing race conditions
-// when multiple parallel tests call this function simultaneously.
-//
-// RACE CONDITION FIX:
-// Previously, 62+ parallel tests all called createStubClaude(), causing concurrent
-// writes to bin/claude, bin/opencode, etc. This resulted in intermittent
-// "fork/exec: exec format error" failures when a test tried to execute a stub
-// while another test was writing to it.
-func createStubClaude(t *testing.T, root string) {
-	t.Helper()
-
-	stubOnce.Do(func() {
-		stubScript := `#!/bin/bash
+// getWorkingStubScript returns the script content for a working (PASS) agent stub.
+// This stub writes valid PASS reports so workflows can proceed.
+func getWorkingStubScript() string {
+	return `#!/bin/bash
 # Stub agent CLI for testing
 
 # Echo all arguments to demonstrate passthrough
@@ -105,10 +88,10 @@ elif [[ "$PROMPT" == *"Review the implementation"* ]]; then
 fi
 
 # Write a valid PASS report so workflow can proceed
-# This allows tests to pass with the report-based workflow
-FLUXID_BIN="$(dirname "$0")/fluxid"
+# Using new file-based interface
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-"$FLUXID_BIN" ipc write-report --session "$FLUXID_SESSION_ID" <<REPORT_EOF
+REPORT_FILE=$(fluxid report --get-file)
+cat > "$REPORT_FILE" <<REPORT_EOF
 command: $COMMAND
 artifact: stub-test
 timestamp: $TIMESTAMP
@@ -124,23 +107,81 @@ REPORT_EOF
 # Simulate successful execution
 exit 0
 `
+}
 
-		// Create bin directory if it doesn't exist
-		binDir := filepath.Join(root, "bin")
-		const dirPerms = 0o755  // rwxr-xr-x: owner can read/write/execute, others can read/execute
-		const filePerms = 0o755 // rwxr-xr-x: executable scripts
+// createStubAgentsInDir creates stub agent binaries in the specified directory.
+// Returns the directory path for convenience.
+func createStubAgentsInDir(t *testing.T, dir string, stubScript string) string {
+	t.Helper()
 
-		if err := os.MkdirAll(binDir, dirPerms); err != nil {
-			t.Fatalf("failed to create bin directory: %v", err)
+	const dirPerms = 0o755  // rwxr-xr-x: owner can read/write/execute, others can read/execute
+	const filePerms = 0o755 // rwxr-xr-x: executable scripts
+
+	if err := os.MkdirAll(dir, dirPerms); err != nil {
+		t.Fatalf("failed to create stub directory: %v", err)
+	}
+
+	// Create stubs for all agents used in tests
+	agents := []string{"claude", "opencode", "codex", "project-agent"}
+	for _, agent := range agents {
+		agentPath := filepath.Join(dir, agent)
+		if err := os.WriteFile(agentPath, []byte(stubScript), filePerms); err != nil {
+			t.Fatalf("failed to create stub %s: %v", agent, err)
 		}
+	}
 
-		// Create stubs for all agents used in tests
-		agents := []string{"claude", "opencode", "codex", "project-agent"}
-		for _, agent := range agents {
-			agentPath := filepath.Join(binDir, agent)
-			if err := os.WriteFile(agentPath, []byte(stubScript), filePerms); err != nil {
-				t.Fatalf("failed to create stub %s: %v", agent, err)
-			}
-		}
-	})
+	return dir
+}
+
+// stubMutex protects stub creation from race conditions during parallel test execution.
+// Unlike sync.Once, this allows stubs to be recreated when needed (for -count=N).
+//
+//nolint:gochecknoglobals // Global mutex required for cross-test synchronization
+var stubMutex sync.Mutex
+
+// createStubClaude creates stub agent binaries for testing in the shared bin/ directory.
+// Uses a mutex to prevent race conditions when multiple parallel tests call this function,
+// while detecting when fluxid binary changes to force stub recreation.
+//
+// Deprecated: Tests that need custom stubs (failing, conditional, etc.) should use
+// createStubAgentsInDir with a test-specific temp directory to avoid race conditions.
+//
+// FLAKINESS FIX (2026-01-06):
+// Replaced sync.Once with mutex + timestamp comparison. sync.Once prevented stub recreation
+// across -count iterations, causing 90% test failures. The mutex prevents race conditions
+// while timestamp comparison detects when fluxid binary changes, forcing stub recreation.
+//
+// RACE CONDITION FIX:
+// Previously, 62+ parallel tests all called createStubClaude(), causing concurrent
+// writes to bin/claude, bin/opencode, etc. This resulted in intermittent
+// "fork/exec: exec format error" failures when a test tried to execute a stub
+// while another test was writing to it.
+func createStubClaude(t *testing.T, root string) {
+	t.Helper()
+
+	stubMutex.Lock()
+	defer stubMutex.Unlock()
+
+	binDir := filepath.Join(root, "bin")
+	stubPath := filepath.Join(binDir, "claude")
+	fluxidPath := filepath.Join(binDir, "fluxid")
+
+	// Check if stubs need recreation by comparing timestamps
+	// If fluxid is newer than stubs, recreate them
+	stubInfo, stubErr := os.Stat(stubPath)
+	fluxidInfo, fluxidErr := os.Stat(fluxidPath)
+
+	needsRecreation := stubErr != nil || // Stub doesn't exist
+		fluxidErr != nil || // Fluxid doesn't exist (create stubs anyway)
+		stubInfo.ModTime().Before(fluxidInfo.ModTime()) || // Stub older than fluxid
+		stubInfo.Mode()&0o111 == 0 // Stub not executable
+
+	if !needsRecreation {
+		// Stubs are fresh and valid
+		return
+	}
+
+	// Create fresh stubs
+	stubScript := getWorkingStubScript()
+	createStubAgentsInDir(t, binDir, stubScript)
 }

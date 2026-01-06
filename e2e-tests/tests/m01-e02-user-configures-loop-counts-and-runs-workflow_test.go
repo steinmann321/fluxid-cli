@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -15,8 +16,6 @@ import (
 // TestM01E02ConfigureLoopCounts validates that --fluxid-iterations and
 // --fluxid-implement-retries flags override defaults correctly.
 func TestM01E02ConfigureLoopCounts(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -52,8 +51,6 @@ func TestM01E02ConfigureLoopCounts(t *testing.T) {
 
 // TestM01E02InvalidIterationsZero validates that --fluxid-iterations 0 is rejected.
 func TestM01E02InvalidIterationsZero(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -92,8 +89,6 @@ func TestM01E02InvalidIterationsZero(t *testing.T) {
 
 // TestM01E02InvalidIterationsNegative validates that negative iterations are rejected.
 func TestM01E02InvalidIterationsNegative(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -123,8 +118,6 @@ func TestM01E02InvalidIterationsNegative(t *testing.T) {
 
 // TestM01E02InvalidIterationsNonInteger validates that non-integer values are rejected.
 func TestM01E02InvalidIterationsNonInteger(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -154,8 +147,6 @@ func TestM01E02InvalidIterationsNonInteger(t *testing.T) {
 
 // TestM01E02InvalidRetriesZero validates that --fluxid-implement-retries 0 is rejected.
 func TestM01E02InvalidRetriesZero(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -186,8 +177,6 @@ func TestM01E02InvalidRetriesZero(t *testing.T) {
 // TestM01E02DefaultsAppliedWhenFlagsOmitted validates that defaults are used
 // when override flags are not provided.
 func TestM01E02DefaultsAppliedWhenFlagsOmitted(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -207,8 +196,6 @@ func TestM01E02DefaultsAppliedWhenFlagsOmitted(t *testing.T) {
 // TestM01E02PartialOverride validates that only one flag can be overridden
 // while the other uses default.
 func TestM01E02PartialOverride(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -229,8 +216,6 @@ func TestM01E02PartialOverride(t *testing.T) {
 // TestM01E02SuccessfulCompletion validates that workflow completes successfully
 // with custom loop counts and exits with code 0.
 func TestM01E02SuccessfulCompletion(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -255,8 +240,6 @@ func TestM01E02SuccessfulCompletion(t *testing.T) {
 // TestM01E02ClaudeArgsPassthroughWithOverrides validates that Claude args
 // work correctly even when fluxid-specific flags are used.
 func TestM01E02ClaudeArgsPassthroughWithOverrides(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

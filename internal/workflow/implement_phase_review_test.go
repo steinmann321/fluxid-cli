@@ -2,25 +2,25 @@
 package workflow
 
 import (
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/types"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"go.uber.org/goleak"
 )
 
 func TestRunReviewPhase_Failure(t *testing.T) {
 	// Test review phase failure
-	sessionID := "test-review-failure-" + time.Now().Format("20060102150405.000000")
+	sessionID := "b4c5d6e7-8f9a-0b1c-2d3e-4f5a6b7c8d9e"
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -45,7 +45,7 @@ func TestRunReviewPhase_Success(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	// Test successful review phase
-	sessionID := "test-review-success-" + time.Now().Format("20060102150405.000000")
+	sessionID := "c5d6e7f8-9a0b-1c2d-3e4f-5a6b7c8d9e0f"
 	tmpDir, cleanup := setupTestDataDir(t)
 	defer cleanup()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
@@ -56,6 +56,7 @@ func TestRunReviewPhase_Success(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -85,7 +86,7 @@ issues:
 next_steps:
   - Complete
 `
-		_ = ipc.WriteReport(sessionID, report)
+		_ = storage.WriteReport(sessionID, report)
 	}()
 	<-started // Wait for goroutine to start
 

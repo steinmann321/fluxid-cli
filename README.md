@@ -34,40 +34,63 @@ fluxid --opencode --file=/absolute/path/to/task.md
 fluxid {--claude|--codex|--opencode} --file=PATH [options] [agent-args]
 ```
 
-**IPC commands:**
+**Report and history commands:**
 
-These commands are primarily used for controller ↔ agent communication during a workflow, but they can also be called by any external CLI tools or scripts to read/write session state (history, reports) independently of the agent.
+These commands enable external agents to write reports and history files, and validate them before fluxid processes them.
 
 ```bash
-fluxid ipc get-report-schema              # Print YAML schema for reports
-fluxid ipc write-report [--session ID]    # Validate + store report from stdin
-fluxid ipc read-report [--session ID]     # Print stored report as YAML
-fluxid ipc abort [--session ID]           # Request graceful abort for session
-fluxid ipc write-history <msg>            # Append timestamped entry to history
-fluxid ipc view-history [--session ID]    # Print session history lines
+# Report commands
+fluxid report --get-schema              # Print YAML schema for reports
+fluxid report --get-file                # Get absolute path to report file for current session
+fluxid report --validate                # Validate existing report file
+
+# History commands
+fluxid history --get-schema             # Print YAML schema for history
+fluxid history --get-file               # Get absolute path to history file for current session
+fluxid history --validate               # Validate existing history file
 ```
 
-Session scoping and ID:
-- All IPC operations are scoped to a session. Provide it via `--session ID` or `FLUXID_SESSION_ID`; `--session` overrides the env var.
-- fluxid generates a UUID v4 session automatically if `FLUXID_SESSION_ID` is not set.
-- To obtain the current session ID:
-  - Human-readable: fluxid prints “Session ID: …” at startup and on completion in text output.
-  - Machine-readable: run with `--fluxid-output json|yaml` and read `session_id`.
+Session scoping:
+- All file operations are scoped to a session via the `FLUXID_SESSION_ID` environment variable.
+- fluxid automatically sets this variable when launching agents.
+- Files are stored in session-specific directories: `<session-root>/<session-id>/report.yaml` and `<session-root>/<session-id>/history.yaml`
+
+Agent workflow:
+1. Query file path: `REPORT_FILE=$(fluxid report --get-file)`
+2. Write YAML to that path: `echo "command: implement\n..." > "$REPORT_FILE"`
+3. Optionally validate: `fluxid report --validate`
+4. fluxid workflow reads the file automatically
 
 Examples:
-- Capture session ID once and reuse:
-  - `SID=$(fluxid --claude --fluxid-output=json | jq -r '.session_id')`
-  - `fluxid ipc view-history --session="$SID"`
-  - `fluxid ipc read-report --session="$SID"`
-- Pin a session you choose (env var):
-  - `export FLUXID_SESSION_ID=my-session && fluxid --claude`
-  - `fluxid ipc write-report < report.yaml`  # writes report into that session
-  - `fluxid ipc read-report`                 # reads report using env var
-  - `fluxid ipc view-history`                # prints history using env var
-- Or pin via flag per call:
-  - `fluxid ipc write-history "Started build" --session=my-session`
-  - `fluxid ipc view-history --session=my-session`
-  - `fluxid ipc read-report --session=my-session`
+```bash
+# Agent writes report
+REPORT_FILE=$(fluxid report --get-file)
+cat > "$REPORT_FILE" << EOF
+command: fluxid implement
+artifact: src/main.go
+timestamp: 2026-01-05T10:00:00Z
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: ["Implementation complete"]
+  enhancements: []
+EOF
+fluxid report --validate  # Optional validation
+
+# Agent appends history
+HISTORY_FILE=$(fluxid history --get-file)
+cat >> "$HISTORY_FILE" << EOF
+- timestamp: 2026-01-05T10:00:00Z
+  step: implement
+  status: SUCCESS
+  summary: Feature implemented successfully
+EOF
+fluxid history --validate  # Optional validation
+```
+
+For detailed agent integration guide, see: `specs/001-report-history-refactor/quickstart.md`
 
 **All Command-Line Options:**
 
@@ -202,7 +225,7 @@ Result:          agent=opencode, iterations=5, implement_retries=3 (from default
 
 ### Environment Variables
 
-- `FLUXID_SESSION_ID` - Session identifier for IPC operations (optional, auto-generated if not set)
+- `FLUXID_SESSION_ID` - Session identifier for file operations (optional, auto-generated if not set). Scopes report and history files to session-specific directories.
 
 ### Built-in Defaults
 
@@ -214,14 +237,15 @@ Result:          agent=opencode, iterations=5, implement_retries=3 (from default
 ## Application Layout
 
 ```
-fluxid-loop/
+fluxid-cli/
 ├── cmd/
 │   └── fluxid/
 │       └── main.go             # Thin entrypoint; calls internal/command.Execute()
 ├── internal/
-│   ├── command/                # CLI parsing, flags, IPC subcommands, signal handling
+│   ├── command/                # CLI parsing, flags, report/history subcommands, signal handling
 │   ├── config/                 # Load, resolve, validate config (home, project, env)
-│   ├── ipc/                    # In-memory report/history storage and schema validation
+│   ├── storage/                # File-based report/history operations and YAML validation
+│   ├── assets/                 # Embedded schemas, templates, default config
 │   ├── output/                 # Text/JSON/YAML initialization status formatting
 │   └── workflow/               # Core implement→review loop and dry-run simulation
 ├── e2e-tests/                  # End-to-end CLI tests
@@ -283,14 +307,13 @@ fluxid --claude --file=/path/to/task.md --output=yaml
 export FLUXID_SESSION_ID=my-feature-work
 fluxid --claude --file=/path/to/task.md
 
-# Or pass via flag
-fluxid --claude --file=/path/to/task.md --session=my-feature-work
+# Get session-specific file paths
+fluxid report --get-file    # Returns path to report file for current session
+fluxid history --get-file   # Returns path to history file for current session
 
-# View history for a session
-fluxid ipc view-history --session=my-feature-work
-
-# Read report from a session
-fluxid ipc read-report --session=my-feature-work
+# Validate files for a session
+fluxid report --validate    # Validates report.yaml in current session
+fluxid history --validate   # Validates history.yaml in current session
 ```
 
 ### Complete Example: Feature Development
@@ -314,12 +337,14 @@ EOF
 export FLUXID_SESSION_ID=feature-login
 fluxid --claude --file=/tmp/add-login-feature.md --fluxid-iterations=15
 
-# 4. Check progress during execution (from another terminal)
-fluxid ipc view-history --session=feature-login
-fluxid ipc read-report --session=feature-login
-
-# 5. Request graceful abort if needed
-fluxid ipc abort --session=feature-login
+# 4. Check report and history files (from another terminal, after workflow completes)
+# Note: Files are session-specific and located at:
+# <session-root>/feature-login/report.yaml
+# <session-root>/feature-login/history.yaml
+REPORT_FILE=$(fluxid report --get-file)
+HISTORY_FILE=$(fluxid history --get-file)
+cat "$REPORT_FILE"
+cat "$HISTORY_FILE"
 ```
 
 ### Advanced: Multiple Agents for Different Tasks
@@ -346,12 +371,20 @@ fluxid --opencode --file=/tmp/refactor-auth.md --session=refactor-auth
 - ❌ `FLUXID_ITERATIONS` - Use `--fluxid-iterations=N` or config file
 - ❌ `FLUXID_IMPLEMENT_RETRIES` - Use `--fluxid-implement-retries=R` or config file
 - ❌ `FLUXID_COMMIT_ENABLED` - Commits always run (cannot be disabled)
-- ✅ `FLUXID_SESSION_ID` - Still supported for IPC operations
+- ✅ `FLUXID_SESSION_ID` - Still supported for file operations (report/history)
 
 **Commit toggle flags:**
 - ❌ `--fluxid-commit` - Removed (commits always run)
 - ❌ `--fluxid-no-commit` - Removed (commits always run)
 - ❌ `commit_enabled` config field - Removed from config files
+
+**IPC commands (replaced with file-based interface):**
+- ❌ `fluxid ipc get-report-schema` - Use `fluxid report --get-schema`
+- ❌ `fluxid ipc write-report` - Use file write to path from `fluxid report --get-file`
+- ❌ `fluxid ipc read-report` - Read file directly or use `fluxid report --validate`
+- ❌ `fluxid ipc write-history` - Append to file from `fluxid history --get-file`
+- ❌ `fluxid ipc view-history` - Read file directly from `fluxid history --get-file`
+- ❌ `fluxid ipc abort` - Out of scope (separate evaluation needed)
 
 **Space syntax for value flags:**
 - ❌ `--fluxid-iterations 20` - Not supported

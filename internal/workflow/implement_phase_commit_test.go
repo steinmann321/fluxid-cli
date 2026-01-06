@@ -2,25 +2,25 @@
 package workflow
 
 import (
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/types"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"go.uber.org/goleak"
 )
 
 func TestRunImplementPhase_WithCommit(t *testing.T) {
 	// Test implement phase with commit enabled
-	sessionID := "test-implement-with-commit-" + time.Now().Format("20060102150405.000000")
+	sessionID := "e1f2a3b4-5c6d-7e8f-9a0b-1c2d3e4f5a6b"
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -46,7 +46,7 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	// Test successful implement phase with commit
-	sessionID := "test-implement-success-commit-" + time.Now().Format("20060102150405.000000")
+	sessionID := "f2a3b4c5-6d7e-8f9a-0b1c-2d3e4f5a6b7c"
 	tmpDir, cleanup := setupTestDataDir(t)
 	defer cleanup()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
@@ -57,6 +57,7 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
@@ -89,7 +90,7 @@ issues:
 next_steps:
   - Continue
 `
-		_ = ipc.WriteReport(sessionID, report)
+		_ = storage.WriteReport(sessionID, report)
 	}()
 	<-started // Wait for goroutine to start
 
@@ -105,12 +106,13 @@ next_steps:
 
 func TestRunCommitPhase_Failure(t *testing.T) {
 	// Test commit phase failure
-	sessionID := "test-commit-failure-" + time.Now().Format("20060102150405.000000")
+	sessionID := "a3b4c5d6-7e8f-9a0b-1c2d-3e4f5a6b7c8d"
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,

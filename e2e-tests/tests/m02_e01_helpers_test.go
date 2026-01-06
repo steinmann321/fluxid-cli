@@ -1,4 +1,3 @@
-//nolint:gocritic // Test helper with string concatenation
 package tests
 
 import (
@@ -46,7 +45,7 @@ func writeHomeConfig(t *testing.T, fluxidDir, content string) {
 		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 			content += "\n"
 		}
-		content = content + fmt.Sprintf(`commands:
+		content += fmt.Sprintf(`commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md
@@ -157,29 +156,6 @@ func setupHomeWithConfig(t *testing.T, configContent string) string {
 	return tmpHome
 }
 
-// runFluxidInDir runs fluxid in a specific working directory.
-func runFluxidInDir(t *testing.T, root, homeDir, workDir string) {
-	t.Helper()
-
-	binPath := filepath.Join(root, "bin", "fluxid")
-	cmd := exec.CommandContext(t.Context(), binPath)
-	cmd.Dir = workDir
-	cmd.Env = append(os.Environ(),
-		"HOME="+homeDir,
-		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
-	)
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stdout
-
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
-	}
-}
-
-// runFluxidInDirWithOutput runs fluxid in a specific working directory and returns output.
-
 // createProjectWithConfig creates a temporary project dir with .fluxid/config.yaml content.
 // v2.0: Automatically adds commands section and creates command files if not present.
 func createProjectWithConfig(t *testing.T, content string) string {
@@ -196,7 +172,7 @@ func createProjectWithConfig(t *testing.T, content string) string {
 		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
 			content += "\n"
 		}
-		content = content + fmt.Sprintf(`commands:
+		content += fmt.Sprintf(`commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md

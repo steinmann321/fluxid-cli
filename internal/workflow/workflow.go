@@ -3,14 +3,12 @@ package workflow
 
 import (
 	"errors"
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/types"
 	"fmt"
 	"log"
 )
 
 var (
-	errWorkflowAborted      = errors.New("workflow aborted by user request")
 	errImplementPhaseFailed = errors.New("implement phase failed")
 	errCommitPhaseFailed    = errors.New("commit phase failed")
 	errReviewPhaseFailed    = errors.New("review phase failed")
@@ -24,8 +22,6 @@ const (
 	implementPrompt = "Run implement command file for task: ${FLUXID_TASK_FILE}"
 	commitPrompt    = "Execute commit command file to create git commit"
 	reviewPrompt    = "Run review command file for task: ${FLUXID_TASK_FILE}"
-
-	exitCodeInterrupted = 130 // Exit code for SIGINT/SIGTERM user interrupt
 )
 
 // AbortError represents a workflow abort with specific exit code.
@@ -44,29 +40,9 @@ func Run(cfg types.Config) (int, error) {
 	for reviewCycle := 1; reviewCycle <= cfg.MaxReviewCycles; reviewCycle++ {
 		log.Printf("--- Review Cycle %d/%d ---", reviewCycle, cfg.MaxReviewCycles)
 
-		// Check for abort before starting implement phase
-		aborted, err := ipc.CheckAbortFlag(cfg.SessionID)
-		if err != nil {
-			log.Printf("Warning: failed to check abort flag: %v", err)
-		}
-		if aborted {
-			log.Println("Abort requested - exiting workflow gracefully")
-			return exitCodeInterrupted, errWorkflowAborted
-		}
-
 		// Run implement phase with retries
 		if exitCode, err := runImplementPhase(cfg); err != nil {
 			return exitCode, err
-		}
-
-		// Check for abort before review phase
-		aborted, err = ipc.CheckAbortFlag(cfg.SessionID)
-		if err != nil {
-			log.Printf("Warning: failed to check abort flag: %v", err)
-		}
-		if aborted {
-			log.Println("Abort requested - exiting workflow gracefully")
-			return exitCodeInterrupted, errWorkflowAborted
 		}
 
 		// Run review phase
@@ -108,7 +84,7 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		// Check implement report status IMMEDIATELY after implement phase
 		// CRITICAL: This must happen BEFORE executeCommit(), otherwise the commit phase
 		// will overwrite the implement report with a commit report
-		if exitCode, err := checkImplementReportStatus(cfg.SessionID, retry); err != nil {
+		if exitCode, err := checkImplementReportStatus(cfg.SessionID, cfg.SessionRoot, retry); err != nil {
 			return exitCode, err
 		} else if exitCode == 0 {
 			// Implement phase succeeded, run commit and return success
@@ -135,15 +111,9 @@ func runImplementPhase(cfg types.Config) (int, error) {
 	return 0, nil
 }
 
-func checkAbortBeforeImplement(sessionID string) (int, error) {
-	aborted, err := ipc.CheckAbortFlag(sessionID)
-	if err != nil {
-		log.Printf("Warning: failed to check abort flag: %v", err)
-	}
-	if aborted {
-		log.Println("Abort requested - exiting workflow gracefully")
-		return exitCodeInterrupted, errWorkflowAborted
-	}
+func checkAbortBeforeImplement(_ string) (int, error) {
+	// Abort mechanism removed per 001-report-history-refactor
+	// This function is retained for API consistency but always returns success
 	return 0, nil
 }
 
@@ -164,13 +134,11 @@ func executeCommit(cfg types.Config) (int, error) {
 	return runCommitPhaseWithRetry(cfg)
 }
 
-func checkImplementReportStatus(sessionID string, _ int) (int, error) {
-	status, err := waitForValidReport(sessionID, "implement")
+func checkImplementReportStatus(sessionID string, sessionRoot string, _ int) (int, error) {
+	status, err := waitForValidReport(sessionID, sessionRoot, "implement")
 	if err != nil {
-		var abortErr *AbortError
-		if errors.As(err, &abortErr) {
-			return abortErr.ExitCode, err
-		}
+		// Note: AbortError handling removed per 001-report-history-refactor
+		// If abort functionality is needed in future, restore error type checking here
 		return 1, fmt.Errorf("failed to get implement report: %w", err)
 	}
 
@@ -200,7 +168,7 @@ func runCommitPhaseWithRetry(cfg types.Config) (int, error) {
 		}
 
 		// Check commit report status IMMEDIATELY after commit phase
-		if exitCode, err := checkCommitReportStatus(cfg.SessionID, retry); err != nil {
+		if exitCode, err := checkCommitReportStatus(cfg.SessionID, cfg.SessionRoot, retry); err != nil {
 			return exitCode, err
 		} else if exitCode == 0 {
 			// Commit phase succeeded (REPORT says PASS)
@@ -218,15 +186,9 @@ func runCommitPhaseWithRetry(cfg types.Config) (int, error) {
 	return 1, fmt.Errorf("commit phase failed after %d retries: %w", retries, errCommitPhaseFailed)
 }
 
-func checkAbortBeforeCommit(sessionID string) (int, error) {
-	aborted, err := ipc.CheckAbortFlag(sessionID)
-	if err != nil {
-		log.Printf("Warning: failed to check abort flag: %v", err)
-	}
-	if aborted {
-		log.Println("Abort requested - exiting workflow gracefully")
-		return exitCodeInterrupted, errWorkflowAborted
-	}
+func checkAbortBeforeCommit(_ string) (int, error) {
+	// Abort mechanism removed per 001-report-history-refactor
+	// This function is retained for API consistency but always returns success
 	return 0, nil
 }
 
@@ -243,13 +205,11 @@ func executeCommitPhase(cfg types.Config, retry int) (int, error) {
 	return 0, nil
 }
 
-func checkCommitReportStatus(sessionID string, _ int) (int, error) {
-	status, err := waitForValidReport(sessionID, "commit")
+func checkCommitReportStatus(sessionID string, sessionRoot string, _ int) (int, error) {
+	status, err := waitForValidReport(sessionID, sessionRoot, "commit")
 	if err != nil {
-		var abortErr *AbortError
-		if errors.As(err, &abortErr) {
-			return abortErr.ExitCode, err
-		}
+		// Note: AbortError handling removed per 001-report-history-refactor
+		// If abort functionality is needed in future, restore error type checking here
 		return 1, fmt.Errorf("failed to get commit report: %w", err)
 	}
 
@@ -282,12 +242,10 @@ func runReviewPhase(cfg types.Config) (string, int, error) {
 	}
 
 	// Wait for valid review report and check status
-	status, err := waitForValidReport(cfg.SessionID, "review")
+	status, err := waitForValidReport(cfg.SessionID, cfg.SessionRoot, "review")
 	if err != nil {
-		var abortErr *AbortError
-		if errors.As(err, &abortErr) {
-			return "", abortErr.ExitCode, err
-		}
+		// Note: AbortError handling removed per 001-report-history-refactor
+		// If abort functionality is needed in future, restore error type checking here
 		return "", 1, fmt.Errorf("failed to get review report: %w", err)
 	}
 

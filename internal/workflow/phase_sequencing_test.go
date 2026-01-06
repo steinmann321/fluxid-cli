@@ -3,15 +3,12 @@ package workflow
 
 import (
 	"fluxid-cli/internal/config"
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/types"
-	"fmt"
 	"testing"
-	"time"
 
 	"go.uber.org/goleak"
-	"gopkg.in/yaml.v3"
 )
 
 // TestPhaseSequencing_ImplementReportReadBeforeCommit verifies that the implement report
@@ -23,10 +20,11 @@ func TestPhaseSequencing_ImplementReportReadBeforeCommit(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-phase-seq-impl-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b"
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -38,19 +36,14 @@ func TestPhaseSequencing_ImplementReportReadBeforeCommit(t *testing.T) {
 	}
 
 	// Write implement PASS report before calling runImplementPhase
-	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testImplementPassReport); err != nil {
 		t.Fatalf("Failed to write implement report: %v", err)
 	}
 
 	// Verify the report has the correct command field BEFORE runImplementPhase
-	reportYAML, err := ipc.ReadReport(sessionID)
+	reportBefore, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("Failed to read initial report: %v", err)
-	}
-
-	var reportBefore ipc.Report
-	if err := yaml.Unmarshal([]byte(reportYAML), &reportBefore); err != nil {
-		t.Fatalf("Failed to unmarshal initial report: %v", err)
 	}
 
 	if reportBefore.Command != phaseCommandImplement {
@@ -86,10 +79,11 @@ func TestPhaseSequencing_FullWorkflowPhases(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-phase-seq-full-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "f2a3b4c5-d6e7-8f9a-0b1c-2d3e4f5a6b7c"
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "echo",
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -101,7 +95,7 @@ func TestPhaseSequencing_FullWorkflowPhases(t *testing.T) {
 	}
 
 	// Write initial implement PASS report
-	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testImplementPassReport); err != nil {
 		t.Fatalf("Failed to write implement report: %v", err)
 	}
 
@@ -130,22 +124,17 @@ func TestPhaseSequencing_CommitOverwritesImplement(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-phase-overwrite-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "692125c0-6272-4017-88b2-6c3f59fca631"
 
 	// Write an implement report
-	if err := ipc.WriteReport(sessionID, testImplementPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testImplementPassReport); err != nil {
 		t.Fatalf("Failed to write implement report: %v", err)
 	}
 
 	// Verify implement report exists
-	reportYAML, err := ipc.ReadReport(sessionID)
+	implementReport, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("Failed to read implement report: %v", err)
-	}
-
-	var implementReport ipc.Report
-	if err := yaml.Unmarshal([]byte(reportYAML), &implementReport); err != nil {
-		t.Fatalf("Failed to unmarshal implement report: %v", err)
 	}
 
 	if implementReport.Command != phaseCommandImplement {
@@ -153,19 +142,14 @@ func TestPhaseSequencing_CommitOverwritesImplement(t *testing.T) {
 	}
 
 	// Write a commit report (simulating commit phase overwriting implement report)
-	if err := ipc.WriteReport(sessionID, testCommitPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testCommitPassReport); err != nil {
 		t.Fatalf("Failed to write commit report: %v", err)
 	}
 
 	// Verify that the report is now a commit report (implement report was overwritten)
-	reportYAML, err = ipc.ReadReport(sessionID)
+	commitReport, err := storage.ReadReport(sessionID, "")
 	if err != nil {
 		t.Fatalf("Failed to read report after commit: %v", err)
-	}
-
-	var commitReport ipc.Report
-	if err := yaml.Unmarshal([]byte(reportYAML), &commitReport); err != nil {
-		t.Fatalf("Failed to unmarshal commit report: %v", err)
 	}
 
 	if commitReport.Command != phaseCommandCommit {

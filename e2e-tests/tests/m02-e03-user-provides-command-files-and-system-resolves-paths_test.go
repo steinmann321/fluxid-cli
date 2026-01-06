@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -11,8 +12,6 @@ import (
 // TestM02E03CommandFilesResolvedFromHome validates that command files are
 // resolved from home config and absolute paths are displayed.
 func TestM02E03CommandFilesResolvedFromHome(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -76,8 +75,6 @@ commands:
 //
 //nolint:cyclop,funlen // E2E test with file setup, command execution, and multiple validations
 func TestM02E03ProjectCommandFilesOverrideHome(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -172,8 +169,6 @@ commands:
 // TestM02E03MissingCommandFileError validates that missing command files
 // produce clear error messages.
 func TestM02E03MissingCommandFileError(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -214,8 +209,6 @@ commands:
 // TestM02E03PartialCommandsError validates that specifying only some command files
 // (not all three) produces an error.
 func TestM02E03PartialCommandsError(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -254,8 +247,6 @@ commands:
 // TestM02E03NoCommandFilesOptional validates that command files are optional
 // and fluxid works without them.
 func TestM02E03NoCommandFilesOptional(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -299,8 +290,6 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 //
 //nolint:cyclop // E2E test with path resolution and multiple output format validations
 func TestM02E03AbsolutePathsDisplayed(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

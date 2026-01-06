@@ -1,8 +1,12 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -10,8 +14,6 @@ import (
 // TestM02E01HomeConfigApplied validates that ~/.fluxid/config.yaml is read
 // and values are applied correctly.
 func TestM02E01HomeConfigApplied(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -32,8 +34,6 @@ iterations: 10`
 // TestM02E01DefaultsWhenNoHomeConfig validates that defaults are used when
 // ~/.fluxid/config.yaml doesn't exist.
 func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -62,8 +62,6 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 // TestM02E01PartialHomeConfig validates that partial config files work correctly,
 // with omitted keys using defaults.
 func TestM02E01PartialHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -83,8 +81,6 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 // TestM02E01InvalidTypeInConfig validates that invalid types are rejected with
 // clear error messages.
 func TestM02E01InvalidTypeInConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -106,8 +102,6 @@ func TestM02E01InvalidTypeInConfig(t *testing.T) {
 // TestM02E01InvalidValueInConfig validates that invalid values (e.g., zero or negative)
 // are rejected with clear error messages.
 func TestM02E01InvalidValueInConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 
@@ -129,8 +123,6 @@ func TestM02E01InvalidValueInConfig(t *testing.T) {
 // TestM02E01CLIOverridesHomeConfig validates that CLI flags override home config values
 // and source is correctly reported as "cli".
 func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -149,8 +141,6 @@ func TestM02E01CLIOverridesHomeConfig(t *testing.T) {
 // TestM02E01InitializationStatusFormat validates that the initialization status
 // section appears with the expected format and all required fields.
 func TestM02E01InitializationStatusFormat(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -198,13 +188,12 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 // TestM02E01NoProjectStateModification validates that running fluxid with only
 // home config doesn't create or modify files in the current directory.
 func TestM02E01NoProjectStateModification(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
 	tmpWorkDir := t.TempDir()
+	tmpSessionRoot := t.TempDir() // Separate directory for session files
 	configContent := `iterations: 5
 `
 	tmpHome := setupHomeWithConfig(t, configContent)
@@ -215,8 +204,23 @@ func TestM02E01NoProjectStateModification(t *testing.T) {
 		t.Fatalf("Failed to read working dir before: %v", err)
 	}
 
-	// Run fluxid from the temporary working directory (using custom exec for Dir)
-	runFluxidInDir(t, root, tmpHome, tmpWorkDir)
+	// Run fluxid from the temporary working directory with session root outside workdir
+	binPath := filepath.Join(root, "bin", "fluxid")
+	cmd := exec.CommandContext(t.Context(), binPath)
+	cmd.Dir = tmpWorkDir
+	cmd.Env = append(os.Environ(),
+		"HOME="+tmpHome,
+		"PATH="+filepath.Join(root, "bin")+":"+os.Getenv("PATH"),
+		"FLUXID_SESSION_ROOT="+tmpSessionRoot,
+	)
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("fluxid failed: %v\nOutput:\n%s", err, stdout.String())
+	}
 
 	// List files after running fluxid
 	filesAfter, err := os.ReadDir(tmpWorkDir)
@@ -224,9 +228,14 @@ func TestM02E01NoProjectStateModification(t *testing.T) {
 		t.Fatalf("Failed to read working dir after: %v", err)
 	}
 
-	// Verify no files were created or modified
+	// Verify no files were created or modified in working directory
 	if len(filesAfter) != len(filesBefore) {
-		t.Errorf("Expected no files to be created in working directory, but file count changed from %d to %d",
-			len(filesBefore), len(filesAfter))
+		var newFiles []string
+		for _, f := range filesAfter {
+			newFiles = append(newFiles, f.Name())
+		}
+		t.Errorf(
+			"Expected no files in working directory, but file count changed from %d to %d. Created: %v",
+			len(filesBefore), len(filesAfter), newFiles)
 	}
 }

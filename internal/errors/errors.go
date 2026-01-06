@@ -1,7 +1,7 @@
 // Package errors provides centralized error handling for fluxid with
 // consistent error formatting across all components.
 //
-//nolint:revive // Package name matches directory, standard pattern for error utilities
+//nolint:revive // Package name intentionally matches standard library for domain clarity
 package errors
 
 import (
@@ -40,14 +40,6 @@ func NewArgsError(description string) error {
 func NewWorkflowError(description string) error {
 	return &ComponentError{
 		Component:   "workflow",
-		Description: description,
-	}
-}
-
-// NewIPCError creates a new IPC communication error.
-func NewIPCError(description string) error {
-	return &ComponentError{
-		Component:   "ipc",
 		Description: description,
 	}
 }

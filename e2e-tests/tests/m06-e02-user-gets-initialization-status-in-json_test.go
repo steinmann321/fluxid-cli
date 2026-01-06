@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -37,8 +38,6 @@ type CommandFilesJSON struct {
 
 // TestM06E02JSONOutputBasic validates basic JSON output functionality.
 func TestM06E02JSONOutputBasic(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -96,8 +95,6 @@ func TestM06E02JSONOutputBasic(t *testing.T) {
 
 // TestM06E02JSONOutputWithConfig validates JSON output with configuration values.
 func TestM06E02JSONOutputWithConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -120,8 +117,6 @@ func TestM06E02JSONOutputWithConfig(t *testing.T) {
 
 // TestM06E02DefaultFormatIsText validates that default output format is text.
 func TestM06E02DefaultFormatIsText(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -138,8 +133,6 @@ func TestM06E02DefaultFormatIsText(t *testing.T) {
 //
 //nolint:dupl // Test functions intentionally similar for different error cases
 func TestM06E02UnknownFormatRejected(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -183,8 +176,6 @@ func TestM06E02UnknownFormatRejected(t *testing.T) {
 
 // TestM06E02JSONWithDryRun validates JSON output works with dry-run mode.
 func TestM06E02JSONWithDryRun(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -205,8 +196,6 @@ func TestM06E02JSONWithDryRun(t *testing.T) {
 
 // TestM06E02JSONOutputStructure validates the complete JSON structure.
 func TestM06E02JSONOutputStructure(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

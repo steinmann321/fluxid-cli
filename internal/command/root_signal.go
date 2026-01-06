@@ -1,7 +1,6 @@
 package command
 
 import (
-	"fluxid-cli/internal/ipc"
 	"log"
 	"os"
 	"os/signal"
@@ -58,9 +57,13 @@ func setupSignalHandler(sessionID string) func() {
 	done := make(chan struct{})
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// Abort flag functionality removed per 001-report-history-refactor
+	// Abort mechanism is out of scope and requires separate evaluation
+	noopAbortSetter := func(string) error { return nil }
+
 	handler := &signalHandler{
 		sessionID:   sessionID,
-		abortSetter: ipc.SetAbortFlag,
+		abortSetter: noopAbortSetter,
 		exitFunc:    os.Exit,
 		logger:      log.Default(),
 	}

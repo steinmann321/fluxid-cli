@@ -233,6 +233,7 @@ func TestCopyAssetsToDir_VerifyAllFiles(t *testing.T) {
 	templateFiles := map[string]bool{
 		"report-schema.yaml":  false,
 		"report-example.yaml": false,
+		"history-schema.yaml": false,
 	}
 
 	entries, err = os.ReadDir(templatesDir)
@@ -332,8 +333,8 @@ func TestCopyAssetsToDir_VerifyFileContents(t *testing.T) {
 		t.Fatalf("Failed to read templates directory: %v", err)
 	}
 
-	if len(entries) != 2 {
-		t.Errorf("Expected 2 template files, got %d", len(entries))
+	if len(entries) != 3 {
+		t.Errorf("Expected 3 template files, got %d", len(entries))
 	}
 
 	for _, entry := range entries {

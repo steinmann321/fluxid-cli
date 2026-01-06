@@ -3,12 +3,9 @@ package workflow
 
 import (
 	"fluxid-cli/internal/config"
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
 	"fluxid-cli/internal/types"
-	"fmt"
 	"testing"
-	"time"
 
 	"go.uber.org/goleak"
 )
@@ -18,10 +15,11 @@ func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-impl-commit-fail-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e"
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentFalse, // Will fail on commit phase
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
@@ -47,10 +45,11 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-impl-agent-fail-noexit-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f"
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentFalse,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 2,
@@ -72,15 +71,17 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 
 // TestRunImplementPhase_ReportWaitAbort tests abort during implement report wait.
 func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
+	t.Skip("Abort mechanism removed in 001-report-history-refactor - out of scope")
 	defer goleak.VerifyNone(t)
 
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-impl-wait-abort-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := "d0e1f2a3-b4c5-6d7e-8f9a-0b1c2d3e4f5a"
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
@@ -92,9 +93,10 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 
 	// Set abort flag before calling runImplementPhase
 	// With immediate report checking, abort must be set before the phase runs
-	if err := ipc.SetAbortFlag(sessionID); err != nil {
+	// SKIP: Abort removed in 001-refactor
+	/*if err := ipc.SetAbortFlag(sessionID); err != nil {
 		t.Fatalf("Failed to set abort flag: %v", err)
-	}
+	}*/
 
 	exitCode, err := runImplementPhase(cfg)
 	if err == nil {

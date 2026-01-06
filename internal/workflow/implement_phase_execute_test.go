@@ -2,24 +2,24 @@
 package workflow
 
 import (
-	"fluxid-cli/internal/ipc"
 	"fluxid-cli/internal/output"
+	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/types"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 	// Test that executeImplementPhase handles non-zero exit codes properly
-	sessionID := "test-exec-impl-exit-" + time.Now().Format("20060102150405.000000")
+	sessionID := "f8a9b0c1-2d3e-4f5a-6b7c-8d9e0f1a2b3c"
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
 	cfg := types.Config{
 		SessionID:           sessionID,
+		SessionRoot:         "",
 		Agent:               "false", // Always exits with code 1
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
@@ -44,8 +44,9 @@ func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 }
 
 func TestCheckImplementReportStatus_Abort(t *testing.T) {
+	t.Skip("Abort mechanism removed in 001-report-history-refactor - out of scope")
 	// Test abort error handling in checkImplementReportStatus
-	sessionID := "test-check-report-abort-" + time.Now().Format("20060102150405.000000")
+	sessionID := "a9b0c1d2-3e4f-5a6b-7c8d-9e0f1a2b3c4d"
 	tmpDir, cleanup := setupTestDataDir(t)
 	defer cleanup()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
@@ -55,11 +56,12 @@ func TestCheckImplementReportStatus_Abort(t *testing.T) {
 	}
 
 	// Set abort flag before checking report
-	if err := ipc.SetAbortFlag(sessionID); err != nil {
+	// SKIP: Abort removed in 001-refactor
+	/*if err := ipc.SetAbortFlag(sessionID); err != nil {
 		t.Fatalf("Failed to set abort flag: %v", err)
-	}
+	}*/
 
-	exitCode, err := checkImplementReportStatus(sessionID, 1)
+	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
 	if err == nil {
 		t.Error("Expected abort error")
 	}
@@ -70,7 +72,7 @@ func TestCheckImplementReportStatus_Abort(t *testing.T) {
 
 func TestCheckImplementReportStatus_FailStatus(t *testing.T) {
 	// Test that checkImplementReportStatus returns -1 for FAIL status
-	sessionID := "test-check-fail-" + time.Now().Format("20060102150405.000000")
+	sessionID := "b0c1d2e3-4f5a-6b7c-8d9e-0f1a2b3c4d5e"
 	tmpDir, cleanup := setupTestDataDir(t)
 	defer cleanup()
 	storageDir := filepath.Join(tmpDir, ".fluxid")
@@ -94,11 +96,11 @@ issues:
 next_steps:
   - Fix issues
 `
-	if err := ipc.WriteReport(sessionID, failReport); err != nil {
+	if err := storage.WriteReport(sessionID, failReport); err != nil {
 		t.Fatalf("Failed to write fail report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, 1)
+	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
 	if err != nil {
 		t.Errorf("Expected no error for FAIL status, got: %v", err)
 	}

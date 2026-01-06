@@ -1,8 +1,7 @@
-//nolint:paralleltest // E2E tests with subprocess execution
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +24,6 @@ func TestImplementRetriesExhaustedContinuesThroughCommit(t *testing.T) {
 	tmpDir := t.TempDir()
 	homeDir := filepath.Join(tmpDir, "home")
 	projectDir := filepath.Join(tmpDir, "project")
-	reportsDir := filepath.Join(os.TempDir(), "fluxid-reports")
 
 	if err := os.MkdirAll(homeDir, 0o750); err != nil {
 		t.Fatalf("Failed to create home dir: %v", err)
@@ -33,18 +31,11 @@ func TestImplementRetriesExhaustedContinuesThroughCommit(t *testing.T) {
 	if err := os.MkdirAll(projectDir, 0o750); err != nil {
 		t.Fatalf("Failed to create project dir: %v", err)
 	}
-	if err := os.MkdirAll(reportsDir, 0o750); err != nil {
-		t.Fatalf("Failed to create reports dir: %v", err)
-	}
 
 	// Create config with commands section
 	setupConfigWithCommands(t, homeDir, "claude")
 
-	t.Cleanup(func() {
-		_ = os.RemoveAll(reportsDir)
-	})
-
-	sessionID := fmt.Sprintf("test-impl-exhaust-%d", time.Now().UnixNano())
+	sessionID := "b9e3f4a0-e29b-41d4-a716-446655440000" // Valid UUID for test
 
 	// Build fluxid binary
 	root := getProjectRoot(t)
@@ -75,22 +66,18 @@ CALL_COUNT=$(cat "$STATE_FILE")
 NEXT_COUNT=$((CALL_COUNT + 1))
 echo "$NEXT_COUNT" > "$STATE_FILE"
 
-# Ensure reports directory exists
-TMPDIR="${TMPDIR:-/tmp}"
-REPORTS_DIR="${TMPDIR%/}/fluxid-reports"
-mkdir -p "$REPORTS_DIR"
-
+# Use new file-based report interface
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-REPORT_FILE="$REPORTS_DIR/${FLUXID_SESSION_ID}.yaml"
+REPORT_FILE=$(fluxid report --get-file)
 
 # Call 0-1: implement FAIL, Call 2: commit PASS, Call 3+: review PASS
 
 if [ $CALL_COUNT -lt 2 ]; then
   # Implement FAIL
-  cat > "$REPORT_FILE" <<'EOF'
+  cat > "$REPORT_FILE" <<EOF
 command: fluxid.implement
 artifact: test-artifact
-timestamp: TIMESTAMP_PLACEHOLDER
+timestamp: $TIMESTAMP
 status: FAIL
 issues:
   blockers: []
@@ -99,14 +86,12 @@ issues:
   observations: []
   enhancements: []
 EOF
-  sed -i.bak "s/TIMESTAMP_PLACEHOLDER/$TIMESTAMP/" "$REPORT_FILE"
-  rm -f "${REPORT_FILE}.bak"
 elif [ $CALL_COUNT -eq 2 ]; then
   # Commit PASS
-  cat > "$REPORT_FILE" <<'EOF'
+  cat > "$REPORT_FILE" <<EOF
 command: fluxid.commit
 artifact: test-commit
-timestamp: TIMESTAMP_PLACEHOLDER
+timestamp: $TIMESTAMP
 status: PASS
 issues:
   blockers: []
@@ -115,14 +100,12 @@ issues:
   observations: []
   enhancements: []
 EOF
-  sed -i.bak "s/TIMESTAMP_PLACEHOLDER/$TIMESTAMP/" "$REPORT_FILE"
-  rm -f "${REPORT_FILE}.bak"
 else
   # Review PASS
-  cat > "$REPORT_FILE" <<'EOF'
+  cat > "$REPORT_FILE" <<EOF
 command: fluxid.review
 artifact: test-review
-timestamp: TIMESTAMP_PLACEHOLDER
+timestamp: $TIMESTAMP
 status: PASS
 issues:
   blockers: []
@@ -131,8 +114,6 @@ issues:
   observations: []
   enhancements: []
 EOF
-  sed -i.bak "s/TIMESTAMP_PLACEHOLDER/$TIMESTAMP/" "$REPORT_FILE"
-  rm -f "${REPORT_FILE}.bak"
 fi
 
 exit 0
@@ -154,9 +135,10 @@ exit 0
 		"--codex",
 		"--file="+taskPath,
 	)
+	fluxidBinDir := filepath.Join(root, "bin")
 	cmd.Env = append(os.Environ(),
 		"HOME="+homeDir,
-		"PATH="+binDir+":"+os.Getenv("PATH"),
+		"PATH="+binDir+":"+fluxidBinDir+":"+os.Getenv("PATH"),
 		"FLUXID_SESSION_ID="+sessionID,
 		"STATE_FILE="+stateFile,
 	)

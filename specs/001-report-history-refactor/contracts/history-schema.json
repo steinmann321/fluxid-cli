@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fluxid.dev/schemas/history.json",
+  "title": "Fluxid Workflow History",
+  "description": "History log of workflow events across multiple phases. Append-only log written by external agents, read by fluxid workflow controller to prevent repeating failed approaches.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "timestamp",
+      "step",
+      "status",
+      "summary"
+    ],
+    "properties": {
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 timestamp when event occurred",
+        "examples": [
+          "2026-01-05T10:00:00Z",
+          "2026-01-05T10:00:00-05:00"
+        ]
+      },
+      "step": {
+        "type": "string",
+        "description": "Workflow step name",
+        "minLength": 1,
+        "examples": [
+          "implement",
+          "review",
+          "validate"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "SUCCESS",
+          "FAIL"
+        ],
+        "description": "Outcome of workflow step. SUCCESS indicates completed successfully, FAIL indicates retry needed."
+      },
+      "summary": {
+        "type": "string",
+        "description": "Brief outcome description (one sentence preferred)",
+        "minLength": 1,
+        "examples": [
+          "Initial implementation attempted using channels for file notification",
+          "Successfully implemented file-based report reading with direct file I/O"
+        ]
+      },
+      "details": {
+        "type": "string",
+        "description": "Detailed approach and failure reason. RECOMMENDED for FAIL status to prevent repeating mistakes. Optional for SUCCESS status.",
+        "examples": [
+          "Tried implementing file change watcher using Go channels and fsnotify. Failed because requirements specify strictly sequential workflow with no concurrency. Channels introduce async behavior incompatible with constitution principle III.",
+          "Removed all async operations. Workflow calls storage.ReadReport() synchronously after agent exits. Simple file read with error handling. Passes constitution check."
+        ]
+      }
+    },
+    "additionalProperties": false
+  },
+  "examples": [
+    [
+      {
+        "timestamp": "2026-01-05T10:00:00Z",
+        "step": "implement",
+        "status": "FAIL",
+        "summary": "Initial implementation attempted using channels for file notification",
+        "details": "Tried implementing file change watcher using Go channels and fsnotify. Failed because requirements specify strictly sequential workflow with no concurrency. Channels introduce async behavior incompatible with constitution principle III."
+      },
+      {
+        "timestamp": "2026-01-05T11:15:00Z",
+        "step": "implement",
+        "status": "FAIL",
+        "summary": "Second attempt using file polling with goroutines",
+        "details": "Attempted file polling with background goroutines to check report file existence. Failed review because goroutines violate sequential workflow requirement. Constitution check rejected parallel operations."
+      },
+      {
+        "timestamp": "2026-01-05T13:30:00Z",
+        "step": "implement",
+        "status": "SUCCESS",
+        "summary": "Successfully implemented file-based report reading with direct file I/O",
+        "details": "Removed all async operations. Workflow calls storage.ReadReport() synchronously after agent exits. Simple file read with error handling. Passes constitution check."
+      },
+      {
+        "timestamp": "2026-01-05T14:00:00Z",
+        "step": "review",
+        "status": "SUCCESS",
+        "summary": "Review passed with minor concerns addressed"
+      }
+    ]
+  ]
+}

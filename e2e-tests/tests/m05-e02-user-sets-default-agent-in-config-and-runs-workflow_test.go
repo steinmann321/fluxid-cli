@@ -1,3 +1,4 @@
+//nolint:paralleltest // E2E tests use shared infrastructure
 package tests
 
 import (
@@ -9,8 +10,6 @@ import (
 
 // TestM05E02AgentFromHomeConfig validates agent selection from home config.
 func TestM05E02AgentFromHomeConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root) // Creates stubs for all agents
@@ -33,8 +32,6 @@ func TestM05E02AgentFromHomeConfig(t *testing.T) {
 
 // TestM05E02AgentFromProjectConfig validates agent selection from project config.
 func TestM05E02AgentFromProjectConfig(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root) // Creates stubs for all agents
@@ -57,8 +54,6 @@ func TestM05E02AgentFromProjectConfig(t *testing.T) {
 
 // TestM05E02ProjectOverridesHome validates project config takes precedence over home.
 func TestM05E02ProjectOverridesHome(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root) // Creates stubs for all agents
@@ -86,7 +81,6 @@ func TestM05E02ProjectOverridesHome(t *testing.T) {
 // v2.0: environment variable support removed (Phase 7).
 func TestM05E02PrecedenceChain(t *testing.T) {
 	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	// createStubClaude creates stubs for all agents (claude, codex, opencode, project-agent)
@@ -146,8 +140,6 @@ func TestM05E02PrecedenceChain(t *testing.T) {
 
 // TestM05E02InvalidAgentValue validates empty agent rejection.
 func TestM05E02InvalidAgentValue(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)
@@ -168,8 +160,6 @@ func TestM05E02InvalidAgentValue(t *testing.T) {
 
 // TestM05E02NoConfigUsesDefault validates default agent when no config exists.
 func TestM05E02NoConfigUsesDefault(t *testing.T) {
-	t.Parallel()
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createStubClaude(t, root)

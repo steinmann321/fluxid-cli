@@ -3,22 +3,20 @@ package workflow
 
 import (
 	"errors"
-	"fluxid-cli/internal/ipc"
-	"fmt"
+	"fluxid-cli/internal/storage"
 	"testing"
-	"time"
 )
 
 func TestWaitForValidReport_InvalidReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-invalid-report-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Write invalid YAML report - should return FAIL immediately
-	_ = ipc.WriteReport(sessionID, "invalid: yaml: [content")
+	_ = storage.WriteReport(sessionID, "invalid: yaml: [content")
 
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error when report invalid (should return FAIL), got: %v", err)
 	}
@@ -28,15 +26,16 @@ func TestWaitForValidReport_InvalidReport(t *testing.T) {
 }
 
 func TestWaitForValidReport_AbortFlagSet(t *testing.T) {
+	t.Skip("Abort mechanism removed in 001-report-history-refactor - out of scope")
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-abort-flag-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Set abort flag before checking report
-	_ = ipc.SetAbortFlag(sessionID)
+	// SKIP: _ = ipc.SetAbortFlag // Abort removed in 001-refactor(sessionID)
 
-	_, err := waitForValidReport(sessionID, "implement")
+	_, err := waitForValidReport(sessionID, "", "implement")
 	if err == nil {
 		t.Error("Expected error due to abort, got nil")
 	}
@@ -56,14 +55,14 @@ func TestWaitForValidReport_ImmediateValidReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-immediate-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Write valid report immediately (before calling waitForValidReport)
-	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testPassReport); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	status, err := waitForValidReport(sessionID, "implement")
+	status, err := waitForValidReport(sessionID, "", "implement")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -76,12 +75,12 @@ func TestWaitForValidReport_MalformedReport(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-malformed-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Write malformed YAML that can't be parsed - should return FAIL
-	_ = ipc.WriteReport(sessionID, "command: test\nstatus: PASS\ninvalid_structure")
+	_ = storage.WriteReport(sessionID, "command: test\nstatus: PASS\ninvalid_structure")
 
-	status, err := waitForValidReport(sessionID, "review")
+	status, err := waitForValidReport(sessionID, "", "review")
 	if err != nil {
 		t.Errorf("Expected no error when report malformed (should return FAIL), got: %v", err)
 	}
@@ -91,19 +90,20 @@ func TestWaitForValidReport_MalformedReport(t *testing.T) {
 }
 
 func TestWaitForValidReport_CheckAbortFlagError(t *testing.T) {
+	t.Skip("Abort mechanism removed in 001-report-history-refactor - out of scope")
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-check-abort-err-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Write valid report immediately so we can complete successfully
 	// The goal is to test the CheckAbortFlag warning path, not to fail
-	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testPassReport); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
 	// This should successfully read the report
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -116,15 +116,15 @@ func TestWaitForValidReport_ReadReportError(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-read-err-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Create a valid session directory
-	if err := ipc.WriteReport(sessionID, testPassReport); err != nil {
+	if err := storage.WriteReport(sessionID, testPassReport); err != nil {
 		t.Fatalf("Failed to write initial report: %v", err)
 	}
 
 	// This test validates that waitForValidReport properly reads a valid report
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestWaitForValidReport_MissingStatusField(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-missing-status-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	// Write a report that is valid YAML and passes schema but test status extraction
 	reportWithoutStatus := `command: "test"
@@ -152,11 +152,11 @@ issues:
   enhancements: []
 `
 
-	if err := ipc.WriteReport(sessionID, reportWithoutStatus); err != nil {
+	if err := storage.WriteReport(sessionID, reportWithoutStatus); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestWaitForValidReport_FAILStatus(t *testing.T) {
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
 
-	sessionID := "test-fail-status-" + fmt.Sprintf("%d", time.Now().UnixNano()) //nolint:perfsprint
+	sessionID := testSessionWait
 
 	failReport := `command: "test"
 artifact: "test-artifact"
@@ -184,11 +184,11 @@ issues:
   enhancements: []
 `
 
-	if err := ipc.WriteReport(sessionID, failReport); err != nil {
+	if err := storage.WriteReport(sessionID, failReport); err != nil {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	status, err := waitForValidReport(sessionID, "test")
+	status, err := waitForValidReport(sessionID, "", "test")
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
