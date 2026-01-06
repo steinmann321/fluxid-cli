@@ -105,8 +105,8 @@ func printHelp() {
 USAGE:
     fluxid [OPTIONS] --<agent> --file=<task-file>
     fluxid init [OPTIONS]
-    fluxid report <write|read|validate> [OPTIONS]
-    fluxid history <write|read> [OPTIONS]
+    fluxid report [--get-file|--validate|--get-schema]
+    fluxid history [--get-file|--validate|--get-schema]
 
 AGENTS:
     --claude            Use Claude agent
@@ -126,12 +126,15 @@ OPTIONS:
     -h, --help                     Show this help message
 
 COMMANDS:
-    init                Initialize fluxid configuration
-    report write        Write a report file
-    report read         Read a report file
-    report validate     Validate a report file
-    history write       Write to history
-    history read        Read history entries
+    init                           Initialize fluxid configuration
+
+    report --get-file              Get absolute path to report file for current session
+    report --validate              Validate existing report file against schema
+    report --get-schema            Output report schema in YAML format
+
+    history --get-file             Get absolute path to history file for current session
+    history --validate             Validate existing history file against schema
+    history --get-schema           Output history schema in YAML format
 
 EXAMPLES:
     # Run workflow with Claude agent
@@ -142,6 +145,12 @@ EXAMPLES:
 
     # Initialize configuration
     fluxid init
+
+    # Get report file path (for external agents)
+    fluxid report --get-file
+
+    # Validate report before workflow reads it
+    fluxid report --validate
 
 For more information, visit: https://github.com/fluxid/fluxid-cli
 `
