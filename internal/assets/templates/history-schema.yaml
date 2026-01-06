@@ -7,6 +7,7 @@ type: array
 items:
   type: object
   description: A single event from a workflow step.
+  additionalProperties: false
   required:
     - timestamp
     - step

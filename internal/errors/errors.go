@@ -44,14 +44,6 @@ func NewWorkflowError(description string) error {
 	}
 }
 
-// NewIPCError creates a new IPC communication error.
-func NewIPCError(description string) error {
-	return &ComponentError{
-		Component:   "ipc",
-		Description: description,
-	}
-}
-
 // LogError writes an error message to stderr with consistent formatting.
 func LogError(err error) {
 	fmt.Fprintln(os.Stderr, err.Error())

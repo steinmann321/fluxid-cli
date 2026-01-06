@@ -93,30 +93,6 @@ func TestNewWorkflowError(t *testing.T) {
 }
 
 //nolint:paralleltest // Uses shared error output buffer
-func TestNewIPCError(t *testing.T) {
-	tests := []struct {
-		name        string
-		description string
-		want        string
-	}{
-		{
-			name:        "simple error",
-			description: "invalid report format",
-			want:        "error: ipc: invalid report format",
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			err := fluxiderr.NewIPCError(testCase.description)
-			if err.Error() != testCase.want {
-				t.Errorf("fluxiderr.NewIPCError() = %q, want %q", err.Error(), testCase.want)
-			}
-		})
-	}
-}
-
-//nolint:paralleltest // Uses shared error output buffer
 func TestComponentError(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -14,7 +14,7 @@ required:
   - status
   - issues
 
-additionalProperties: true  # Allow optional fields like history, next_steps, summary
+additionalProperties: false  # Strict: only allow defined fields (required + optional below)
 
 properties:
   # ===========================================================================
