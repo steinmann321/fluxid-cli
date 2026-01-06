@@ -24,7 +24,7 @@ When you run `fluxid --claude --file=task.md`, fluxid:
 5. **Streams agent output** to stdout/stderr
 6. **Reads report.yaml** after agent completes to get status
 
-## The File-Based Protocol
+## The File-Based Handover Protocol
 
 ### Agent Must Write Report
 
@@ -44,153 +44,96 @@ A FAIL report must document:
 
 fluxid reads this file to determine workflow status and decide whether to retry.
 
-### Get Report File Path
+### Prompt Instructions for Report Writing
 
-**Agent command:**
-```bash
-fluxid report --get-file
-```
-
-**Output (to stdout):**
-```
-/Users/username/.fluxid/sessions/<session-id>/report.yaml
-```
-
-**Requirements:**
-- `FLUXID_SESSION_ID` environment variable must be set (fluxid sets this automatically)
-- Returns absolute path where agent should write report
-- Creates session directory if it doesn't exist
-
-### Get Report Schema
-
-**Agent command:**
-```bash
-fluxid report --get-schema
-```
-
-**Output (to stdout):**
-YAML schema defining required report structure (see Report Schema section below).
-
-### Validate Report
-
-**Agent command:**
-```bash
-fluxid report --validate
-```
-
-**Exit codes:**
-- `0`: Report is valid
-- Non-zero: Validation failed (error details on stderr)
-
-**Requirements:**
-- `FLUXID_SESSION_ID` must be set
-- report.yaml must exist at session path
-
-## Report Schema
-
-### Required Fields
-
-```yaml
-command: implement              # Phase: implement, review, or commit
-artifact: src/main.go          # Primary file or component modified
-timestamp: 2026-01-07T10:00:00Z # ISO 8601 UTC timestamp
-status: PASS                    # PASS or FAIL
-issues:
-  blockers: []                  # Critical issues preventing progress
-  defects: []                   # Bugs that need fixing
-  concerns: []                  # Code smells or design issues
-  observations: []              # Neutral observations
-  enhancements: []              # Improvement opportunities
-```
-
-### Optional Fields
-
-```yaml
-next_steps:                     # Array of suggested actions
-  - "Add error handling"
-summary: "Implementation complete"  # Brief summary
-```
-
-### Field Constraints
-
-- **command**: string (required)
-- **artifact**: string (required)
-- **timestamp**: ISO 8601 UTC format `YYYY-MM-DDTHH:MM:SSZ` (required)
-- **status**: enum `PASS` or `FAIL` (required)
-- **issues**: object with 5 required arrays (required)
-  - blockers, defects, concerns, observations, enhancements
-- **next_steps**: array of strings (optional)
-- **summary**: string (optional)
-- **Additional properties**: NOT ALLOWED (schema strict validation)
-
-### Critical Prompt Instructions
-
-**From implement-e2e command (section 7):**
+**Your command file must instruct the agent how to write the report. Example:**
 
 ```markdown
-## Decide PASS vs FAIL
+# Report Protocol
 
-- If the primary user journey runs end-to-end and tests pass with meaningful assertions:
-  - Mark the status as `PASS` in the report.
-  - Still record any remaining TODOs or refinements in the history file.
+After completing work (whether successful, blocked, or exhausted), write a report:
 
-- If the flow is only partially implemented or tests still fail:
-  - Mark the status as `FAIL` in the report.
-  - Describe clearly:
-    - How far the implementation/test gets
-    - What breaks and why
-    - What work remains (grouped into next steps vs larger follow-ups)
-  - Make sure the failure is well-documented, not ambiguous.
+## 1. Get report file path
+Run: `fluxid report --get-file`
 
-**CRITICAL**: You aim for fully passing, meaningful tests. **Never mark a test as
-"passing" by weakening assertions, hiding failures, or lowering the bar.** You are
-expected to push implementation as far as reasonably possible in this session; you
-only stop when further progress would require disproportionate effort, unresolved
-external dependencies, or would force you to compromise on quality. If, after doing
-your best, you still cannot reach green, **stop implementing and produce a clear,
-validated FAIL report** that documents the current state and concrete next steps.
-Better stop working than start cheating — **ALWAYS**.
+## 2. Get schema to understand structure
+Run: `fluxid report --get-schema`
+
+## 3. Write YAML report to the file path from step 1
+
+Required fields:
+- command: "implement" (or "review", "commit")
+- artifact: <main file or component modified>
+- timestamp: <ISO 8601 UTC format: YYYY-MM-DDTHH:MM:SSZ>
+- status: PASS or FAIL
+- issues: object with 5 arrays (blockers, defects, concerns, observations, enhancements)
+
+Optional fields:
+- next_steps: array of strings
+- summary: brief description
+
+## 4. Validate before finishing
+Run: `fluxid report --validate`
+
+If validation fails, fix the report and re-validate.
+
+## When to use PASS vs FAIL
+
+**PASS:**
+- Task fully completed
+- All tests passing
+- Implementation working as expected
+
+**FAIL:**
+- Task partially completed
+- Tests failing
+- Blocked by external issues
+- Agent exhausted/fatigued
+- Cannot make further progress without disproportionate effort
+
+**CRITICAL**: If you cannot complete the task, write a FAIL report documenting:
+- What you accomplished
+- What blocks further progress (in issues.blockers)
+- What needs to be done next (in next_steps)
+
+DO NOT:
+- Continue indefinitely when exhausted
+- Mark PASS by weakening quality
+- Skip the report when stuck
+
+Better to stop and document current state clearly than to continue producing low-quality work.
 ```
 
-This instruction ensures agents write FAIL reports when exhausted, blocked, or unable to complete the task, rather than continuing indefinitely or producing invalid work.
+### Example: Exhaustion Scenario in Prompt
 
-## History File (Optional)
+```markdown
+## If You Hit Limits
 
-Agents can optionally append events to history.yaml to track workflow progression.
+If after your best effort you cannot complete the task:
 
-### Get History File Path
+1. **Stop working** - Don't continue indefinitely
 
-```bash
-fluxid history --get-file
+2. **Write FAIL report** documenting current state:
+   - Get report file path: `fluxid report --get-file`
+   - Write YAML report with:
+     - status: FAIL
+     - issues.blockers: List what prevents completion (e.g., "Database migration conflicts with existing schema")
+     - issues.defects: List bugs encountered (e.g., "Password validation regex not working")
+     - issues.concerns: List potential problems (e.g., "Current approach may have race conditions")
+     - next_steps: Concrete actions for next iteration
+     - summary: Brief description of blocker
+   - Validate: `fluxid report --validate`
+
+3. **Exit** - fluxid will read your FAIL report and decide whether to retry
 ```
 
-### Get History Schema
-
-```bash
-fluxid history --get-schema
-```
-
-### Validate History
-
-```bash
-fluxid history --validate
-```
-
-### History Event Structure
-
-```yaml
-- timestamp: 2026-01-07T10:00:00Z  # ISO 8601 UTC (required)
-  step: implement                  # Step identifier (required)
-  status: SUCCESS                  # SUCCESS or FAIL (required)
-  summary: "Implementation complete" # Brief description (required)
-  details: "Implemented login..."  # Detailed explanation (optional)
-```
+This ensures the agent always writes a valid report at the correct location, even when exhausted.
 
 ## Command File Templates
 
 Command files are **markdown prompts** sent to the agent. They must instruct the agent to use the file-based protocol.
 
-### Minimal Example
+### Minimal Command File Example
 
 ```markdown
 # Task
@@ -201,38 +144,25 @@ Implement the required changes.
 
 # Report Protocol
 
-After completing the task, write a report using fluxid's file-based interface:
+After completing the task (or if blocked/exhausted), write a report:
 
-1. Get report file path:
-   ```bash
-   REPORT_FILE=$(fluxid report --get-file)
-   ```
+1. Get file path: `REPORT_FILE=$(fluxid report --get-file)`
+2. Get schema: `fluxid report --get-schema`
+3. Write YAML to $REPORT_FILE with:
+   - command: "implement"
+   - artifact: <main file modified>
+   - timestamp: ISO 8601 UTC
+   - status: PASS or FAIL
+   - issues: {blockers, defects, concerns, observations, enhancements}
+4. Validate: `fluxid report --validate`
 
-2. Get schema to understand structure:
-   ```bash
-   fluxid report --get-schema
-   ```
-
-3. Write YAML conforming to schema to $REPORT_FILE
-
-4. Validate before finishing:
-   ```bash
-   fluxid report --validate
-   ```
-
-Required report fields:
-- command: "implement"
-- artifact: <main file modified>
-- timestamp: <ISO 8601 UTC>
-- status: PASS or FAIL
-- issues: object with blockers, defects, concerns, observations, enhancements arrays
-
-Set status to PASS if task completed successfully, FAIL if blocked or incomplete.
+Set status to PASS only if task completed successfully.
+Set status to FAIL if blocked, incomplete, or exhausted - document current state clearly.
 ```
 
 ### Complete Example
 
-See `internal/assets/commands/*.md` for full command templates, but note that default templates may reference outdated shell script approaches. Modern templates should use the fluxid CLI commands documented above.
+See `internal/assets/commands/*.md` for full command templates, noting that default templates may reference outdated shell script approaches. Modern templates should use the fluxid CLI commands documented above.
 
 ## Extending fluxid
 
@@ -253,11 +183,11 @@ Your command files should:
 1. **Define the role/context** for the agent
 2. **Reference task file** via `$FLUXID_TASK_FILE` environment variable
 3. **Instruct agent** to use fluxid CLI commands:
-   - `fluxid report --get-file`
-   - `fluxid report --get-schema`
-   - `fluxid report --validate`
-4. **Specify report requirements** (required fields, PASS/FAIL criteria)
-5. **Include examples** of valid reports (optional but helpful)
+   - `fluxid report --get-file` - Get path where to write report
+   - `fluxid report --get-schema` - Get YAML schema
+   - `fluxid report --validate` - Validate written report
+4. **Specify PASS/FAIL criteria** (when to mark each status)
+5. **Handle exhaustion scenario** (what to do when agent can't complete task)
 
 ### Critical Requirements
 
@@ -267,10 +197,111 @@ Your command file MUST ensure the agent:
 - Validates the report before completing (`fluxid report --validate`)
 - Sets `status: PASS` only if task completed successfully
 - Sets `status: FAIL` if blocked, incomplete, or errors occurred
+- Documents current state clearly in FAIL reports (what's done, what blocks, what's next)
+
+## History File: The Session Memory
+
+The history file is **ESSENTIAL**, not optional. It's the memory mechanism that enables subsequent sessions in the implement-review loop to learn from previous attempts and avoid repeating mistakes.
+
+### Why History is Critical
+
+**From implement-e2e command (section 1):**
+> "Read existing report and history (if present) to understand prior attempts, decisions, and known gaps."
+
+**Purpose:**
+- **Avoid repeating failures** - Document what was tried and why it failed
+- **Track decisions** - Log reasoning behind architectural choices
+- **Record trade-offs** - Document what was postponed and why
+- **Enable continuity** - Give next iteration context to build on
+
+Without history, each implement iteration starts blind, repeating the same failed approaches.
+
+### What Must Go in History
+
+**From implement-e2e command (section 4, 5, 7):**
+- **Planning decisions** - "Record the plan and any explicit scope cuts or postponed items in the history file, including reasoning and trade-offs"
+- **Failed attempts** - Document what approaches didn't work and why
+- **Design decisions** - "Briefly log design decisions, assumptions, and trade-offs in the history file"
+- **Scope changes** - "Ensure the history file contains a clear log of key decisions, scope changes, and postponed items, with enough context for future sessions to continue effectively"
+
+### Prompt Instructions for History
+
+**Your command file must instruct the agent to use history:**
+
+```markdown
+# History Protocol
+
+## 1. At session start: Read existing history
+
+Get the history file path by running: `fluxid history --get-file`
+
+If the file exists, READ IT to understand:
+- What approaches were already tried in previous iterations
+- What failed and why
+- What design decisions were made
+- What blockers were encountered
+
+Use this knowledge to avoid repeating failed approaches.
+
+## 2. During implementation: Log significant events
+
+Throughout your work, APPEND events to the history file whenever:
+- You try an approach that fails
+- You encounter a blocker that prevents progress
+- You make an architectural decision based on constraints
+- You discover a trade-off or limitation
+
+Get the file location, get the schema, append a new event entry, then validate.
+
+## 3. Before finishing: Document any remaining blockers
+
+Before writing your final report, if there are unresolved issues, append final entries documenting:
+- What approaches failed
+- What blocks remain
+- What the next iteration should try differently
+
+Then validate the history file.
+
+History events must include:
+- timestamp: ISO 8601 UTC format
+- step: "implement", "review", or "commit"
+- status: SUCCESS or FAIL
+- summary: Brief description of what was attempted
+- details: Why it failed/succeeded, what to try next (recommended)
+
+Validate after writing: `fluxid history --validate`
+```
+
+### Example: What to Document
+
+**Failed approach:**
+```
+Tried inline password validation in UI component. Caused performance issues (UI lag).
+Learned: Validation must be on backend. Moving validation logic to API endpoint.
+```
+
+**Design decision:**
+```
+Chose JWT tokens over session cookies for authentication.
+Reason: Existing API endpoints already expect JWT bearer tokens in Authorization header.
+Trade-off: Cannot invalidate tokens before expiry.
+```
+
+**Blocked by external issue:**
+```
+Cannot complete OAuth integration. Blocked: API credentials not configured in environment.
+Attempted: Read from OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET env vars, both undefined.
+Requires: User to configure OAuth credentials or provide alternative auth method.
+```
+
+**Critical:** Next iteration reads this history and knows:
+- Don't try inline validation (performance issues)
+- JWT tokens used to match existing API contract
+- OAuth blocked on missing credentials (need user input)
 
 ## Environment Variables
 
-Agents receive these from fluxid automatically:
+fluxid sets these environment variables before executing the agent subprocess:
 
 - **FLUXID_SESSION_ID**: Current session identifier (UUID)
 - **FLUXID_TASK_FILE**: Absolute path to task file
@@ -279,51 +310,15 @@ Agents receive these from fluxid automatically:
   - If not set: Default is `.fluxid/sessions/` in current directory, with fallback to `$TMPDIR/fluxid`
   - Example: `FLUXID_SESSION_ROOT=/custom/path` stores sessions in `/custom/path/<session-id>/`
 
-## Error Handling
-
-### "FLUXID_SESSION_ID not set"
-
-**Cause**: Agent called fluxid commands outside of fluxid workflow.
-
-**Fix**: Only run agent via `fluxid --<agent> --file=...`
-
-### "Validation failed"
-
-**Cause**: Report YAML doesn't match schema.
-
-**Fix**: Run `fluxid report --get-schema` to see requirements.
-
-### "Additional property not allowed"
-
-**Cause**: Report contains fields not in schema.
-
-**Fix**: Remove custom fields, use only schema-defined fields.
-
-## Security
-
-### YAML Security
-
-fluxid rejects YAML with:
-- Anchors (`&anchor`)
-- Aliases (`*alias`)
-- Merge keys (`<<:`)
-
-**Reason**: Prevent YAML deserialization attacks.
-
-### Path Security
-
-- Session IDs must be valid UUIDs
-- Paths validated to prevent traversal attacks
-- No `../` or absolute paths in session IDs
-
 ## Best Practices
 
 1. **Always instruct agents** to use CLI commands, not hardcoded paths
 2. **Include validation step** in command templates
 3. **Define clear PASS/FAIL criteria** in command files
-4. **Test command files** with `--fluxid-dry-run` before production use
-5. **Keep command files simple** and focused on protocol compliance
-6. **Document your command files** for team consistency
+4. **Handle exhaustion explicitly** - tell agent what to do when stuck
+5. **Test command files** with `--fluxid-dry-run` before production use
+6. **Keep command files simple** and focused on protocol compliance
+7. **Document your command files** for team consistency
 
 ## Troubleshooting
 
@@ -363,3 +358,42 @@ fluxid rejects YAML with:
 2. Check validation error message for specific field issues
 3. Ensure timestamp is ISO 8601 UTC format
 4. Verify status is exactly `PASS` or `FAIL` (case-sensitive)
+
+---
+
+## Report Schema Reference
+
+### Required Fields
+
+```yaml
+command: implement              # Phase: implement, review, or commit
+artifact: src/main.go          # Primary file or component modified
+timestamp: 2026-01-07T10:00:00Z # ISO 8601 UTC timestamp
+status: PASS                    # PASS or FAIL
+issues:
+  blockers: []                  # Critical issues preventing progress
+  defects: []                   # Bugs that need fixing
+  concerns: []                  # Code smells or design issues
+  observations: []              # Neutral observations
+  enhancements: []              # Improvement opportunities
+```
+
+### Optional Fields
+
+```yaml
+next_steps:                     # Array of suggested actions
+  - "Add error handling"
+summary: "Implementation complete"  # Brief summary
+```
+
+### Field Constraints
+
+- **command**: string (required)
+- **artifact**: string (required)
+- **timestamp**: ISO 8601 UTC format `YYYY-MM-DDTHH:MM:SSZ` (required)
+- **status**: enum `PASS` or `FAIL` (required)
+- **issues**: object with 5 required arrays (required)
+  - blockers, defects, concerns, observations, enhancements
+- **next_steps**: array of strings (optional)
+- **summary**: string (optional)
+- **Additional properties**: NOT ALLOWED (schema strict validation)
