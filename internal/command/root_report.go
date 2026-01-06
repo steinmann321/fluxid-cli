@@ -1,10 +1,5 @@
 package command
 
-import (
-	"fmt"
-	"os"
-)
-
 // handleReportCommand handles the `fluxid report` command.
 //
 // This function parses command-line arguments and delegates to the appropriate handler:
@@ -21,11 +16,10 @@ func handleReportCommand(args []string) int {
 
 	// Execute command
 	if err := cmd.Execute(); err != nil {
-		// Error handling is done within individual handlers
-		// They call os.Exit with appropriate exit codes
-		// If we reach here, it's an unexpected error
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		return ExitInternalError
+		// Use ErrorWriter to properly classify errors and determine exit code
+		// Per FR-006, FR-007, FR-040: Different error types have different exit codes
+		errorWriter := NewErrorWriter()
+		return errorWriter.WriteError(err, "")
 	}
 
 	return ExitSuccess

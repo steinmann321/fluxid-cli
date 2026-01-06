@@ -1,4 +1,3 @@
-//nolint:funlen // Test helper: setup code justifies length
 package tests
 
 import (
@@ -63,27 +62,10 @@ func buildFluxid(t *testing.T, root string) {
 	}
 }
 
-// stubOnce ensures createStubClaude runs exactly once across all parallel tests.
-// This prevents race conditions where multiple tests try to write to the same
-// stub binary files simultaneously, causing "exec format error" failures.
-//
-//nolint:gochecknoglobals // Global required for sync.Once to work across all parallel tests
-var stubOnce sync.Once
-
-// createStubClaude creates stub agent binaries for testing.
-// Uses sync.Once to ensure it runs exactly once, preventing race conditions
-// when multiple parallel tests call this function simultaneously.
-//
-// RACE CONDITION FIX:
-// Previously, 62+ parallel tests all called createStubClaude(), causing concurrent
-// writes to bin/claude, bin/opencode, etc. This resulted in intermittent
-// "fork/exec: exec format error" failures when a test tried to execute a stub
-// while another test was writing to it.
-func createStubClaude(t *testing.T, root string) {
-	t.Helper()
-
-	stubOnce.Do(func() {
-		stubScript := `#!/bin/bash
+// getWorkingStubScript returns the script content for a working (PASS) agent stub.
+// This stub writes valid PASS reports so workflows can proceed.
+func getWorkingStubScript() string {
+	return `#!/bin/bash
 # Stub agent CLI for testing
 
 # Echo all arguments to demonstrate passthrough
@@ -126,23 +108,57 @@ REPORT_EOF
 # Simulate successful execution
 exit 0
 `
+}
 
-		// Create bin directory if it doesn't exist
+// createStubAgentsInDir creates stub agent binaries in the specified directory.
+// Returns the directory path for convenience.
+func createStubAgentsInDir(t *testing.T, dir string, stubScript string) string {
+	t.Helper()
+
+	const dirPerms = 0o755  // rwxr-xr-x: owner can read/write/execute, others can read/execute
+	const filePerms = 0o755 // rwxr-xr-x: executable scripts
+
+	if err := os.MkdirAll(dir, dirPerms); err != nil {
+		t.Fatalf("failed to create stub directory: %v", err)
+	}
+
+	// Create stubs for all agents used in tests
+	agents := []string{"claude", "opencode", "codex", "project-agent"}
+	for _, agent := range agents {
+		agentPath := filepath.Join(dir, agent)
+		if err := os.WriteFile(agentPath, []byte(stubScript), filePerms); err != nil {
+			t.Fatalf("failed to create stub %s: %v", agent, err)
+		}
+	}
+
+	return dir
+}
+
+// stubOnce ensures createStubClaude runs exactly once across all parallel tests.
+// This prevents race conditions where multiple tests try to write to the same
+// stub binary files simultaneously, causing "exec format error" failures.
+//
+//nolint:gochecknoglobals // Global required for sync.Once to work across all parallel tests
+var stubOnce sync.Once
+
+// createStubClaude creates stub agent binaries for testing in the shared bin/ directory.
+// Uses sync.Once to ensure it runs exactly once, preventing race conditions
+// when multiple parallel tests call this function simultaneously.
+//
+// Deprecated: Tests that need custom stubs (failing, conditional, etc.) should use
+// createStubAgentsInDir with a test-specific temp directory to avoid race conditions.
+//
+// RACE CONDITION FIX:
+// Previously, 62+ parallel tests all called createStubClaude(), causing concurrent
+// writes to bin/claude, bin/opencode, etc. This resulted in intermittent
+// "fork/exec: exec format error" failures when a test tried to execute a stub
+// while another test was writing to it.
+func createStubClaude(t *testing.T, root string) {
+	t.Helper()
+
+	stubOnce.Do(func() {
 		binDir := filepath.Join(root, "bin")
-		const dirPerms = 0o755  // rwxr-xr-x: owner can read/write/execute, others can read/execute
-		const filePerms = 0o755 // rwxr-xr-x: executable scripts
-
-		if err := os.MkdirAll(binDir, dirPerms); err != nil {
-			t.Fatalf("failed to create bin directory: %v", err)
-		}
-
-		// Create stubs for all agents used in tests
-		agents := []string{"claude", "opencode", "codex", "project-agent"}
-		for _, agent := range agents {
-			agentPath := filepath.Join(binDir, agent)
-			if err := os.WriteFile(agentPath, []byte(stubScript), filePerms); err != nil {
-				t.Fatalf("failed to create stub %s: %v", agent, err)
-			}
-		}
+		stubScript := getWorkingStubScript()
+		createStubAgentsInDir(t, binDir, stubScript)
 	})
 }

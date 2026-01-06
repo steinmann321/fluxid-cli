@@ -116,7 +116,8 @@ func handleHistoryValidate(_ *ErrorWriter) error {
 
 	// Validate history structure
 	if err := storage.ValidateHistory(filePath); err != nil {
-		return fmt.Errorf("history validation failed: %w", err)
+		// Include file path for FR-043: Errors must include sufficient context
+		return fmt.Errorf("%s\nhistory validation failed: %w", filePath, err)
 	}
 
 	// Silent success per FR-042: no stdout, no stderr, exit 0

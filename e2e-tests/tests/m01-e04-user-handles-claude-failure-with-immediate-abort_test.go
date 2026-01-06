@@ -34,11 +34,13 @@ func verifyFailureOutput(t *testing.T, output string) {
 	}
 }
 
-//nolint:paralleltest // Sequential execution required due to shared stub
 func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
+	t.Parallel()
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-	createFailingClaudeStub(t, root, 2)
+	// Create test-specific stub directory to avoid race conditions
+	stubDir := t.TempDir()
+	createFailingClaudeStub(t, stubDir, 2)
 	// Create temporary home with v2.0 config
 	tmpHome := t.TempDir()
 	setupConfigWithCommands(t, tmpHome, "claude")
@@ -49,7 +51,7 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	}
 	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		fmt.Sprintf("PATH=%s:%s:%s", stubDir, filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
 	var output bytes.Buffer
@@ -77,12 +79,13 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 
 // TestM01E04NoFurtherPhasesAfterFailure verifies that when Claude fails,
 // no further phases or iterations are executed.
-//
-//nolint:paralleltest // Sequential execution required due to shared stub
 func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
+	t.Parallel()
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-	createFailingClaudeStub(t, root, 3)
+	// Create test-specific stub directory to avoid race conditions
+	stubDir := t.TempDir()
+	createFailingClaudeStub(t, stubDir, 3)
 
 	// Create temporary home with v2.0 config
 	tmpHome := t.TempDir()
@@ -95,7 +98,7 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 	}
 	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		fmt.Sprintf("PATH=%s:%s:%s", stubDir, filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
 
@@ -172,7 +175,9 @@ func runPhaseFailureTest(t *testing.T, failOnInvoke, expectedExitCode int) {
 
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
-	createConditionalFailingClaudeStub(t, root, failOnInvoke, expectedExitCode)
+	// Create test-specific stub directory to avoid race conditions
+	stubDir := t.TempDir()
+	createConditionalFailingClaudeStub(t, stubDir, failOnInvoke, expectedExitCode)
 
 	// Create temporary home with v2.0 config
 	tmpHome := t.TempDir()
@@ -185,7 +190,7 @@ func runPhaseFailureTest(t *testing.T, failOnInvoke, expectedExitCode int) {
 	}
 	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
+		fmt.Sprintf("PATH=%s:%s:%s", stubDir, filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
 
@@ -220,10 +225,10 @@ func verifyExitCodeAndOutput(t *testing.T, err error, outputStr string, expected
 	}
 }
 
-func createFailingClaudeStub(t *testing.T, root string, exitCode int) {
+func createFailingClaudeStub(t *testing.T, stubDir string, exitCode int) {
 	t.Helper()
 
-	stubPath := filepath.Join(root, "bin", "claude")
+	stubPath := filepath.Join(stubDir, "claude")
 	stubScript := fmt.Sprintf(`#!/bin/bash
 # Stub Claude CLI that always fails with exit code %d
 
@@ -234,16 +239,24 @@ echo "Simulating Claude failure..." >&2
 exit %d
 `, exitCode, exitCode)
 
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatalf("failed to create stub directory: %v", err)
+	}
+
 	if err := os.WriteFile(stubPath, []byte(stubScript), 0o755); err != nil {
 		t.Fatalf("failed to create failing claude stub: %v", err)
 	}
 }
 
-func createConditionalFailingClaudeStub(t *testing.T, root string, failOnInvoke int, exitCode int) {
+func createConditionalFailingClaudeStub(t *testing.T, stubDir string, failOnInvoke int, exitCode int) {
 	t.Helper()
 
-	stubPath := filepath.Join(root, "bin", "claude")
-	counterFile := filepath.Join(root, "bin", ".claude_invoke_count")
+	if err := os.MkdirAll(stubDir, 0o755); err != nil {
+		t.Fatalf("failed to create stub directory: %v", err)
+	}
+
+	stubPath := filepath.Join(stubDir, "claude")
+	counterFile := filepath.Join(stubDir, ".claude_invoke_count")
 
 	// Initialize counter file
 	if err := os.WriteFile(counterFile, []byte("0"), 0o644); err != nil {

@@ -161,7 +161,8 @@ func handleReportValidate() error {
 
 	// Step 3: Validate report file
 	if err := storage.ValidateReport(filePath); err != nil {
-		return fmt.Errorf("report validation failed: %w", err)
+		// Include file path for FR-043: Errors must include sufficient context
+		return fmt.Errorf("%s\nreport validation failed: %w", filePath, err)
 	}
 
 	// Silent success - no output to stderr per FR-042
