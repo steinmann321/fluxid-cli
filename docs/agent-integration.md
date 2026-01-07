@@ -53,29 +53,10 @@ fluxid reads this file to determine workflow status and decide whether to retry.
 
 After completing work (whether successful, blocked, or exhausted), write a report:
 
-## 1. Get report file path
-Run: `fluxid report --get-file`
-
-## 2. Get schema to understand structure
-Run: `fluxid report --get-schema`
-
-## 3. Write YAML report to the file path from step 1
-
-Required fields:
-- command: "implement" (or "review", "commit")
-- artifact: <main file or component modified>
-- timestamp: <ISO 8601 UTC format: YYYY-MM-DDTHH:MM:SSZ>
-- status: PASS or FAIL
-- issues: object with 5 arrays (blockers, defects, concerns, observations, enhancements)
-
-Optional fields:
-- next_steps: array of strings
-- summary: brief description
-
-## 4. Validate before finishing
-Run: `fluxid report --validate`
-
-If validation fails, fix the report and re-validate.
+1. Get report file path: `fluxid report --get-file`
+2. Get schema: `fluxid report --get-schema`
+3. Write YAML report following the schema
+4. Validate: `fluxid report --validate` (fix and re-validate if it fails)
 
 ## When to use PASS vs FAIL
 
@@ -112,22 +93,9 @@ Better to stop and document current state clearly than to continue producing low
 If after your best effort you cannot complete the task:
 
 1. **Stop working** - Don't continue indefinitely
-
-2. **Write FAIL report** documenting current state:
-   - Get report file path: `fluxid report --get-file`
-   - Write YAML report with:
-     - status: FAIL
-     - issues.blockers: List what prevents completion (e.g., "Database migration conflicts with existing schema")
-     - issues.defects: List bugs encountered (e.g., "Password validation regex not working")
-     - issues.concerns: List potential problems (e.g., "Current approach may have race conditions")
-     - next_steps: Concrete actions for next iteration
-     - summary: Brief description of blocker
-   - Validate: `fluxid report --validate`
-
+2. **Write FAIL report** following the report protocol above, documenting what blocks further progress
 3. **Exit** - fluxid will read your FAIL report and decide whether to retry
 ```
-
-This ensures the agent always writes a valid report at the correct location, even when exhausted.
 
 ## Command File Templates
 
@@ -146,14 +114,9 @@ Implement the required changes.
 
 After completing the task (or if blocked/exhausted), write a report:
 
-1. Get file path: `REPORT_FILE=$(fluxid report --get-file)`
+1. Get file path: `fluxid report --get-file`
 2. Get schema: `fluxid report --get-schema`
-3. Write YAML to $REPORT_FILE with:
-   - command: "implement"
-   - artifact: <main file modified>
-   - timestamp: ISO 8601 UTC
-   - status: PASS or FAIL
-   - issues: {blockers, defects, concerns, observations, enhancements}
+3. Write YAML report following the schema
 4. Validate: `fluxid report --validate`
 
 Set status to PASS only if task completed successfully.
@@ -226,50 +189,18 @@ Without history, each implement iteration starts blind, repeating the same faile
 
 ### Prompt Instructions for History
 
-**Your command file must instruct the agent to use history:**
+**Your command file should instruct the agent to use history. Example:**
 
 ```markdown
-# History Protocol
+# History
 
-## 1. At session start: Read existing history
+At session start, read existing history (if present) to understand prior attempts, decisions, and known gaps:
+- Get path: `fluxid history --get-file`
+- Get schema: `fluxid history --get-schema`
 
-Get the history file path by running: `fluxid history --get-file`
+During implementation, log key decisions, failed approaches, and blockers to the history file.
 
-If the file exists, READ IT to understand:
-- What approaches were already tried in previous iterations
-- What failed and why
-- What design decisions were made
-- What blockers were encountered
-
-Use this knowledge to avoid repeating failed approaches.
-
-## 2. During implementation: Log significant events
-
-Throughout your work, APPEND events to the history file whenever:
-- You try an approach that fails
-- You encounter a blocker that prevents progress
-- You make an architectural decision based on constraints
-- You discover a trade-off or limitation
-
-Get the file location, get the schema, append a new event entry, then validate.
-
-## 3. Before finishing: Document any remaining blockers
-
-Before writing your final report, if there are unresolved issues, append final entries documenting:
-- What approaches failed
-- What blocks remain
-- What the next iteration should try differently
-
-Then validate the history file.
-
-History events must include:
-- timestamp: ISO 8601 UTC format
-- step: "implement", "review", or "commit"
-- status: SUCCESS or FAIL
-- summary: Brief description of what was attempted
-- details: Why it failed/succeeded, what to try next (recommended)
-
-Validate after writing: `fluxid history --validate`
+Before finishing, validate: `fluxid history --validate`
 ```
 
 ### Example: What to Document
@@ -280,24 +211,21 @@ Tried inline password validation in UI component. Caused performance issues (UI 
 Learned: Validation must be on backend. Moving validation logic to API endpoint.
 ```
 
-**Design decision:**
+**Design decision based on constraints:**
 ```
 Chose JWT tokens over session cookies for authentication.
 Reason: Existing API endpoints already expect JWT bearer tokens in Authorization header.
 Trade-off: Cannot invalidate tokens before expiry.
 ```
 
-**Blocked by external issue:**
+**Blocker that can be fixed in next iteration:**
 ```
-Cannot complete OAuth integration. Blocked: API credentials not configured in environment.
-Attempted: Read from OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET env vars, both undefined.
-Requires: User to configure OAuth credentials or provide alternative auth method.
+Database migration failed due to foreign key constraint violation.
+Cause: Migration creates child records before parent table exists.
+Fix: Reorder migrations - create parent table first, then child table.
 ```
 
-**Critical:** Next iteration reads this history and knows:
-- Don't try inline validation (performance issues)
-- JWT tokens used to match existing API contract
-- OAuth blocked on missing credentials (need user input)
+Next iteration reads these history events and avoids repeating the same mistakes.
 
 ## Environment Variables
 
@@ -316,9 +244,8 @@ fluxid sets these environment variables before executing the agent subprocess:
 2. **Include validation step** in command templates
 3. **Define clear PASS/FAIL criteria** in command files
 4. **Handle exhaustion explicitly** - tell agent what to do when stuck
-5. **Test command files** with `--fluxid-dry-run` before production use
-6. **Keep command files simple** and focused on protocol compliance
-7. **Document your command files** for team consistency
+5. **Keep command files simple** and focused on protocol compliance
+6. **Document your command files** for team consistency
 
 ## Troubleshooting
 
@@ -358,42 +285,3 @@ fluxid sets these environment variables before executing the agent subprocess:
 2. Check validation error message for specific field issues
 3. Ensure timestamp is ISO 8601 UTC format
 4. Verify status is exactly `PASS` or `FAIL` (case-sensitive)
-
----
-
-## Report Schema Reference
-
-### Required Fields
-
-```yaml
-command: implement              # Phase: implement, review, or commit
-artifact: src/main.go          # Primary file or component modified
-timestamp: 2026-01-07T10:00:00Z # ISO 8601 UTC timestamp
-status: PASS                    # PASS or FAIL
-issues:
-  blockers: []                  # Critical issues preventing progress
-  defects: []                   # Bugs that need fixing
-  concerns: []                  # Code smells or design issues
-  observations: []              # Neutral observations
-  enhancements: []              # Improvement opportunities
-```
-
-### Optional Fields
-
-```yaml
-next_steps:                     # Array of suggested actions
-  - "Add error handling"
-summary: "Implementation complete"  # Brief summary
-```
-
-### Field Constraints
-
-- **command**: string (required)
-- **artifact**: string (required)
-- **timestamp**: ISO 8601 UTC format `YYYY-MM-DDTHH:MM:SSZ` (required)
-- **status**: enum `PASS` or `FAIL` (required)
-- **issues**: object with 5 required arrays (required)
-  - blockers, defects, concerns, observations, enhancements
-- **next_steps**: array of strings (optional)
-- **summary**: string (optional)
-- **Additional properties**: NOT ALLOWED (schema strict validation)
