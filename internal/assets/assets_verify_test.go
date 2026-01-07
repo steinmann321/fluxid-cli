@@ -162,11 +162,11 @@ func TestCopyAssetsToDir_CopiesCommandFiles(t *testing.T) {
 	// Check all 6 command files
 	files := []string{
 		"fluxid.commit.md",
-		"fluxid.implement.md",
-		"fluxid.implement-cli.md",
+		"fluxid.commit-speckit.md",
 		"fluxid.implement-e2e.md",
-		"fluxid.review-implementation.md",
-		"fluxid.review-implementation-e2e.md",
+		"fluxid.implement-speckit.md",
+		"fluxid.review-e2e.md",
+		"fluxid.review-speckit.md",
 	}
 
 	for _, file := range files {
@@ -196,15 +196,12 @@ func TestCopyAssetsToDir_VerifyAllFiles(t *testing.T) {
 	// Verify all 6 command files are copied
 	commandsDir := filepath.Join(tmpDir, ".fluxid", "commands")
 	expectedFiles := map[string]bool{
-		"fluxid.commit.md":                    false,
-		"fluxid.commit-speckit.md":            false,
-		"fluxid.implement-cli.md":             false,
-		"fluxid.implement-e2e.md":             false,
-		"fluxid.implement.md":                 false,
-		"fluxid.implement-speckit.md":         false,
-		"fluxid.review-implementation-e2e.md": false,
-		"fluxid.review-implementation.md":     false,
-		"fluxid.review-speckit.md":            false,
+		"fluxid.commit.md":            false,
+		"fluxid.commit-speckit.md":    false,
+		"fluxid.implement-e2e.md":     false,
+		"fluxid.implement-speckit.md": false,
+		"fluxid.review-e2e.md":        false,
+		"fluxid.review-speckit.md":    false,
 	}
 
 	entries, err := os.ReadDir(commandsDir)
@@ -276,7 +273,7 @@ func TestGetDefaultConfig_Content(t *testing.T) {
 	if !containsStr(config, "fluxid.implement-e2e.md") {
 		t.Error("Config does not contain default e2e implement command")
 	}
-	if !containsStr(config, "fluxid.review-implementation-e2e.md") {
+	if !containsStr(config, "fluxid.review-e2e.md") {
 		t.Error("Config does not contain default e2e review command")
 	}
 }
@@ -299,8 +296,8 @@ func TestCopyAssetsToDir_VerifyFileContents(t *testing.T) {
 		t.Fatalf("Failed to read commands directory: %v", err)
 	}
 
-	if len(entries) != 9 {
-		t.Errorf("Expected 9 command files, got %d", len(entries))
+	if len(entries) != 6 {
+		t.Errorf("Expected 6 command files, got %d", len(entries))
 	}
 
 	for _, entry := range entries {

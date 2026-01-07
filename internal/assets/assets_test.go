@@ -18,8 +18,8 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	}
 
 	// Verify counts
-	if counts.Commands != 9 {
-		t.Errorf("Expected 9 command files, got %d", counts.Commands)
+	if counts.Commands != 6 {
+		t.Errorf("Expected 6 command files, got %d", counts.Commands)
 	}
 	if counts.Templates != 3 {
 		t.Errorf("Expected 3 template files, got %d", counts.Templates)
@@ -55,9 +55,9 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	if len(entries) == 0 {
 		t.Error("No command files created")
 	}
-	// We expect 9 command files (implement, review, commit variants + speckit variants)
-	if len(entries) != 9 {
-		t.Errorf("Expected 9 command files, got %d", len(entries))
+	// We expect 6 command files (implement, review, commit variants + speckit variants)
+	if len(entries) != 6 {
+		t.Errorf("Expected 6 command files, got %d", len(entries))
 	}
 
 	// Verify templates directory with files
@@ -113,12 +113,12 @@ func TestCopyAssetsToDir_FileContents(t *testing.T) {
 	// Verify command files have content
 	commandsDir := filepath.Join(tmpDir, ".fluxid", "commands")
 	commandFiles := []string{
-		"fluxid.implement.md",
-		"fluxid.implement-cli.md",
-		"fluxid.implement-e2e.md",
-		"fluxid.review-implementation.md",
-		"fluxid.review-implementation-e2e.md",
 		"fluxid.commit.md",
+		"fluxid.commit-speckit.md",
+		"fluxid.implement-e2e.md",
+		"fluxid.implement-speckit.md",
+		"fluxid.review-e2e.md",
+		"fluxid.review-speckit.md",
 	}
 
 	for _, file := range commandFiles {
@@ -172,7 +172,7 @@ func TestCopyAssetsToDir_ConfigContent(t *testing.T) {
 	// Check for expected e2e default commands
 	expectedStrings := []string{
 		"fluxid.implement-e2e.md",
-		"fluxid.review-implementation-e2e.md",
+		"fluxid.review-e2e.md",
 		"fluxid.commit.md",
 	}
 
