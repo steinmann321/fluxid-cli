@@ -42,8 +42,8 @@ func TestM01E02ConfigureLoopCounts(t *testing.T) {
 	}
 
 	// Verify workflow executes with correct counts
-	if !strings.Contains(output, "Review Cycle 1/5") {
-		t.Errorf("Expected Review Cycle 1/5, got output:\n%s", output)
+	if !strings.Contains(output, "REVIEW CYCLE 1/5") {
+		t.Errorf("Expected REVIEW CYCLE 1/5, got output:\n%s", output)
 	}
 
 	// Verify exit code 0 (implicit - test passed if runFluxidWithClaude didn't fail)

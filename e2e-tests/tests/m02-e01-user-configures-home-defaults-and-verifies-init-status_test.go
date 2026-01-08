@@ -178,7 +178,7 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 
 	// Verify initialization appears BEFORE workflow execution
 	initIdx := strings.Index(output, "Workflow Initialization")
-	phaseIdx := strings.Index(output, "Review Cycle")
+	phaseIdx := strings.Index(output, "REVIEW CYCLE")
 
 	if initIdx == -1 || phaseIdx == -1 || initIdx >= phaseIdx {
 		t.Errorf("Initialization section should appear before workflow execution")

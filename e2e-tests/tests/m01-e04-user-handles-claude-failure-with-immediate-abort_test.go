@@ -132,7 +132,7 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 	}
 
 	// Verify only one cycle was started (use more specific pattern to avoid matching "Max Review Cycles")
-	cycleCount := strings.Count(outputStr, "--- Review Cycle")
+	cycleCount := strings.Count(outputStr, "--- REVIEW CYCLE")
 	if cycleCount != 1 {
 		t.Errorf("Expected exactly 1 review cycle, got %d\nOutput:\n%s", cycleCount, outputStr)
 	}

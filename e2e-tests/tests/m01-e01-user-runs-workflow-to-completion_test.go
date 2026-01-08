@@ -262,7 +262,7 @@ func verifyInitialization(t *testing.T, output string) {
 func verifyPhaseExecution(t *testing.T, output string) {
 	t.Helper()
 
-	if !strings.Contains(output, "Review Cycle 1/1") {
+	if !strings.Contains(output, "REVIEW CYCLE 1/1") {
 		t.Errorf("Missing review cycle indicator")
 	}
 
