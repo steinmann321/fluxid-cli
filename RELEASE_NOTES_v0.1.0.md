@@ -31,6 +31,49 @@ brew tap steinmann321/tap
 brew install fluxid
 ```
 
+**Debian/Ubuntu (.deb)**:
+```bash
+# Download the .deb package
+wget https://github.com/steinmann321/fluxid-cli/releases/download/v0.1.0/fluxid_0.1.0_linux_amd64.deb
+
+# Install
+sudo dpkg -i fluxid_0.1.0_linux_amd64.deb
+```
+
+**Fedora/RHEL/CentOS (.rpm)**:
+```bash
+# Download the .rpm package
+wget https://github.com/steinmann321/fluxid-cli/releases/download/v0.1.0/fluxid_0.1.0_linux_amd64.rpm
+
+# Install
+sudo rpm -i fluxid_0.1.0_linux_amd64.rpm
+# or with dnf
+sudo dnf install fluxid_0.1.0_linux_amd64.rpm
+```
+
+**Arch Linux (AUR)**:
+```bash
+# Using yay
+yay -S fluxid-bin
+
+# Using paru
+paru -S fluxid-bin
+
+# Manual installation
+git clone https://aur.archlinux.org/fluxid-bin.git
+cd fluxid-bin
+makepkg -si
+```
+
+**Alpine Linux (.apk)**:
+```bash
+# Download the .apk package
+wget https://github.com/steinmann321/fluxid-cli/releases/download/v0.1.0/fluxid_0.1.0_linux_amd64.apk
+
+# Install
+apk add --allow-untrusted fluxid_0.1.0_linux_amd64.apk
+```
+
 **Chocolatey (Windows)**:
 ```powershell
 choco install fluxid

@@ -71,6 +71,47 @@ brews:
     test: |
       system "#{bin}/fluxid", "version"
 
+nfpms:
+  - id: fluxid
+    package_name: fluxid
+    vendor: Jakob Steinmann
+    homepage: https://github.com/steinmann321/fluxid-cli
+    maintainer: Jakob Steinmann <noreply@github.com>
+    description: CLI workflow orchestration for coding agents with Implement-Review-Commit loop
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+    section: utils
+    priority: optional
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/fluxid/copyright
+        file_info:
+          mode: 0644
+    rpm:
+      group: Development/Tools
+      compression: lzma
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+
+aurs:
+  - name: fluxid-bin
+    homepage: https://github.com/steinmann321/fluxid-cli
+    description: CLI workflow orchestration for coding agents with Implement-Review-Commit loop
+    maintainers:
+      - 'Jakob Steinmann <noreply@github.com>'
+    license: MIT
+    private_key: '{{ .Env.AUR_KEY }}'
+    git_url: 'ssh://aur@aur.archlinux.org/fluxid-bin.git'
+    package: |-
+      install -Dm755 "./fluxid" "${pkgdir}/usr/bin/fluxid"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/fluxid/LICENSE"
+
 chocolateys:
   - name: fluxid
     title: fluxid

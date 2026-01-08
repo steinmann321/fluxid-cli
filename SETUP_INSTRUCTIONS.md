@@ -33,7 +33,46 @@ export GITHUB_TOKEN="ghp_your_token_here"
 source ~/.zshrc  # or ~/.bashrc
 ```
 
-### 3. Setup Chocolatey (Optional for Windows users)
+### 3. Setup Linux Packages (.deb, .rpm, .apk)
+
+**Good news!** Linux packages require **no additional setup**. GoReleaser will automatically:
+- Create .deb packages (Debian/Ubuntu)
+- Create .rpm packages (Fedora/RHEL/CentOS)
+- Create .apk packages (Alpine Linux)
+- Include them in the GitHub release
+
+Users can download and install directly from the release page.
+
+### 4. Setup AUR (Arch Linux) - Optional
+
+```bash
+# 1. Sign up at: https://aur.archlinux.org/register
+# 2. Add SSH public key to AUR account
+
+# 3. Generate dedicated SSH key
+ssh-keygen -t ed25519 -C "fluxid-aur" -f ~/.ssh/aur
+ssh-add ~/.ssh/aur
+
+# 4. Copy public key and add to AUR account
+cat ~/.ssh/aur.pub
+
+# 5. Export key for GoReleaser
+export AUR_KEY=$(cat ~/.ssh/aur | base64)
+
+# 6. Add to shell profile (~/.zshrc or ~/.bashrc):
+echo 'export AUR_KEY="$(cat ~/.ssh/aur | base64)"' >> ~/.zshrc
+
+# 7. Initialize AUR repository (one-time)
+git clone ssh://aur@aur.archlinux.org/fluxid-bin.git
+cd fluxid-bin
+git commit --allow-empty -m "Initial commit"
+git push -u origin master
+cd ..
+
+# To skip AUR for now: Remove the 'aurs:' section from .goreleaser.yml
+```
+
+### 5. Setup Chocolatey (Windows) - Optional
 
 ```bash
 # Sign up at: https://community.chocolatey.org/account/Register
@@ -47,7 +86,7 @@ export CHOCOLATEY_API_KEY="your_api_key_here"
 # To: skip_publish: true
 ```
 
-### 4. Add Package Icon (Optional but Recommended)
+### 6. Add Package Icon (Optional but Recommended)
 
 ```bash
 # Create assets directory
@@ -93,7 +132,42 @@ brew tap steinmann321/tap
 brew install fluxid
 fluxid version
 
-# Should show: fluxid 0.1.0 (commit: d2bb5a4...)
+# Should show: fluxid 0.1.0 (commit: bdcadbb...)
+```
+
+### Test Linux Packages
+
+**Debian/Ubuntu**:
+```bash
+# Download .deb from GitHub releases
+wget https://github.com/steinmann321/fluxid-cli/releases/download/v0.1.0/fluxid_0.1.0_linux_amd64.deb
+
+# Install
+sudo dpkg -i fluxid_0.1.0_linux_amd64.deb
+
+# Test
+fluxid version
+```
+
+**Fedora/RHEL**:
+```bash
+# Download .rpm from GitHub releases
+wget https://github.com/steinmann321/fluxid-cli/releases/download/v0.1.0/fluxid_0.1.0_linux_amd64.rpm
+
+# Install
+sudo dnf install fluxid_0.1.0_linux_amd64.rpm
+
+# Test
+fluxid version
+```
+
+**Arch Linux (AUR)**:
+```bash
+# Using yay
+yay -S fluxid-bin
+
+# Test
+fluxid version
 ```
 
 ### Test Chocolatey
