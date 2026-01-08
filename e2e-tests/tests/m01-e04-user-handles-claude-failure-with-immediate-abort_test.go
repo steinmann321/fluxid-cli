@@ -23,7 +23,7 @@ func verifyFailureOutput(t *testing.T, output string) {
 	}{
 		{true, "=== Workflow Aborted ===", "Expected workflow abort header in output"},
 		{true, "Agent execution failed", "Expected agent failure message in output"},
-		{true, "Exit code: 2", "Expected exit code 2 to be displayed in error message"},
+		{true, "Exit code: 1", "Expected exit code 1 to be displayed in error message"},
 		{true, "Next steps:", "Expected next steps guidance in output"},
 		{false, "Status: SUCCESS", "Success message should not appear after failure"},
 	}
@@ -62,13 +62,15 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected fluxid to fail when Claude exits non-zero, but it succeeded")
 	}
-	// Verify exit code matches Claude's exit code (2)
+	// Verify exit code 1 (commit phase failure after exhausting retries)
+	// Note: Abort mechanism was removed in 001-report-history-refactor,
+	// so workflow no longer mirrors agent exit codes
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) {
 		t.Fatalf("Expected ExitError, got: %v", err)
 	}
-	if exitErr.ExitCode() != 2 {
-		t.Errorf("Expected exit code 2 (matching Claude), got: %d", exitErr.ExitCode())
+	if exitErr.ExitCode() != 1 {
+		t.Errorf("Expected exit code 1 (commit phase failure), got: %d", exitErr.ExitCode())
 	}
 	verifyFailureOutput(t, output.String())
 	// Verify no completion summary appears
@@ -123,18 +125,19 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 		t.Errorf("Expected exactly 3 implement phases (default retry limit), got %d", implementCount)
 	}
 
-	// After exhausting retries, workflow continues to commit phase (which also fails)
-	if commitCount != 1 {
-		t.Errorf("Expected 1 commit phase after exhausting retries, got %d", commitCount)
+	// After exhausting implement retries, workflow continues to commit phase (which also fails and retries)
+	// With default MaxCommitRetries=100, workflow exhausts all commit retries
+	if commitCount != 100 {
+		t.Errorf("Expected 100 commit phases (default commit retry limit), got %d", commitCount)
 	}
 	if reviewCount > 0 {
-		t.Errorf("Expected 0 review phases after failure, got %d", reviewCount)
+		t.Errorf("Expected 0 review phases after commit failures, got %d", reviewCount)
 	}
 
-	// Verify only one cycle was started (use more specific pattern to avoid matching "Max Review Cycles")
-	cycleCount := strings.Count(outputStr, "--- REVIEW CYCLE")
+	// Verify only one development iteration was started
+	cycleCount := strings.Count(outputStr, "DEVELOPMENT ITERATION")
 	if cycleCount != 1 {
-		t.Errorf("Expected exactly 1 review cycle, got %d\nOutput:\n%s", cycleCount, outputStr)
+		t.Errorf("Expected exactly 1 development iteration, got %d\nOutput:\n%s", cycleCount, outputStr)
 	}
 }
 

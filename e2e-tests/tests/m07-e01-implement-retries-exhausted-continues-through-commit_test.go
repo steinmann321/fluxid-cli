@@ -153,15 +153,15 @@ exit 0
 	outputStr := string(output)
 
 	// Verify implement attempts were logged
-	if !strings.Contains(outputStr, "Implement attempt 1/2") {
+	if !strings.Contains(outputStr, "IMPLEMENT PHASE - Attempt 1/2") {
 		t.Error("Expected to see first implement attempt in output")
 	}
-	if !strings.Contains(outputStr, "Implement attempt 2/2") {
+	if !strings.Contains(outputStr, "IMPLEMENT PHASE - Attempt 2/2") {
 		t.Error("Expected to see second implement attempt in output")
 	}
 
 	// Verify review phase was executed
-	if !strings.Contains(outputStr, "Running review phase") {
+	if !strings.Contains(outputStr, "Starting phase: review") {
 		t.Error("Expected review phase to execute after implement retries exhausted")
 	}
 
