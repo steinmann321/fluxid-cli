@@ -74,10 +74,10 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		}
 
 		// Run implement phase
-		if exitCode, err := executeImplementPhase(cfg, retry); err != nil {
-			if exitCode != 0 {
-				return exitCode, err
-			}
+		if _, err := executeImplementPhase(cfg, retry); err != nil {
+			// Agent failure - this is expected and why we have retries
+			// Log error but continue to next retry
+			log.Printf("Implement phase error: %v (retry %d/%d)", err, retry, cfg.MaxImplementRetries)
 			continue
 		}
 
