@@ -3,9 +3,10 @@
 # Binary name
 BINARY_NAME=fluxid
 
-# Installation directories
-INSTALL_DIR=/usr/local/bin
-GOBIN=$(shell go env GOPATH)/bin
+# Installation directory - CANONICAL across all platforms
+# Use GOPATH/bin for cross-platform consistency (Windows, macOS, Linux)
+# Package managers (Homebrew, apt, rpm, Chocolatey) handle their own paths
+INSTALL_DIR=$(shell go env GOPATH)/bin
 
 help: ## Show this help message
 	@echo "Available targets:"
@@ -17,46 +18,16 @@ build: ## Build fluxid using GoReleaser (local platform only)
 	@echo "✓ Built dist/$(BINARY_NAME)_*_*/$(BINARY_NAME)"
 
 install: build ## Install fluxid to $$GOPATH/bin
-	@echo "Installing $(BINARY_NAME) to $(GOBIN)..."
-	@cp dist/$(BINARY_NAME)_*_*/$(BINARY_NAME) $(GOBIN)/$(BINARY_NAME)
-	@echo "✓ Installed to $(GOBIN)/$(BINARY_NAME)"
-	@echo "✓ Run 'fluxid version' to verify installation"
-
-install-system: build ## Install fluxid to /usr/local/bin (requires sudo)
 	@echo "Installing $(BINARY_NAME) to $(INSTALL_DIR)..."
-	@sudo install -m 755 dist/$(BINARY_NAME)_*_*/$(BINARY_NAME) $(INSTALL_DIR)/$(BINARY_NAME)
+	@mkdir -p $(INSTALL_DIR)
+	@cp dist/$(BINARY_NAME)_*_*/$(BINARY_NAME)* $(INSTALL_DIR)/$(BINARY_NAME)
 	@echo "✓ Installed to $(INSTALL_DIR)/$(BINARY_NAME)"
 	@echo "✓ Run 'fluxid version' to verify installation"
 
-install-user: build ## Install fluxid to ~/bin (no sudo required)
-	@echo "Installing $(BINARY_NAME) to ~/bin..."
-	@mkdir -p ~/bin
-	@install -m 755 dist/$(BINARY_NAME)_*_*/$(BINARY_NAME) ~/bin/$(BINARY_NAME)
-	@echo "✓ Installed to ~/bin/$(BINARY_NAME)"
-	@if echo $$PATH | grep -q "$$HOME/bin"; then \
-		echo "✓ ~/bin is in your PATH"; \
-		echo "✓ Run 'fluxid version' to verify installation"; \
-	else \
-		echo "⚠ ~/bin is NOT in your PATH"; \
-		echo "  Add this to your ~/.zshrc or ~/.bashrc:"; \
-		echo "    export PATH=\"\$$HOME/bin:\$$PATH\""; \
-		echo "  Then run: source ~/.zshrc"; \
-	fi
-
 uninstall: ## Uninstall fluxid from $$GOPATH/bin
-	@echo "Uninstalling $(BINARY_NAME) from $(GOBIN)..."
-	@rm -f $(GOBIN)/$(BINARY_NAME)
-	@echo "✓ Uninstalled from $(GOBIN)"
-
-uninstall-system: ## Uninstall fluxid from /usr/local/bin
 	@echo "Uninstalling $(BINARY_NAME) from $(INSTALL_DIR)..."
-	@sudo rm -f $(INSTALL_DIR)/$(BINARY_NAME)
+	@rm -f $(INSTALL_DIR)/$(BINARY_NAME) $(INSTALL_DIR)/$(BINARY_NAME).exe
 	@echo "✓ Uninstalled from $(INSTALL_DIR)"
-
-uninstall-user: ## Uninstall fluxid from ~/bin
-	@echo "Uninstalling $(BINARY_NAME) from ~/bin..."
-	@rm -f ~/bin/$(BINARY_NAME)
-	@echo "✓ Uninstalled from ~/bin"
 
 clean: ## Remove build artifacts
 	@echo "Cleaning build artifacts..."
