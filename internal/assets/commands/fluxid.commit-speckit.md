@@ -114,12 +114,10 @@ After each iteration:
 
 **Speckit/Specify**: `.specify/specs/[###-feature-slug]/` containing `spec.md`, `plan.md`, `tasks.md`
 
-**IPC Commands**:
-- Read previous report: `fluxid ipc read-report`
-- View history: `fluxid ipc view-history`
-- Get report schema: `fluxid ipc get-report-schema`
-- Write report: `fluxid ipc write-report` (validates automatically)
-- Write history: `fluxid ipc write-history`
+# Context Files
+Read previous state if needed:
+- Previous report: `fluxid report --get-file` and `fluxid report --get-schema`
+- Execution history: `fluxid history --get-file` and `fluxid history --get-schema`
 
 **Input**: Feature ID `###-feature-slug` (e.g., `001-todo-main-screen`)
 
@@ -146,37 +144,27 @@ After each iteration:
 - Index clean
 - No branch/tag/remote operations
 
-# Report & Logging - REQUIRED BEFORE EXITING
+# CRITICAL: Write Report (MANDATORY - DO NOT EXIT WITHOUT THIS)
 
-You MUST write a fluxid report using this exact command format (update values as appropriate):
+You MUST write a report file. This is a required workflow control document.
 
-```bash
-cat <<'EOF' | fluxid ipc write-report
-command: fluxid.commit-speckit
-artifact: feature-name-here
-timestamp: 2026-01-05T01:00:00Z
-status: PASS
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-summary: Brief summary of commit result (e.g., "Commit created successfully with all hooks passing")
-next_steps: []
-EOF
-```
+1. Get file path: `fluxid report --get-file`
+2. Get schema: `fluxid report --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid report --validate`
 
-**Fields to update**:
-- `artifact`: Feature/epic name from spec
-- `timestamp`: Current ISO-8601 timestamp (e.g., `2026-01-05T10:30:00Z`)
-- `status`: **PASS** if commit created and all hooks pass, **FAIL** if hooks fail or no changes
-- `summary`: 1-2 sentence result (e.g., "Commit abc123 created, 15 files changed, all pre-commit hooks passed")
-- `issues`: Document hook failures, unfixable errors, or blockers
-- `next_steps`: List required fixes if status is FAIL (empty array `[]` if PASS)
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without a valid report.
 
-**Critical**: IPC validates automatically. If it fails, fix the YAML syntax and retry.
-**Do not exit without writing this report** - fluxid depends on it to track workflow state.
+# CRITICAL: Write History (MANDATORY - DO NOT EXIT WITHOUT THIS)
+
+You MUST write to the history file. This is a required workflow control document.
+
+1. Get file path: `fluxid history --get-file`
+2. Get schema: `fluxid history --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid history --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without valid history.
 
 **Issue Mapping**:
 - Hook failures → blockers
@@ -194,12 +182,6 @@ If reporting FAIL, must include:
 - Proof that all mandatory phases were completed
 - Specific blocking reason (must match valid stop criteria)
 
-**History**: Write progress and final status using:
-```bash
-fluxid ipc write-history
-```
-
-Example entry format: `[commit] [feature-id] - [status]: [reason]`
 
 ---
 

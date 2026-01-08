@@ -10,13 +10,10 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-## Optional additional input from previous session
-
-Check previous work if this is a retry:
-```bash
-fluxid ipc read-report    # Previous report (if exists)
-fluxid ipc view-history   # Session history
-```
+# Context Files
+Read previous state if needed:
+- Previous report: `fluxid report --get-file` and `fluxid report --get-schema`
+- Execution history: `fluxid history --get-file` and `fluxid history --get-schema`
 
 ## Outline
 
@@ -171,37 +168,27 @@ Better honest FAIL than compromised implementation — ALWAYS.
 - Document what was tried and what remains
 - Create FAIL report
 
-**Report - REQUIRED BEFORE EXITING**:
+# CRITICAL: Write Report (MANDATORY - DO NOT EXIT WITHOUT THIS)
 
-You MUST write a fluxid report using this exact command format (update values as appropriate):
+You MUST write a report file. This is a required workflow control document.
 
-```bash
-cat <<'EOF' | fluxid ipc write-report
-command: fluxid.implement-speckit
-artifact: feature-name-here
-timestamp: 2026-01-05T01:00:00Z
-status: PASS
-issues:
-  blockers: []
-  defects: []
-  concerns: []
-  observations: []
-  enhancements: []
-summary: Brief summary of what was accomplished
-next_steps: []
-EOF
-```
+1. Get file path: `fluxid report --get-file`
+2. Get schema: `fluxid report --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid report --validate`
 
-**Fields to update**:
-- `artifact`: Feature/epic name from tasks.md or plan.md
-- `timestamp`: Current ISO-8601 timestamp (e.g., `2026-01-05T10:30:00Z`)
-- `status`: **PASS** if all tasks complete and tests pass, **FAIL** if stopped/incomplete
-- `summary`: 1-2 sentence summary of work completed
-- `next_steps`: List remaining work if status is FAIL (empty array `[]` if PASS)
-- `issues`: Add items to appropriate categories if needed (blockers, defects, concerns, observations, enhancements)
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without a valid report.
 
-**Critical**: IPC validates automatically. If it fails, fix the YAML syntax and retry.
-**Do not exit without writing this report** - fluxid depends on it to track workflow state.
+# CRITICAL: Write History (MANDATORY - DO NOT EXIT WITHOUT THIS)
+
+You MUST write to the history file. This is a required workflow control document.
+
+1. Get file path: `fluxid history --get-file`
+2. Get schema: `fluxid history --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid history --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without valid history.
 
 ---
 

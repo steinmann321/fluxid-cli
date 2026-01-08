@@ -52,13 +52,15 @@ Take epic flow description and move product forward: understand user journey, re
 
 **Your PASS criteria:** E2E tests pass. Code quality helps but doesn't block.
 
+# Context Files
+Read previous state if needed:
+- Previous report: `fluxid report --get-file` and `fluxid report --get-schema`
+- Execution history: `fluxid history --get-file` and `fluxid history --get-schema`
+
 # Input/Output
 
 **Input:**
 - Epic id (file name) describing a user flow (e.g., `mXX-eYY-<slug>.md`)
-- Report file (get path via `.fluxid/scripts/commands/files.sh --report`)
-- History file (get path via `.fluxid/scripts/commands/files.sh --history`)
-- E2E test file for the epic (get path via `.fluxid/scripts/commands/files.sh --testfile <epic-id>`)
 
 **Output:**
 - Updated application code and configuration
@@ -70,7 +72,7 @@ Take epic flow description and move product forward: understand user journey, re
 # Process
 
 ## 1. Understand Context
-- Inputs: epic file, report file, history file, test file via `.fluxid/scripts/commands/files.sh`
+- Inputs: epic file, report file, history file via fluxid CLI commands
 - Current status and suggested next steps from the report file
 - Prior failures and blockers from history
 
@@ -115,7 +117,24 @@ Take epic flow description and move product forward: understand user journey, re
 
 FAIL report documents remaining work AFTER exhaustion, not escape hatch from hard work.
 
-## 7. Generate and Validate Report
-- Pure YAML report per `.fluxid/templates/report-schema.yaml`
-- Validate via `.fluxid/scripts/commands/validate-report.sh`
-- Fix validation errors
+# CRITICAL: Write Report (MANDATORY - DO NOT EXIT WITHOUT THIS)
+
+You MUST write a report file. This is a required workflow control document.
+
+1. Get file path: `fluxid report --get-file`
+2. Get schema: `fluxid report --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid report --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without a valid report.
+
+# CRITICAL: Write History (MANDATORY - DO NOT EXIT WITHOUT THIS)
+
+You MUST write to the history file. This is a required workflow control document.
+
+1. Get file path: `fluxid history --get-file`
+2. Get schema: `fluxid history --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid history --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without valid history.

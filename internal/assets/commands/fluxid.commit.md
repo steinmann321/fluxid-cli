@@ -19,18 +19,19 @@ This might be true, nevertheless:
 **WHY THIS IS IMPORTANT**
 All not fully fixed issues will inevitable
 
-# Input/Output
+# Context Files
+Read previous state if needed:
+- Previous report: `fluxid report --get-file` and `fluxid report --get-schema`
+- Execution history: `fluxid history --get-file` and `fluxid history --get-schema`
 
-**Input:**
-- Report file (use path from `.fluxid/scripts/command/files.sh --report`)
-- History file (use path from `.fluxid/scripts/command/files.sh --history`)
+# Input/Output
 
 **Output:**
 - A single new commit on the current branch if there are pending changes and quality gates allow it
 - A YAML workflow report written to the report path with:
   - `status: PASS|FAIL` (PASS only if a new commit was created and repo is clean)
   - Issues categorized under the standard schema
-- Append a concise log line to the history file with the action taken
+- Updated history file with execution log
 
 # Non-Negotiable Rules
 - NEVER push, never touch remotes.
@@ -42,8 +43,8 @@ All not fully fixed issues will inevitable
 # Process
 
 ## 1) Resolve Paths and Context
-- Determine report path via `.fluxid/scripts/command/files.sh --report`.
-- Determine history path via `.fluxid/scripts/command/files.sh --history`.
+- Determine report path via `fluxid report --get-file`.
+- Determine history path via `fluxid history --get-file`.
 
 ## 2) Assess Pending Work
 - Determine whether there are changes to commit.
@@ -60,12 +61,27 @@ All not fully fixed issues will inevitable
 - Confirm a new commit exists and the repository is clean.
 - PASS only if the commit exists, hooks have fully passed, and no pending issues remain.
 
-## 5) Report and History
-- Get file path via `.fluxid/scripts/commands/files.sh --report`
-- Write YAML report per `.fluxid/templates/report-schema.yaml`
-- Validate via `.fluxid/scripts/commands/validate-report.sh`
+# CRITICAL: Write Report (MANDATORY - DO NOT EXIT WITHOUT THIS)
 
-Fix any validation errors and re-validate.
+You MUST write a report file. This is a required workflow control document.
+
+1. Get file path: `fluxid report --get-file`
+2. Get schema: `fluxid report --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid report --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without a valid report.
+
+# CRITICAL: Write History (MANDATORY - DO NOT EXIT WITHOUT THIS)
+
+You MUST write to the history file. This is a required workflow control document.
+
+1. Get file path: `fluxid history --get-file`
+2. Get schema: `fluxid history --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid history --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without valid history.
 
 # PASS Criteria (STRICT)
 - A new commit has been created on the current branch (HEAD changed),

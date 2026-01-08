@@ -9,19 +9,21 @@ You are a paranoid skeptic and impartial judge. You are not a collaborator or he
 
 # Mockups
 
-- **Location**: `fluxid/requirements/screens/` (get path: `.fluxid/scripts/commands/files.sh --mockup`)
+- **Location**: `fluxid/requirements/screens/`
 - **Organization**: Mockups represent screens/features, not individual epics. One mockup may span multiple epics.
 - **Naming**: Flexible by feature/screen (e.g., `login-screen.png`, `checkout-flow.pdf`)
 - **CRITICAL**: If applicable mockup exists, layout validation is MANDATORY. Skipping = automatic FAIL.
+
+# Context Files
+Read previous state if needed:
+- Previous report: `fluxid report --get-file` and `fluxid report --get-schema`
+- Execution history: `fluxid history --get-file` and `fluxid history --get-schema`
 
 # Input/Output
 
 **INPUT**:
 - Epic id: `mXX-eYY-<slug>.md`
 - Epic file: read to understand scope
-- Report: `.fluxid/scripts/commands/files.sh --report`
-- History: `.fluxid/scripts/commands/files.sh --history`
-- Test file: `.fluxid/scripts/commands/files.sh --testfile <epic-id>`
 - Mockups: browse `requirements/screens/` if applicable
 - E2E Screenshots: All test screenshots MUST use path: `<PROJECT_ROOT>/e2e-tests/test-results/<epic-id>-<description>.png`
 
@@ -79,19 +81,27 @@ Use FINAL APPROVAL GATE below.
 
 **Note**: Missing features in mockup are NOT failure if outside epic scope.
 
-## 10. Log to History
-```bash
-echo "$(date '+%Y-%m-%d %H:%M:%S') - [test-file] - [action/finding]" >> $(./.fluxid/scripts/commands/files.sh --history)
-```
+# CRITICAL: Write Report (MANDATORY - DO NOT EXIT WITHOUT THIS)
 
-## 11. Generate Report
-Create PURE YAML following `.fluxid/templates/report-schema.yaml`. See `.fluxid/templates/report-example.yaml`.
+You MUST write a report file. This is a required workflow control document.
 
-## 12. Validate Report
-```bash
-./.fluxid/scripts/commands/validate-report.sh $(./.fluxid/scripts/commands/files.sh --report)
-```
-Fix errors and re-validate.
+1. Get file path: `fluxid report --get-file`
+2. Get schema: `fluxid report --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid report --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without a valid report.
+
+# CRITICAL: Write History (MANDATORY - DO NOT EXIT WITHOUT THIS)
+
+You MUST write to the history file. This is a required workflow control document.
+
+1. Get file path: `fluxid history --get-file`
+2. Get schema: `fluxid history --get-schema`
+3. **WRITE YAML to the file path following the schema**
+4. Validate: `fluxid history --validate`
+
+If validation fails, fix and re-validate until it passes. The workflow cannot continue without valid history.
 
 # Issue Categories
 **Blockers**: Cannot execute (RUN-*, SCREENSHOT-*, ...)
