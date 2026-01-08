@@ -172,16 +172,20 @@ func TestGetDefaultConfigStructure(t *testing.T) {
 		}
 	}
 
-	// Verify config has expected commented fields
-	commentedFields := []string{
-		"# agent:",
-		"# implement_retries:",
-		"# iterations:",
+	// Verify config has expected active fields with defaults
+	requiredFields := map[string]string{
+		"agent:":             "claude",
+		"implement_retries:": "3",
+		"commit_retries:":    "100",
+		"iterations:":        "20",
 	}
 
-	for _, field := range commentedFields {
+	for field, defaultValue := range requiredFields {
 		if !containsStr(config, field) {
-			t.Errorf("Config missing expected commented field: %s", field)
+			t.Errorf("Config missing expected field: %s", field)
+		}
+		if !containsStr(config, defaultValue) {
+			t.Errorf("Config missing expected default value: %s", defaultValue)
 		}
 	}
 }

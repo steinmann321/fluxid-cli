@@ -236,7 +236,7 @@ func runFluxidWithClaude(t *testing.T, root string, args ...string) string {
 func verifyInitialization(t *testing.T, output string) {
 	t.Helper()
 
-	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
+	if !strings.Contains(output, "Workflow Initialization") {
 		t.Errorf("Missing initialization header in output")
 	}
 

@@ -40,6 +40,7 @@ func ValidateFormat(format string) error {
 // InitializationStatus represents the initialization status output.
 // This is used by the Config type in the command package.
 type InitializationStatus struct {
+	Version             string            `json:"version" yaml:"version"`
 	SessionID           string            `json:"session_id" yaml:"session_id"`
 	Agent               string            `json:"agent" yaml:"agent"`
 	MaxReviewCycles     int               `json:"max_review_cycles" yaml:"max_review_cycles"`
@@ -98,6 +99,7 @@ func PrintText(status InitializationStatus) {
 // PrintTextToWriter outputs initialization status as human-readable text to the provided writer.
 func PrintTextToWriter(writer io.Writer, status InitializationStatus) {
 	_, _ = fmt.Fprintf(writer, "=== fluxid Workflow Initialization ===\n")
+	_, _ = fmt.Fprintf(writer, "Version: %s\n", status.Version)
 	_, _ = fmt.Fprintf(writer, "Agent: %s\n", status.Agent)
 	_, _ = fmt.Fprintf(writer, "Session ID: %s\n", status.SessionID)
 	_, _ = fmt.Fprintf(writer, "Max Review Cycles: %d\n", status.MaxReviewCycles)

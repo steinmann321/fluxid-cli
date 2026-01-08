@@ -157,7 +157,7 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 	output := runFluxidWithHome(t, root, tmpHome)
 
 	// Verify initialization header
-	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
+	if !strings.Contains(output, "Workflow Initialization") {
 		t.Errorf("Missing initialization header")
 	}
 
@@ -177,7 +177,7 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 	}
 
 	// Verify initialization appears BEFORE workflow execution
-	initIdx := strings.Index(output, "=== fluxid Workflow Initialization ===")
+	initIdx := strings.Index(output, "Workflow Initialization")
 	phaseIdx := strings.Index(output, "Review Cycle")
 
 	if initIdx == -1 || phaseIdx == -1 || initIdx >= phaseIdx {

@@ -3,6 +3,7 @@ package command
 import (
 	"fluxid-cli/internal/output"
 	"fluxid-cli/internal/types"
+	"fluxid-cli/internal/version"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 func buildInitializationStatus(cfg types.Config) output.InitializationStatus {
 	status := output.InitializationStatus{
+		Version:             version.Get(),
 		SessionID:           cfg.SessionID,
 		Agent:               cfg.Agent,
 		MaxReviewCycles:     cfg.MaxReviewCycles,

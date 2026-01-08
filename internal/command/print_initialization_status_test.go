@@ -8,6 +8,7 @@ import (
 func TestPrintInitializationStatus_TextFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -27,6 +28,7 @@ func TestPrintInitializationStatus_TextFormat(t *testing.T) {
 func TestPrintInitializationStatus_JSONFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -46,6 +48,7 @@ func TestPrintInitializationStatus_JSONFormat(t *testing.T) {
 func TestPrintInitializationStatus_YAMLFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -65,6 +68,7 @@ func TestPrintInitializationStatus_YAMLFormat(t *testing.T) {
 func TestPrintInitializationStatus_DefaultFormat(t *testing.T) {
 	t.Parallel()
 	status := output.InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session",
 		Agent:               "claude",
 		MaxReviewCycles:     10,

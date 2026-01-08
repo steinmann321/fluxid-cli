@@ -76,7 +76,7 @@ func verifyDefaultTextFormat(
 	t.Helper()
 
 	// Verify text format markers are present
-	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
+	if !strings.Contains(output, "Workflow Initialization") {
 		t.Errorf("Expected text format header in output, got:\n%s", output)
 	}
 

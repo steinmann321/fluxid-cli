@@ -3,6 +3,7 @@ package command
 
 import (
 	"fluxid-cli/internal/types"
+	"fluxid-cli/internal/version"
 	"fluxid-cli/internal/workflow"
 	"fmt"
 	"os"
@@ -33,32 +34,42 @@ func Execute() int {
 
 func handleSpecialCommands() (int, bool) {
 	// Check for help flags (must be handled before config loading to avoid validation errors)
-	for _, arg := range os.Args {
-		if arg == "--help" || arg == "-h" {
-			printHelp()
-			return 0, true
-		}
+	if checkHelpFlag() {
+		printHelp()
+		return 0, true
 	}
 
-	// Check for init command first (before loading config)
-	// Init creates the config, so it must run before config loading
-	if len(os.Args) > 1 && os.Args[1] == "init" {
-		return handleInit(os.Args[2:]), true
-	}
-
-	// Check for report command (file-based interface for agents)
-	// Per User Story 1 (FR-001): Enable agents to write reports via file-based interface
-	if len(os.Args) > 1 && os.Args[1] == "report" {
-		return handleReportCommand(os.Args[2:]), true
-	}
-
-	// Check for history command (file-based interface for agents)
-	// Per User Story 4 (FR-004): Enable agents to write history via file-based interface
-	if len(os.Args) > 1 && os.Args[1] == "history" {
-		return handleHistoryCommand(os.Args[2:]), true
+	// Check for subcommands that don't require config
+	if len(os.Args) > 1 {
+		return handleSubcommand(os.Args[1], os.Args[2:])
 	}
 
 	return 0, false
+}
+
+func checkHelpFlag() bool {
+	for _, arg := range os.Args {
+		if arg == "--help" || arg == "-h" {
+			return true
+		}
+	}
+	return false
+}
+
+func handleSubcommand(cmd string, args []string) (int, bool) {
+	switch cmd {
+	case "init":
+		return handleInit(args), true
+	case "version", "--version":
+		_, _ = fmt.Fprintln(os.Stdout, version.Full())
+		return 0, true
+	case "report":
+		return handleReportCommand(args), true
+	case "history":
+		return handleHistoryCommand(args), true
+	default:
+		return 0, false
+	}
 }
 
 func executeWorkflow(cfg types.Config) int {
@@ -100,11 +111,12 @@ func runWorkflow(cfg types.Config) (int, error) {
 }
 
 func printHelp() {
-	helpText := `fluxid - AI-powered workflow automation tool
+	helpText := fmt.Sprintf(`fluxid %s - AI-powered workflow automation tool
 
 USAGE:
     fluxid [OPTIONS] --<agent> --file=<task-file>
     fluxid init [OPTIONS]
+    fluxid version
     fluxid report [--get-file|--validate|--get-schema]
     fluxid history [--get-file|--validate|--get-schema]
 
@@ -127,6 +139,7 @@ OPTIONS:
 
 COMMANDS:
     init                           Initialize fluxid configuration
+    version                        Show version information
 
     report --get-file              Get absolute path to report file for current session
     report --validate              Validate existing report file against schema
@@ -146,6 +159,9 @@ EXAMPLES:
     # Initialize configuration
     fluxid init
 
+    # Show version
+    fluxid version
+
     # Get report file path (for external agents)
     fluxid report --get-file
 
@@ -153,6 +169,6 @@ EXAMPLES:
     fluxid report --validate
 
 For more information, visit: https://github.com/fluxid/fluxid-cli
-`
+`, version.Get())
 	_, _ = fmt.Fprint(os.Stdout, helpText)
 }

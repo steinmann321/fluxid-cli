@@ -1,14 +1,9 @@
-# Fluxid Configuration
-# Workflow automation for coding agents
+agent: claude
+implement_retries: 3
+commit_retries: 100
+iterations: 20
 
-# Command file paths (must be absolute paths)
-# Placeholders like {{FLUXID_DIR}} are replaced during 'fluxid init'
 commands:
-  implement: {{FLUXID_DIR}}/commands/fluxid.implement-e2e.md
-  review: {{FLUXID_DIR}}/commands/fluxid.review-e2e.md
+  implement: {{FLUXID_DIR}}/commands/fluxid.implement.md
+  review: {{FLUXID_DIR}}/commands/fluxid.review.md
   commit: {{FLUXID_DIR}}/commands/fluxid.commit.md
-
-# Optional: Override defaults
-# agent: claude                  # Default: claude
-# implement_retries: 3           # Default: 3
-# iterations: 20                 # Default: 20

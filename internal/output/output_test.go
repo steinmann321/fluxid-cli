@@ -50,6 +50,7 @@ func TestPrintText(t *testing.T) {
 	os.Stdout = writePipe
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session-123",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -77,6 +78,7 @@ func TestPrintText(t *testing.T) {
 
 	expectedStrings := []string{
 		"=== fluxid Workflow Initialization ===",
+		"Version: test-version",
 		"Agent: claude",
 		"Session ID: test-session-123",
 		"Max Review Cycles: 10",
@@ -102,6 +104,7 @@ func TestPrintJSON(t *testing.T) {
 
 	//nolint:exhaustruct // Optional fields CommandFiles and AgentArgs not needed in test.
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session-json",
 		Agent:               "claude",
 		MaxReviewCycles:     5,
@@ -147,6 +150,7 @@ func TestPrintYAML(t *testing.T) {
 
 	//nolint:exhaustruct // Optional fields CommandFiles and AgentArgs not needed in test.
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-session-yaml",
 		Agent:               "claude",
 		MaxReviewCycles:     5,
@@ -186,6 +190,7 @@ func TestPrintJSONToWriter_Success(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-json-writer",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -217,6 +222,7 @@ func TestPrintJSONToWriter_Error(t *testing.T) {
 	failWriter := &failingWriter{}
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test",
 		Agent:               "claude",
 		MaxReviewCycles:     0,
@@ -241,6 +247,7 @@ func TestPrintYAMLToWriter_Success(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-yaml-writer",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -272,6 +279,7 @@ func TestPrintYAMLToWriter_Error(t *testing.T) {
 	failWriter := &failingWriter{}
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test",
 		Agent:               "claude",
 		MaxReviewCycles:     0,
@@ -296,6 +304,7 @@ func TestPrintTextToWriter_WithCommandFiles(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-text-writer",
 		Agent:               "claude",
 		MaxReviewCycles:     10,
@@ -316,6 +325,7 @@ func TestPrintTextToWriter_WithCommandFiles(t *testing.T) {
 
 	expectedStrings := []string{
 		"=== fluxid Workflow Initialization ===",
+		"Version: test-version",
 		"Agent: claude",
 		"Session ID: test-text-writer",
 		"Command Files:",
@@ -337,6 +347,7 @@ func TestPrintTextToWriter_WithoutCommandFiles(t *testing.T) {
 	var buf bytes.Buffer
 
 	status := InitializationStatus{
+		Version:             "test-version",
 		SessionID:           "test-text-no-files",
 		Agent:               "claude",
 		MaxReviewCycles:     10,

@@ -193,13 +193,15 @@ func TestCopyAssetsToDir_VerifyAllFiles(t *testing.T) {
 		t.Fatalf("CopyAssetsToDir failed: %v", err)
 	}
 
-	// Verify all 6 command files are copied
+	// Verify all 8 command files are copied
 	commandsDir := filepath.Join(tmpDir, ".fluxid", "commands")
 	expectedFiles := map[string]bool{
 		"fluxid.commit.md":            false,
 		"fluxid.commit-speckit.md":    false,
+		"fluxid.implement.md":         false,
 		"fluxid.implement-e2e.md":     false,
 		"fluxid.implement-speckit.md": false,
+		"fluxid.review.md":            false,
 		"fluxid.review-e2e.md":        false,
 		"fluxid.review-speckit.md":    false,
 	}
@@ -270,11 +272,11 @@ func TestGetDefaultConfig_Content(t *testing.T) {
 	if !containsStr(config, "commit") {
 		t.Error("Config does not contain 'commit'")
 	}
-	if !containsStr(config, "fluxid.implement-e2e.md") {
-		t.Error("Config does not contain default e2e implement command")
+	if !containsStr(config, "fluxid.implement.md") {
+		t.Error("Config does not contain default implement command")
 	}
-	if !containsStr(config, "fluxid.review-e2e.md") {
-		t.Error("Config does not contain default e2e review command")
+	if !containsStr(config, "fluxid.review.md") {
+		t.Error("Config does not contain default review command")
 	}
 }
 
@@ -296,8 +298,8 @@ func TestCopyAssetsToDir_VerifyFileContents(t *testing.T) {
 		t.Fatalf("Failed to read commands directory: %v", err)
 	}
 
-	if len(entries) != 6 {
-		t.Errorf("Expected 6 command files, got %d", len(entries))
+	if len(entries) != 8 {
+		t.Errorf("Expected 8 command files, got %d", len(entries))
 	}
 
 	for _, entry := range entries {

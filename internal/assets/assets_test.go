@@ -18,8 +18,8 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	}
 
 	// Verify counts
-	if counts.Commands != 6 {
-		t.Errorf("Expected 6 command files, got %d", counts.Commands)
+	if counts.Commands != 8 {
+		t.Errorf("Expected 8 command files, got %d", counts.Commands)
 	}
 	if counts.Templates != 3 {
 		t.Errorf("Expected 3 template files, got %d", counts.Templates)
@@ -55,9 +55,9 @@ func TestCopyAssetsToDir_Success(t *testing.T) {
 	if len(entries) == 0 {
 		t.Error("No command files created")
 	}
-	// We expect 6 command files (implement, review, commit variants + speckit variants)
-	if len(entries) != 6 {
-		t.Errorf("Expected 6 command files, got %d", len(entries))
+	// We expect 8 command files (implement, review, commit variants + speckit variants + e2e variants)
+	if len(entries) != 8 {
+		t.Errorf("Expected 8 command files, got %d", len(entries))
 	}
 
 	// Verify templates directory with files
@@ -169,10 +169,10 @@ func TestCopyAssetsToDir_ConfigContent(t *testing.T) {
 
 	configStr := string(content)
 
-	// Check for expected e2e default commands
+	// Check for expected default commands
 	expectedStrings := []string{
-		"fluxid.implement-e2e.md",
-		"fluxid.review-e2e.md",
+		"fluxid.implement.md",
+		"fluxid.review.md",
 		"fluxid.commit.md",
 	}
 

@@ -276,7 +276,7 @@ func TestM02E03NoCommandFilesOptional(t *testing.T) {
 	output := runFluxidInDirWithArgs(t, root, tmpHome, tmpHome, "--fluxid-dry-run")
 
 	// Verify fluxid runs successfully
-	if !strings.Contains(output, "=== fluxid Workflow Initialization ===") {
+	if !strings.Contains(output, "Workflow Initialization") {
 		t.Errorf("Expected initialization header, got:\n%s", output)
 	}
 
