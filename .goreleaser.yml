@@ -52,3 +52,44 @@ changelog:
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
+
+brews:
+  - name: fluxid
+    repository:
+      owner: steinmann321
+      name: homebrew-tap
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    homepage: "https://github.com/steinmann321/fluxid-cli"
+    description: "CLI workflow orchestration for coding agents with Implement-Review-Commit loop"
+    license: "MIT"
+    folder: Formula
+    commit_author:
+      name: Jakob Steinmann
+      email: noreply@github.com
+    install: |
+      bin.install "fluxid"
+    test: |
+      system "#{bin}/fluxid", "version"
+
+chocolateys:
+  - name: fluxid
+    title: fluxid
+    authors: Jakob Steinmann
+    project_url: https://github.com/steinmann321/fluxid-cli
+    url_template: "https://github.com/steinmann321/fluxid-cli/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    icon_url: "https://raw.githubusercontent.com/steinmann321/fluxid-cli/main/assets/icon.png"
+    copyright: 2026 Jakob Steinmann
+    license_url: https://github.com/steinmann321/fluxid-cli/blob/main/LICENSE
+    require_license_acceptance: false
+    project_source_url: https://github.com/steinmann321/fluxid-cli
+    docs_url: https://github.com/steinmann321/fluxid-cli/blob/main/README.md
+    bug_tracker_url: https://github.com/steinmann321/fluxid-cli/issues
+    tags: "cli workflow automation agent orchestration"
+    summary: CLI workflow orchestration for coding agents
+    description: |
+      fluxid is a CLI workflow orchestration tool that enables coding agents to break through
+      context window limitations using an Implement-Review-Commit loop.
+    release_notes: "https://github.com/steinmann321/fluxid-cli/releases/tag/v{{ .Version }}"
+    api_key: "{{ .Env.CHOCOLATEY_API_KEY }}"
+    source_repo: "https://push.chocolatey.org/"
+    skip_publish: false
