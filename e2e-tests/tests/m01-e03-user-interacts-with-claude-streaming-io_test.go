@@ -267,8 +267,8 @@ func TestM01E03NoOutputTruncation(t *testing.T) {
 		t.Errorf("Expected at least 1000 large output lines (checking for truncation), got %d", largeOutputCount)
 	}
 
-	// Verify workflow completed
-	if !strings.Contains(output, "Workflow completed successfully") {
+	// Verify workflow completed (check for review phase completion)
+	if !strings.Contains(output, "PHASE COMPLETED: REVIEW CYCLE") {
 		t.Errorf("Workflow did not complete - possible deadlock")
 	}
 }

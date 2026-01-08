@@ -82,9 +82,7 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 		return exitCode, fmt.Errorf("phase %s failed: %w", phase, waitErr)
 	}
 
-	timestamp = time.Now().Format("15:04:05")
-	log.Printf("[%s] Phase %s completed successfully", timestamp, phase)
-
+	// Phase completed - status will be shown in unified transition box
 	return 0, nil
 }
 
@@ -150,8 +148,8 @@ func waitForValidReport(sessionID string, sessionRoot string, phase string) (str
 	}
 
 	// Valid report found - the storage.ReadReport() function already validates
-	// the report structure, so if we reach here, the report is valid
-	log.Printf("Valid %s report received with status: %s", phase, report.Status)
+	// the report structure, so if we reach here, the report is valid.
+	// Status will be shown in unified transition box.
 	return report.Status, nil
 }
 

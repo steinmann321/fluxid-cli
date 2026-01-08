@@ -63,7 +63,9 @@ func Run(cfg types.Config) (int, error) {
 		}
 
 		// Print review status with formatted output
-		printReviewStatus(cfg.SessionID, cfg.SessionRoot, status, iteration, cfg.MaxReviewCycles)
+		printReviewStatus(
+			cfg.SessionID, cfg.SessionRoot, status, iteration, cfg.MaxReviewCycles, cfg.MaxImplementRetries,
+		)
 
 		if status == statusPass {
 			return 0, nil
@@ -97,7 +99,9 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		}
 
 		// Print formatted status with report file link
-		printImplementAttemptStatus(cfg.SessionID, cfg.SessionRoot, retry, cfg.MaxImplementRetries, status)
+		printImplementAttemptStatus(
+			cfg.SessionID, cfg.SessionRoot, retry, cfg.MaxImplementRetries, status, cfg.MaxCommitRetries,
+		)
 
 		if status == statusPass {
 			// Implement phase succeeded, run commit and return success

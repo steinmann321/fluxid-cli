@@ -3,12 +3,13 @@ package workflow
 
 import (
 	"fluxid-cli/internal/storage"
+	"fmt"
 	"log"
 	"strings"
 )
 
-// printImplementAttemptStatus prints a formatted status message for an implement attempt.
-func printImplementAttemptStatus(sessionID, sessionRoot string, retry, maxRetries int, status string) {
+// printPhaseTransition prints a unified transition box showing completed phase and next phase.
+func printPhaseTransition(sessionID, sessionRoot, completedPhase, status, nextPhase string) {
 	// Get report file path
 	reportPath, err := storage.ResolveSessionPath(sessionID, "report.yaml", sessionRoot)
 	if err != nil {
@@ -25,25 +26,53 @@ func printImplementAttemptStatus(sessionID, sessionRoot string, retry, maxRetrie
 	reportURL := "file://" + reportPath
 	historyURL := "file://" + historyPath
 
-	// Print formatted output
+	// Print unified transition box
 	separator := strings.Repeat("━", separatorWidth)
 	log.Println(separator)
-	log.Printf(" IMPLEMENT PHASE - Attempt %d/%d", retry, maxRetries)
+	log.Println()
+	log.Printf(" PHASE COMPLETED: %s", completedPhase)
+	log.Println()
+	log.Printf("Session ID: %s", sessionID)
+	log.Println()
+	log.Printf("Status:  %s", status)
+	log.Printf("Report:  %s", reportURL)
+	log.Printf("History: %s", historyURL)
+	log.Println()
+	if nextPhase != "" {
+		log.Printf("Next Phase: %s", nextPhase)
+		log.Println()
+	}
 	log.Println(separator)
-	log.Println()
-	log.Printf("Report Status: %s", status)
-	log.Printf("Report File: %s", reportURL)
-	log.Printf("History File: %s", historyURL)
-	log.Println()
+}
 
-	// Print action
+// printImplementAttemptStatus prints a formatted status message for an implement attempt.
+func printImplementAttemptStatus(
+	sessionID, sessionRoot string,
+	retry, maxRetries int,
+	status string,
+	maxCommitRetries int,
+) {
+	completedPhase := formatImplementPhase(retry, maxRetries)
+	nextPhase := determineNextPhaseAfterImplement(status, retry, maxRetries, maxCommitRetries)
+	printPhaseTransition(sessionID, sessionRoot, completedPhase, status, nextPhase)
+}
+
+// formatImplementPhase formats the implement phase label.
+func formatImplementPhase(retry, maxRetries int) string {
+	return fmt.Sprintf("IMPLEMENT - Attempt %d/%d", retry, maxRetries)
+}
+
+// determineNextPhaseAfterImplement determines what phase comes after implement.
+func determineNextPhaseAfterImplement(status string, retry, maxRetries, maxCommitRetries int) string {
 	switch {
 	case status == statusPass:
-		log.Println("Action: Proceeding to commit phase")
+		return fmt.Sprintf("COMMIT - Attempt 1/%d", maxCommitRetries)
 	case retry < maxRetries:
-		log.Println("Action: Continuing implementation with feedback from report...")
+		return formatImplementPhase(retry+1, maxRetries)
+	default:
+		// Last retry failed, continuing to commit anyway
+		return fmt.Sprintf("COMMIT - Attempt 1/%d", maxCommitRetries)
 	}
-	// Last attempt with FAIL - no action message, will print summary next
 }
 
 // printImplementExhausted prints a warning when all implement attempts fail.
@@ -57,41 +86,27 @@ func printImplementExhausted(maxRetries int) {
 
 // printCommitAttemptStatus prints a formatted status message for a commit attempt.
 func printCommitAttemptStatus(sessionID, sessionRoot string, retry, maxRetries int, status string) {
-	// Get report file path
-	reportPath, err := storage.ResolveSessionPath(sessionID, "report.yaml", sessionRoot)
-	if err != nil {
-		reportPath = unableToResolveReportPath
-	}
+	completedPhase := formatCommitPhase(retry, maxRetries)
+	nextPhase := determineNextPhaseAfterCommit(status, retry, maxRetries)
+	printPhaseTransition(sessionID, sessionRoot, completedPhase, status, nextPhase)
+}
 
-	// Get history file path
-	historyPath, err := storage.ResolveSessionPath(sessionID, "history.yaml", sessionRoot)
-	if err != nil {
-		historyPath = unableToResolveHistoryPath
-	}
+// formatCommitPhase formats the commit phase label.
+func formatCommitPhase(retry, maxRetries int) string {
+	return fmt.Sprintf("COMMIT - Attempt %d/%d", retry, maxRetries)
+}
 
-	// Convert to file:// URLs for clickability in terminals
-	reportURL := "file://" + reportPath
-	historyURL := "file://" + historyPath
-
-	// Print formatted output
-	separator := strings.Repeat("━", separatorWidth)
-	log.Println(separator)
-	log.Printf(" COMMIT PHASE - Attempt %d/%d", retry, maxRetries)
-	log.Println(separator)
-	log.Println()
-	log.Printf("Report Status: %s", status)
-	log.Printf("Report File: %s", reportURL)
-	log.Printf("History File: %s", historyURL)
-	log.Println()
-
-	// Print action
+// determineNextPhaseAfterCommit determines what phase comes after commit.
+func determineNextPhaseAfterCommit(status string, retry, maxRetries int) string {
 	switch {
 	case status == statusPass:
-		log.Println("Action: Proceeding to review phase")
+		return "REVIEW"
 	case retry < maxRetries:
-		log.Println("Action: Continuing commit with feedback from report...")
+		return formatCommitPhase(retry+1, maxRetries)
+	default:
+		// Last retry failed, workflow terminates
+		return ""
 	}
-	// Last attempt with FAIL - no action message, will print summary next
 }
 
 // printCommitExhausted prints an error when all commit attempts fail.
@@ -104,42 +119,33 @@ func printCommitExhausted(maxRetries int) {
 }
 
 // printReviewStatus prints a formatted status message for the review phase.
-func printReviewStatus(sessionID, sessionRoot string, status string, currentIteration, maxIterations int) {
-	// Get report file path
-	reportPath, err := storage.ResolveSessionPath(sessionID, "report.yaml", sessionRoot)
-	if err != nil {
-		reportPath = unableToResolveReportPath
-	}
+func printReviewStatus(
+	sessionID, sessionRoot string,
+	status string,
+	currentIteration, maxIterations int,
+	maxImplementRetries int,
+) {
+	completedPhase := formatReviewPhase(currentIteration, maxIterations)
+	nextPhase := determineNextPhaseAfterReview(status, currentIteration, maxIterations, maxImplementRetries)
+	printPhaseTransition(sessionID, sessionRoot, completedPhase, status, nextPhase)
+}
 
-	// Get history file path
-	historyPath, err := storage.ResolveSessionPath(sessionID, "history.yaml", sessionRoot)
-	if err != nil {
-		historyPath = unableToResolveHistoryPath
-	}
+// formatReviewPhase formats the review phase label.
+func formatReviewPhase(currentIteration, maxIterations int) string {
+	return fmt.Sprintf("REVIEW CYCLE %d/%d", currentIteration, maxIterations)
+}
 
-	// Convert to file:// URLs for clickability in terminals
-	reportURL := "file://" + reportPath
-	historyURL := "file://" + historyPath
-
-	// Print formatted output
-	separator := strings.Repeat("━", separatorWidth)
-	log.Println(separator)
-	log.Printf(" REVIEW CYCLE %d/%d", currentIteration, maxIterations)
-	log.Println(separator)
-	log.Println()
-	log.Printf("Report Status: %s", status)
-	log.Printf("Report File: %s", reportURL)
-	log.Printf("History File: %s", historyURL)
-	log.Println()
-
-	// Print action
+// determineNextPhaseAfterReview determines what phase comes after review.
+func determineNextPhaseAfterReview(status string, currentIteration, maxIterations, maxImplementRetries int) string {
 	switch {
 	case status == statusPass:
-		log.Println("Action: Workflow completed successfully")
+		return "" // Workflow complete
 	case currentIteration < maxIterations:
-		log.Println("Action: Starting next development iteration for improvements...")
+		return fmt.Sprintf("IMPLEMENT - Attempt 1/%d", maxImplementRetries)
+	default:
+		// Last iteration failed, workflow complete with issues
+		return ""
 	}
-	// Last iteration with FAIL - no action message, will print summary next
 }
 
 // printIterationsExhausted prints a warning when all development iterations fail.

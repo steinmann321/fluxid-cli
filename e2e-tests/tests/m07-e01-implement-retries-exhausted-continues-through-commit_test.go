@@ -153,10 +153,10 @@ exit 0
 	outputStr := string(output)
 
 	// Verify implement attempts were logged
-	if !strings.Contains(outputStr, "IMPLEMENT PHASE - Attempt 1/2") {
+	if !strings.Contains(outputStr, "PHASE COMPLETED: IMPLEMENT - Attempt 1/2") {
 		t.Error("Expected to see first implement attempt in output")
 	}
-	if !strings.Contains(outputStr, "IMPLEMENT PHASE - Attempt 2/2") {
+	if !strings.Contains(outputStr, "PHASE COMPLETED: IMPLEMENT - Attempt 2/2") {
 		t.Error("Expected to see second implement attempt in output")
 	}
 
