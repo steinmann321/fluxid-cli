@@ -13,7 +13,7 @@ import (
 )
 
 func TestRunReviewPhase_Failure(t *testing.T) {
-	// Test review phase failure
+	// Test review phase failure (missing report treated as FAIL)
 	sessionID := "b4c5d6e7-8f9a-0b1c-2d3e-4f5a6b7c8d9e"
 	_, cleanup := setupTestDataDir(t)
 	defer cleanup()
@@ -32,12 +32,18 @@ func TestRunReviewPhase_Failure(t *testing.T) {
 		TaskFilePath:        "",
 	}
 
-	_, exitCode, err := runReviewPhase(cfg)
+	status, exitCode, err := runReviewPhase(cfg)
+	// With new behavior: missing reports are treated as FAIL, not errors
 	if err == nil {
-		t.Error("Expected error for failed review phase")
-	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
+		// This is expected - missing report returns FAIL status, not error
+		if status != statusFail {
+			t.Errorf("Expected FAIL status for missing report, got %q", status)
+		}
+		if exitCode != 0 {
+			t.Errorf("Expected exit code 0 for FAIL status, got %d", exitCode)
+		}
+	} else {
+		t.Errorf("Expected no error (FAIL status instead), got error: %v", err)
 	}
 }
 

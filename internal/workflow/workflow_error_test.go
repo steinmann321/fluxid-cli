@@ -207,11 +207,17 @@ func TestRunReviewPhase_AgentCommandFail(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	_, exitCode, err := runReviewPhase(cfg)
+	status, exitCode, err := runReviewPhase(cfg)
+	// With new behavior: missing reports are treated as FAIL, not errors
 	if err == nil {
-		t.Error("Expected error when agent command fails")
-	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code when agent fails")
+		// This is expected - missing report returns FAIL status, not error
+		if status != statusFail {
+			t.Errorf("Expected FAIL status for missing report, got %s", status)
+		}
+		if exitCode != 0 {
+			t.Errorf("Expected exit code 0 for FAIL status, got %d", exitCode)
+		}
+	} else {
+		t.Errorf("Expected no error (FAIL status instead), got error: %v", err)
 	}
 }

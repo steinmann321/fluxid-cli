@@ -38,8 +38,8 @@ func TestRunCommitPhase(t *testing.T) {
 }
 
 func TestRunReviewPhase(t *testing.T) {
-	// This test verifies runReviewPhase calls runPhase correctly
-	// We can't easily test the full flow without mocking, so we test error handling
+	// This test verifies runReviewPhase handles missing reports correctly
+	// With the new quiet behavior, missing reports are treated as FAIL (not errors)
 	cfg := types.Config{
 		SessionID:           "test-session",
 		SessionRoot:         "",
@@ -55,17 +55,19 @@ func TestRunReviewPhase(t *testing.T) {
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
+
+	// With new behavior: missing reports are treated as FAIL, not errors
+	// waitForValidReport returns (statusFail, nil) when report can't be read
 	if err == nil {
-		t.Error("Expected error for nonexistent agent")
-	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
-	}
-	if status != "" {
-		t.Errorf("Expected empty status on error, got: %s", status)
-	}
-	if !strings.Contains(err.Error(), "review phase failed") {
-		t.Errorf("Expected error message about review phase, got: %v", err)
+		// This is expected - missing report returns FAIL status, not error
+		if status != statusFail {
+			t.Errorf("Expected FAIL status for missing report, got: %s", status)
+		}
+		if exitCode != 0 {
+			t.Errorf("Expected exit code 0 for FAIL status (not an error), got: %d", exitCode)
+		}
+	} else {
+		t.Errorf("Expected no error (FAIL status instead), got error: %v", err)
 	}
 }
 
@@ -150,7 +152,7 @@ func TestRunCommitPhase_CommitDisabled(t *testing.T) {
 }
 
 func TestRunReviewPhase_NonZeroExitCode(t *testing.T) {
-	// Test that review phase fails on non-zero exit code
+	// Test that review phase handles agent failure (missing report treated as FAIL)
 	cfg := types.Config{
 		SessionID:           "test-review-nonzero",
 		SessionRoot:         "",
@@ -166,14 +168,17 @@ func TestRunReviewPhase_NonZeroExitCode(t *testing.T) {
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
+	// With new behavior: missing reports are treated as FAIL, not errors
 	if err == nil {
-		t.Error("Expected error for non-zero exit code")
-	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
-	}
-	if status != "" {
-		t.Errorf("Expected empty status on error, got: %s", status)
+		// This is expected - missing report returns FAIL status, not error
+		if status != statusFail {
+			t.Errorf("Expected FAIL status for missing report, got: %s", status)
+		}
+		if exitCode != 0 {
+			t.Errorf("Expected exit code 0 for FAIL status, got: %d", exitCode)
+		}
+	} else {
+		t.Errorf("Expected no error (FAIL status instead), got error: %v", err)
 	}
 }
 

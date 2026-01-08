@@ -13,7 +13,8 @@ import (
 
 func TestRunImplementPhase_MaxRetries(t *testing.T) {
 	t.Parallel()
-	// Test that implement phase fails immediately when agent command doesn't exist
+	// Test that implement phase continues through commit phase when agent fails
+	// With new behavior: missing reports are treated as FAIL, workflow continues
 	cfg := types.Config{
 		SessionID:           "test-retries-session",
 		SessionRoot:         "",
@@ -29,15 +30,17 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 	}
 
 	exitCode, err := runImplementPhase(cfg)
+	// With new behavior: implement exhausts retries (FAIL), continues to commit,
+	// commit exhausts retries (FAIL), returns commit error
 	if err == nil {
-		t.Error("Expected error when agent command doesn't exist")
+		t.Error("Expected error after all retries exhausted")
 	}
 	if exitCode == 0 {
 		t.Error("Expected non-zero exit code")
 	}
-	// Command not found should abort immediately with exit code error message
-	if !strings.Contains(err.Error(), "failed with exit code") {
-		t.Errorf("Expected exit code error message, got: %v", err)
+	// Error should be from commit phase failing after retries
+	if !strings.Contains(err.Error(), "commit phase failed") {
+		t.Errorf("Expected commit phase error message, got: %v", err)
 	}
 }
 
@@ -125,7 +128,7 @@ func TestCheckImplementReportStatus_PassStatus(t *testing.T) {
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
+	exitCode, err := checkImplementReportStatus(sessionID, 1)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -161,7 +164,7 @@ summary: "Implementation failed"
 		t.Fatalf("Failed to write report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
+	exitCode, err := checkImplementReportStatus(sessionID, 1)
 	if err != nil {
 		t.Errorf("Expected no error for FAIL status (signals retry), got: %v", err)
 	}
@@ -183,7 +186,7 @@ func TestCheckImplementReportStatus_InvalidReport(t *testing.T) {
 		t.Fatalf("Failed to write invalid report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
+	exitCode, err := checkImplementReportStatus(sessionID, 1)
 	// Invalid report is treated as FAIL status, which returns -1 (retry signal) with no error
 	if err != nil {
 		t.Errorf("Expected no error (invalid report treated as FAIL), got: %v", err)
@@ -214,7 +217,7 @@ func TestExecuteImplementPhase_Success(t *testing.T) {
 		TaskFilePath:        "",
 	}
 
-	exitCode, err := executeImplementPhase(cfg, 1)
+	exitCode, err := executeImplementPhase(cfg)
 	if err != nil {
 		t.Errorf("Expected no error, got: %v", err)
 	}
@@ -244,7 +247,7 @@ func TestExecuteImplementPhase_Failure(t *testing.T) {
 		TaskFilePath:        "",
 	}
 
-	exitCode, err := executeImplementPhase(cfg, 1)
+	exitCode, err := executeImplementPhase(cfg)
 	if err == nil {
 		t.Error("Expected error for failed agent command")
 	}

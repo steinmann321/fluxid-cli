@@ -101,7 +101,7 @@ func TestExecuteImplementPhase_Error(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	exitCode, err := executeImplementPhase(cfg, 1)
+	exitCode, err := executeImplementPhase(cfg)
 	if err == nil {
 		t.Error("Expected error for non-existent agent")
 	}
@@ -251,7 +251,7 @@ func TestCheckImplementReportStatus_AbortFlag(t *testing.T) {
 		t.Fatalf("Failed to set abort flag: %v", err)
 	}*/
 
-	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
+	exitCode, err := checkImplementReportStatus(sessionID, 1)
 	if err == nil {
 		t.Error("Expected error due to abort")
 	}
@@ -268,7 +268,7 @@ func TestCheckImplementReportStatus_ReadError(t *testing.T) {
 	// Use empty session ID to trigger read error
 	// In the refactored design, read errors are treated as FAIL status (not as errors)
 	// This allows the retry mechanism to handle transient failures
-	exitCode, err := checkImplementReportStatus("", "", 1)
+	exitCode, err := checkImplementReportStatus("", 1)
 	if err != nil {
 		t.Errorf("Expected no error (read errors treated as FAIL status), got: %v", err)
 	}
@@ -352,13 +352,16 @@ func TestRunReviewPhaseError(t *testing.T) {
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
+	// With new behavior: missing reports are treated as FAIL, not errors
 	if err == nil {
-		t.Fatal("Expected error from runReviewPhase, got nil")
-	}
-	if status != "" {
-		t.Errorf("Expected empty status on error, got %q", status)
-	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code, got 0")
+		// This is expected - missing report returns FAIL status, not error
+		if status != statusFail {
+			t.Errorf("Expected FAIL status for missing report, got %q", status)
+		}
+		if exitCode != 0 {
+			t.Errorf("Expected exit code 0 for FAIL status, got %d", exitCode)
+		}
+	} else {
+		t.Errorf("Expected no error (FAIL status instead), got error: %v", err)
 	}
 }

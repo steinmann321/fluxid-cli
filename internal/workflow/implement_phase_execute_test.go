@@ -31,7 +31,7 @@ func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 		TaskFilePath:        "",
 	}
 
-	exitCode, err := executeImplementPhase(cfg, 1)
+	exitCode, err := executeImplementPhase(cfg)
 	if err == nil {
 		t.Error("Expected error for non-zero exit code")
 	}
@@ -61,7 +61,7 @@ func TestCheckImplementReportStatus_Abort(t *testing.T) {
 		t.Fatalf("Failed to set abort flag: %v", err)
 	}*/
 
-	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
+	exitCode, err := checkImplementReportStatus(sessionID, 1)
 	if err == nil {
 		t.Error("Expected abort error")
 	}
@@ -100,7 +100,7 @@ next_steps:
 		t.Fatalf("Failed to write fail report: %v", err)
 	}
 
-	exitCode, err := checkImplementReportStatus(sessionID, "", 1)
+	exitCode, err := checkImplementReportStatus(sessionID, 1)
 	if err != nil {
 		t.Errorf("Expected no error for FAIL status, got: %v", err)
 	}
