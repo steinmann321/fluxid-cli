@@ -62,7 +62,7 @@ brews:
     homepage: "https://github.com/steinmann321/fluxid-cli"
     description: "CLI workflow orchestration for coding agents with Implement-Review-Commit loop"
     license: "MIT"
-    folder: Formula
+    directory: Formula
     commit_author:
       name: Jakob Steinmann
       email: noreply@github.com
