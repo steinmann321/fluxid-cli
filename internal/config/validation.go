@@ -6,7 +6,9 @@ import (
 )
 
 // SupportedAgents lists the supported agent values.
-var SupportedAgents = []string{"claude", "codex", "opencode"} //nolint:gochecknoglobals // Shared config constant
+//
+//nolint:gochecknoglobals // Shared config constant
+var SupportedAgents = []string{"claude", "codex", "opencode", "gemini"}
 
 var (
 	errValidationAgentEmpty       = errors.New("agent cannot be empty")

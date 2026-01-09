@@ -42,7 +42,9 @@ func TestM02E01DefaultsWhenNoHomeConfig(t *testing.T) {
 	tmpHome := t.TempDir()
 	fluxidDir := createHomeConfigDir(t, tmpHome)
 	// Create minimal config with only commands section (other values will use defaults)
-	minimalConfig := fmt.Sprintf(`commands:
+	// Note: agent must be specified (no default agent)
+	minimalConfig := fmt.Sprintf(`agent: claude
+commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md
@@ -66,7 +68,8 @@ func TestM02E01PartialHomeConfig(t *testing.T) {
 	buildFluxid(t, root)
 	createStubClaude(t, root)
 
-	configContent := `iterations: 15`
+	configContent := `agent: claude
+iterations: 15`
 	tmpHome := setupHomeWithConfig(t, configContent)
 	output := runFluxidWithHome(t, root, tmpHome)
 
@@ -148,7 +151,8 @@ func TestM02E01InitializationStatusFormat(t *testing.T) {
 	// Create temporary home with minimal v2.0 config (need commands section)
 	tmpHome := t.TempDir()
 	fluxidDir := createHomeConfigDir(t, tmpHome)
-	minimalConfig := fmt.Sprintf(`commands:
+	minimalConfig := fmt.Sprintf(`agent: claude
+commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md
@@ -194,7 +198,8 @@ func TestM02E01NoProjectStateModification(t *testing.T) {
 
 	tmpWorkDir := t.TempDir()
 	tmpSessionRoot := t.TempDir() // Separate directory for session files
-	configContent := `iterations: 5
+	configContent := `agent: claude
+iterations: 5
 `
 	tmpHome := setupHomeWithConfig(t, configContent)
 

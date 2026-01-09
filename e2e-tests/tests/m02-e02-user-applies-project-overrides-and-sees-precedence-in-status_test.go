@@ -47,7 +47,8 @@ func TestM02E02ProjectOnlyConfig(t *testing.T) {
 	if err := os.MkdirAll(homeFluxidDir, 0o755); err != nil {
 		t.Fatalf("Failed to create home .fluxid dir: %v", err)
 	}
-	homeConfigContent := fmt.Sprintf(`commands:
+	homeConfigContent := fmt.Sprintf(`agent: claude
+commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md

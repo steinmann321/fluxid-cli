@@ -57,7 +57,6 @@ type ResolvedConfig struct {
 
 // Defaults for configuration values.
 const (
-	DefaultAgent            = "claude"
 	DefaultImplementRetries = 3
 	DefaultCommitRetries    = 100
 	DefaultIterations       = 20
@@ -283,7 +282,7 @@ func Resolve(
 	cliIterations, cliImplementRetries, cliCommitRetries *int,
 ) *ResolvedConfig {
 	resolved := &ResolvedConfig{
-		Agent:            DefaultAgent,
+		Agent:            "",
 		ImplementRetries: DefaultImplementRetries,
 		CommitRetries:    DefaultCommitRetries,
 		Iterations:       DefaultIterations,
@@ -296,9 +295,9 @@ func Resolve(
 	commitRetriesValues := extractCommitRetriesValues(projectConfig, homeConfig)
 	iterationsValues := extractIterationsValues(projectConfig, homeConfig)
 
-	// Resolve each field using the helper
+	// Resolve each field using the helper (no default for agent - must be specified)
 	resolved.Agent = resolveField(
-		cliAgent, agentValues.project, agentValues.home, DefaultAgent,
+		cliAgent, agentValues.project, agentValues.home, "",
 	)
 	resolved.ImplementRetries = resolveField(
 		cliImplementRetries, implementRetriesValues.project, implementRetriesValues.home, DefaultImplementRetries,

@@ -62,8 +62,8 @@ func TestResolveDefaultValues(t *testing.T) {
 
 	resolved := Resolve(nil, nil, nil, nil, nil, nil)
 
-	if resolved.Agent != "claude" {
-		t.Errorf("Expected Agent=claude (default), got %s", resolved.Agent)
+	if resolved.Agent != "" {
+		t.Errorf("Expected Agent='' (no default), got %s", resolved.Agent)
 	}
 
 	if resolved.Iterations != 20 {

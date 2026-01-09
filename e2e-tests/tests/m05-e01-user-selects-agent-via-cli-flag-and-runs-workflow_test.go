@@ -48,6 +48,12 @@ func TestM05E01UserSelectsAgentViaCLIFlag(t *testing.T) {
 			flag:      "--opencode",
 			wantAgent: "opencode",
 		},
+		{
+			name:      "gemini agent via --gemini",
+			agent:     "gemini",
+			flag:      "--gemini",
+			wantAgent: "gemini",
+		},
 	}
 
 	for _, testCase := range tests {

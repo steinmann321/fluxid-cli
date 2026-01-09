@@ -14,7 +14,8 @@ import (
 // Common test configuration constants.
 // v2.0: commit_enabled removed (Phase 10 - commits always enabled).
 const (
-	basicHomeConfig = `iterations: 10
+	basicHomeConfig = `agent: claude
+iterations: 10
 implement_retries: 5
 `
 	fullHomeConfig = `agent: claude

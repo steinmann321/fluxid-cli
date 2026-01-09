@@ -21,11 +21,6 @@ func TestValidateAgentUnsupported(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "unsupported agent gemini",
-			agent:   "gemini",
-			wantErr: true,
-		},
-		{
 			name:    "unsupported agent random",
 			agent:   "random-ai",
 			wantErr: true,

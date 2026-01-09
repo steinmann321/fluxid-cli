@@ -9,7 +9,7 @@ import (
 
 var (
 	errMultipleAgentFlags = errors.New(
-		"multiple agent flags specified. Please use only one of: --claude, --codex, or --opencode",
+		"multiple agent flags specified. Please use only one of: --claude, --codex, --opencode, or --gemini",
 	)
 	errInvalidInteger     = errors.New("flag requires a valid integer")
 	errNotPositiveInteger = errors.New("flag must be a positive integer (≥1)")
@@ -85,7 +85,7 @@ func ParseArgs() (*CLIArgs, error) {
 }
 
 func isAgentFlag(arg string) bool {
-	return arg == "--claude" || arg == "--codex" || arg == "--opencode"
+	return arg == "--claude" || arg == "--codex" || arg == "--opencode" || arg == "--gemini"
 }
 
 //nolint:cyclop,funlen,unparam // Flag parsing function with necessary complexity, return value for API consistency

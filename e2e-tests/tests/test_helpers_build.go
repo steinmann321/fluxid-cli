@@ -122,7 +122,7 @@ func createStubAgentsInDir(t *testing.T, dir string, stubScript string) string {
 	}
 
 	// Create stubs for all agents used in tests
-	agents := []string{"claude", "opencode", "codex", "project-agent"}
+	agents := []string{"claude", "opencode", "codex", "gemini", "project-agent"}
 	for _, agent := range agents {
 		agentPath := filepath.Join(dir, agent)
 		if err := os.WriteFile(agentPath, []byte(stubScript), filePerms); err != nil {

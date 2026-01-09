@@ -177,7 +177,7 @@ func TestResolve(t *testing.T) {
 			homeConfig:           nil,
 			cliIterations:        nil,
 			cliImplementRetries:  nil,
-			wantAgent:            DefaultAgent,
+			wantAgent:            "", // No default agent - must be specified explicitly
 			wantIterations:       DefaultIterations,
 			wantImplementRetries: DefaultImplementRetries,
 		},

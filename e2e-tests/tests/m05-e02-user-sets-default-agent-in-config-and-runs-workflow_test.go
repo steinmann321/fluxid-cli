@@ -158,7 +158,7 @@ func TestM05E02InvalidAgentValue(t *testing.T) {
 	}
 }
 
-// TestM05E02NoConfigUsesDefault validates default agent when no config exists.
+// TestM05E02NoConfigUsesDefault validates agent specified in config is used.
 func TestM05E02NoConfigUsesDefault(t *testing.T) {
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
@@ -168,10 +168,11 @@ func TestM05E02NoConfigUsesDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Need to create a minimal config with commands section for v2.0
-	// The agent will use the default (claude) since no agent is specified in config
+	// Note: agent must be specified (no default agent)
 	configDir := setupConfigDir(t, tmpDir)
 	configPath := filepath.Join(configDir, "config.yaml")
-	configContent := fmt.Sprintf(`commands:
+	configContent := fmt.Sprintf(`agent: claude
+commands:
   implement: %s/implement.md
   review: %s/review.md
   commit: %s/commit.md
