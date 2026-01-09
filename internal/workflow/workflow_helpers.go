@@ -170,7 +170,11 @@ func composePrompt(cfg types.Config, phase string, basePrompt string) string {
 	}
 
 	// Fallback to path reference
-	return fmt.Sprintf("%s\nCommand file: %s\nTask file: %s", basePrompt, cmdFile, cfg.TaskFilePath)
+	displayPath := cmdFile
+	if cmdFile == builtInPrompt {
+		displayPath = "<built-in>"
+	}
+	return fmt.Sprintf("%s\nCommand file: %s\nTask file: %s", basePrompt, displayPath, cfg.TaskFilePath)
 }
 
 // checkReportStatus checks for a valid report immediately after agent exits.
