@@ -5,6 +5,28 @@ release:
     owner: steinmann321
     name: fluxid-cli
   name_template: '{{.Tag}}'
+aurs:
+  - name: fluxid-bin
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: Update to {{ .Tag }}
+    description: CLI workflow orchestration for coding agents with Implement-Review-Commit loop
+    homepage: https://github.com/steinmann321/fluxid-cli
+    license: MIT
+    maintainers:
+      - Jakob Steinmann <noreply@github.com>
+    provides:
+      - fluxid-cli
+    conflicts:
+      - fluxid-cli
+    rel: "1"
+    package: |-
+      install -Dm755 "./fluxid" "${pkgdir}/usr/bin/fluxid"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/fluxid/LICENSE"
+    git_url: ssh://aur@aur.archlinux.org/fluxid-bin.git
+    private_key: '{{ .Env.AUR_KEY }}'
+    goamd64: v1
 builds:
   - id: fluxid
     goos:
@@ -68,6 +90,38 @@ archives:
       - src: changelog*
       - src: CHANGELOG*
     format: tar.gz
+nfpms:
+  - file_name_template: '{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    package_name: fluxid
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/fluxid/copyright
+        file_info:
+          mode: 420
+    rpm:
+      group: Development/Tools
+      compression: lzma
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+    id: fluxid
+    formats:
+      - deb
+      - rpm
+      - apk
+    section: utils
+    priority: optional
+    vendor: Jakob Steinmann
+    homepage: https://github.com/steinmann321/fluxid-cli
+    maintainer: Jakob Steinmann <noreply@github.com>
+    description: CLI workflow orchestration for coding agents with Implement-Review-Commit loop
+    license: MIT
+    bindir: /usr/bin
+    libdirs:
+      header: /usr/include
+      carchive: /usr/lib
+      cshared: /usr/lib
 snapshot:
   version_template: '{{ incpatch .Version }}-next'
 checksum:
@@ -150,6 +204,27 @@ announce:
     title_template: '{{ .ProjectName }} {{ .Tag }} is out!'
     message_template: '{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .ReleaseURL }}'
     username: system
+chocolateys:
+  - name: fluxid
+    title: fluxid
+    authors: Jakob Steinmann
+    project_url: https://github.com/steinmann321/fluxid-cli
+    url_template: https://github.com/steinmann321/fluxid-cli/releases/download/{{ .Tag }}/{{ .ArtifactName }}
+    icon_url: https://raw.githubusercontent.com/steinmann321/fluxid-cli/main/assets/icon.png
+    copyright: 2026 Jakob Steinmann
+    license_url: https://github.com/steinmann321/fluxid-cli/blob/main/LICENSE
+    project_source_url: https://github.com/steinmann321/fluxid-cli
+    docs_url: https://github.com/steinmann321/fluxid-cli/blob/main/README.md
+    bug_tracker_url: https://github.com/steinmann321/fluxid-cli/issues
+    tags: cli workflow automation agent orchestration
+    summary: CLI workflow orchestration for coding agents
+    description: |
+      fluxid is a CLI workflow orchestration tool that enables coding agents to break through
+      context window limitations using an Implement-Review-Commit loop.
+    release_notes: https://github.com/steinmann321/fluxid-cli/releases/tag/v{{ .Version }}
+    api_key: '{{ .Env.CHOCOLATEY_API_KEY }}'
+    source_repo: https://push.chocolatey.org/
+    goamd64: v1
 git:
   tag_sort: -version:refname
 mcp:
@@ -161,3 +236,23 @@ github_urls:
   download: https://github.com
 gitlab_urls:
   download: https://gitlab.com
+brews:
+  - name: fluxid
+    repository:
+      owner: steinmann321
+      name: homebrew-tap
+      token: '{{ .Env.GITHUB_TOKEN }}'
+    commit_author:
+      name: Jakob Steinmann
+      email: noreply@github.com
+    commit_msg_template: Brew formula update for {{ .ProjectName }} version {{ .Tag }}
+    directory: Formula
+    install: |
+      bin.install "fluxid"
+    test: |
+      system "#{bin}/fluxid", "version"
+    description: CLI workflow orchestration for coding agents with Implement-Review-Commit loop
+    homepage: https://github.com/steinmann321/fluxid-cli
+    license: MIT
+    goarm: "6"
+    goamd64: v1

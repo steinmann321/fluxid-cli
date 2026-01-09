@@ -1,1 +1,1 @@
-{"project_name":"fluxid-cli","tag":"v0.1.0","previous_tag":"","version":"0.1.0","commit":"56ad31c936be29a45494a25199153846f308430d","date":"2026-01-08T11:27:04.961451+01:00","runtime":{"goos":"darwin","goarch":"arm64"}}
+{"project_name":"fluxid-cli","tag":"v0.1.0","previous_tag":"","version":"0.1.1-next","commit":"3204a62652576147514891718ce030c7badeaa32","date":"2026-01-09T09:14:20.03972+01:00","runtime":{"goos":"darwin","goarch":"arm64"}}
