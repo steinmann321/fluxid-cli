@@ -16,7 +16,7 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 	// Test that implement phase continues through commit phase when agent fails
 	// With new behavior: missing reports are treated as FAIL, workflow continues
 	cfg := types.Config{
-		SessionID:           "test-retries-session",
+		SessionID:           "00000000-0000-4000-8000-000000000001",
 		SessionRoot:         "",
 		Agent:               "nonexistent-agent-xyz",
 		MaxReviewCycles:     1,

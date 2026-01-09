@@ -12,7 +12,7 @@ func TestParseSystemEvent(t *testing.T) {
 	input := `{"type":"system","subtype":"init","model":"claude-sonnet-4.5"}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -29,7 +29,7 @@ func TestParseAssistantTextMessage(t *testing.T) {
 	input := `{"type":"assistant","message":{"content":[{"type":"text","text":"Hello world"}]}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -46,7 +46,7 @@ func TestParseToolCall(t *testing.T) {
 	input := `{"type":"assistant","tool_call":{"name":"Bash","description":"Run command"}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -63,7 +63,7 @@ func TestParseToolResult(t *testing.T) {
 	input := `{"type":"tool_result","tool_call":{"name":"Bash"}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -80,7 +80,7 @@ func TestParseSuccessResult(t *testing.T) {
 	input := `{"type":"result","subtype":"success","duration_ms":1234,"num_turns":5,"total_cost_usd":0.023}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -97,7 +97,7 @@ func TestParseErrorResult(t *testing.T) {
 	input := `{"type":"result","subtype":"error","error":"Something went wrong"}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -114,7 +114,7 @@ func TestParseMalformedJSON(t *testing.T) {
 	input := `{invalid json}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	// Should not fail - non-JSON lines are passed through as plain text
 	if err := parser.Parse(); err != nil {
@@ -137,7 +137,7 @@ func TestParsePlainText(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -169,7 +169,7 @@ func TestParseMultipleEvents(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -210,7 +210,7 @@ func TestParseMixedJSONAndPlainText(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -245,7 +245,7 @@ func TestParseVeryLargeJSONLine(t *testing.T) {
 	input := fmt.Sprintf(`{"type":"assistant","message":{"content":[{"type":"text","text":"%s"}]}}`, largeText)
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed on large line: %v", err)
@@ -275,7 +275,7 @@ func TestParseMultipleLargeLines(t *testing.T) {
 	input := strings.Join(lines, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed on multiple large lines: %v", err)

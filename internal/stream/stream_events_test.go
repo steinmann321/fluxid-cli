@@ -20,7 +20,7 @@ func TestParseStreamingTextBlocks(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -43,7 +43,7 @@ func TestParseStreamingToolBlock(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -65,7 +65,7 @@ func TestParseEmptyTextBlock(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -83,7 +83,7 @@ func TestParseEventWithoutEventField(t *testing.T) {
 	input := `{"type":"stream_event"}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -101,7 +101,7 @@ func TestParseContentBlockStartWithoutContentBlock(t *testing.T) {
 	input := `{"type":"stream_event","event":{"type":"content_block_start","index":0}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -119,7 +119,7 @@ func TestParseContentBlockDeltaWithoutDelta(t *testing.T) {
 	input := `{"type":"stream_event","event":{"type":"content_block_delta","index":0}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -137,7 +137,7 @@ func TestParseErrorResultWithEmptyError(t *testing.T) {
 	input := `{"type":"result","subtype":"error","error":""}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -155,7 +155,7 @@ func TestParseSystemEventWithoutModel(t *testing.T) {
 	input := `{"type":"system","subtype":"init","model":""}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -173,7 +173,7 @@ func TestParseToolCallWithoutDescription(t *testing.T) {
 	input := `{"type":"assistant","tool_call":{"name":"Bash","description":""}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -191,7 +191,7 @@ func TestParseAssistantEventWithoutToolCall(t *testing.T) {
 	input := `{"type":"assistant"}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -209,7 +209,7 @@ func TestParseToolResultWithoutToolCall(t *testing.T) {
 	input := `{"type":"tool_result"}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -237,7 +237,7 @@ func TestParseMultipleTextBlocks(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -255,7 +255,7 @@ func TestParseAssistantMessageWithEmptyContent(t *testing.T) {
 	input := `{"type":"assistant","message":{"content":[]}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -273,7 +273,7 @@ func TestParseAssistantMessageWithNonTextContent(t *testing.T) {
 	input := `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"}]}}`
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)
@@ -296,7 +296,7 @@ func TestParseEmptyTextDelta(t *testing.T) {
 	}, "\n")
 
 	var output bytes.Buffer
-	parser := NewStreamParser(strings.NewReader(input), &output)
+	parser := NewClaudeParser(strings.NewReader(input), &output, 256*1024)
 
 	if err := parser.Parse(); err != nil {
 		t.Fatalf("Parse failed: %v", err)

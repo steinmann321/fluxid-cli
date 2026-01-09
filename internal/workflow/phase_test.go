@@ -12,7 +12,7 @@ func TestRunCommitPhase(t *testing.T) {
 	// This test verifies runCommitPhase calls runPhase correctly
 	// We can't easily test the full flow without mocking, so we test error handling
 	cfg := types.Config{
-		SessionID:           "test-session",
+		SessionID:           "00000000-0000-4000-8000-000000000002",
 		SessionRoot:         "",
 		Agent:               "nonexistent-agent",
 		MaxReviewCycles:     1,
@@ -41,7 +41,7 @@ func TestRunReviewPhase(t *testing.T) {
 	// This test verifies runReviewPhase handles missing reports correctly
 	// With the new quiet behavior, missing reports are treated as FAIL (not errors)
 	cfg := types.Config{
-		SessionID:           "test-session",
+		SessionID:           "00000000-0000-4000-8000-000000000002",
 		SessionRoot:         "",
 		Agent:               "nonexistent-agent",
 		MaxReviewCycles:     1,
@@ -75,7 +75,7 @@ func TestRunPhase_ExitCodeExtraction(t *testing.T) {
 	// Test that runPhase correctly extracts exit codes from failed commands
 	// We use false command which always exits with code 1
 	cfg := types.Config{
-		SessionID:           "test-exit-code-session",
+		SessionID:           "00000000-0000-4000-8000-000000000003",
 		SessionRoot:         "",
 		Agent:               "false",
 		MaxReviewCycles:     1,
@@ -104,7 +104,7 @@ func TestRunPhase_Success(t *testing.T) {
 	// Test that runPhase returns 0 for successful commands
 	// We use true command which always exits with code 0
 	cfg := types.Config{
-		SessionID:           "test-success-session",
+		SessionID:           "00000000-0000-4000-8000-000000000004",
 		SessionRoot:         "",
 		Agent:               "true",
 		MaxReviewCycles:     1,

@@ -22,8 +22,8 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	// Compose prompt with command and task file paths
 	finalPrompt := composePrompt(config, phase, prompt)
 
-	// Build Claude command with correct API
-	cmd := buildClaudeCommand(config, finalPrompt)
+	// Build agent command with correct API for each agent
+	cmd := buildAgentCommand(config, finalPrompt)
 
 	// Set environment variables for session tracking and task file
 	cmd.Env = append(os.Environ(), "FLUXID_SESSION_ID="+config.SessionID)
@@ -59,7 +59,7 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	}()
 
 	// Parse and format the JSON stream from stdout (blocking)
-	parser := stream.NewStreamParser(stdoutPipe, os.Stdout)
+	parser := stream.NewParser(stdoutPipe, os.Stdout, config.Agent)
 	parseErr := parser.Parse()
 	if parseErr != nil {
 		log.Printf("Warning: stream parsing error: %v", parseErr)
@@ -86,16 +86,61 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	return 0, nil
 }
 
-func buildClaudeCommand(config types.Config, prompt string) *exec.Cmd {
-	// Build args matching shell script approach: streaming JSON with prompt as argument
-	args := []string{
-		"--dangerously-skip-permissions",
-		"--output-format",
-		"stream-json",
-		"--verbose",
-		"-p",
-		prompt,
+// buildAgentCommand builds the appropriate command for each agent type.
+// Each agent has a different CLI interface that must be respected.
+func buildAgentCommand(config types.Config, prompt string) *exec.Cmd {
+	var args []string
+
+	switch config.Agent {
+	case "claude":
+		// Claude: claude --dangerously-skip-permissions --output-format stream-json --verbose -p "prompt"
+		args = []string{
+			"--dangerously-skip-permissions",
+			"--output-format",
+			"stream-json",
+			"--verbose",
+			"-p",
+			prompt,
+		}
+
+	case "codex":
+		// Codex: codex exec --json "prompt"
+		args = []string{
+			"exec",
+			"--json",
+			prompt,
+		}
+
+	case "opencode":
+		// Opencode: opencode run --format json "prompt"
+		args = []string{
+			"run",
+			"--format",
+			"json",
+			prompt,
+		}
+
+	case "gemini":
+		// Gemini: gemini --output-format stream-json "prompt"
+		args = []string{
+			"--output-format",
+			"stream-json",
+			prompt,
+		}
+
+	default:
+		// Fallback to Claude-style for unknown agents
+		args = []string{
+			"--dangerously-skip-permissions",
+			"--output-format",
+			"stream-json",
+			"--verbose",
+			"-p",
+			prompt,
+		}
 	}
+
+	// Append additional agent-specific arguments
 	args = append(args, config.AgentArgs...)
 
 	// #nosec G204 - Agent name comes from validated config file, not user input
