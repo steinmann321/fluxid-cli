@@ -16,7 +16,7 @@ fluxid-cli/
 │   ├── assets/                 # Embedded schemas and templates
 │   ├── output/                 # Output formatters (text/JSON/YAML)
 │   ├── workflow/               # Core workflow orchestration
-│   ├── errors/                 # Error definitions
+│   ├── fluxerr/                # Error definitions
 │   ├── stream/                 # Streaming output formatters
 │   └── types/                  # Shared type definitions
 ├── e2e-tests/                  # End-to-end integration tests
@@ -362,7 +362,7 @@ $HOME/.fluxid/sessions/           # Or custom via FLUXID_SESSION_ROOT
 ### Error Categories
 
 ```go
-// internal/errors/errors.go
+// internal/fluxerr/errors.go
 type ComponentError struct {
     Component   string  // config, args, workflow, etc.
     Description string

@@ -4,6 +4,7 @@ package workflow
 import (
 	"context"
 	"errors"
+	"fluxid-cli/internal/process"
 	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/stream"
 	"fluxid-cli/internal/types"
@@ -12,6 +13,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 	"time"
 )
 
@@ -33,6 +35,13 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 		cmd.Env = append(cmd.Env, "FLUXID_SESSION_ROOT="+config.SessionRoot)
 	}
 
+	// Set up process group for proper signal handling
+	// This ensures child processes are killed when fluxid terminates
+	//nolint:exhaustruct // Only Setpgid is needed; other fields intentionally use zero values
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+
 	// Create pipes for stdout and stderr
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -50,6 +59,11 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	if err := cmd.Start(); err != nil {
 		return 1, fmt.Errorf("failed to start command: %w", err)
 	}
+
+	// Register child process for signal handling and ensure cleanup
+	// This ensures the agent AND any subprocesses it spawns are killed on Ctrl+C
+	process.Register(cmd.Process)
+	defer process.Unregister(cmd.Process)
 
 	// Start copying stderr in the background
 	done := make(chan error, 1)

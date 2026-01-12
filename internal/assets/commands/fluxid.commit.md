@@ -33,9 +33,8 @@ Read previous state if needed:
 # Non-Negotiable Rules
 - NEVER push, never touch remotes.
 - NEVER change branches; operate on the current branch only.
-- NEVER bypass or relax hooks; pre-commit hooks are hard gates. 
-- NEVER create empty commits; if no changes, this is not a PASS.
-- Only PASS if a new commit was created, post-commit tree is clean, and hooks fully passed, leaving the codebase perfectly shaped per hook rules.
+- NEVER bypass or relax hooks; pre-commit hooks are hard gates.
+- Only PASS if a new commit was created OR nothing to commit, post-commit tree is clean, and hooks fully passed, leaving the codebase perfectly shaped per hook rules.
 
 # Process
 
@@ -45,7 +44,7 @@ Read previous state if needed:
 
 ## 2) Assess Pending Work
 - Determine whether there are changes to commit.
-- If there is nothing meaningful to commit, produce a FAIL report explaining there was no work to commit and stop.
+- If there is nothing to commit, produce a PASS report explaining there was no work to commit and continue.
 
 ## 3) Commit Attempt
 - Create a commit for the current work with a concise, intention‑revealing message.
@@ -56,7 +55,7 @@ Read previous state if needed:
 
 ## 4) Post-Commit Verification (PASS Gate)
 - Confirm a new commit exists and the repository is clean.
-- PASS only if the commit exists, hooks have fully passed, and no pending issues remain.
+- PASS only if the commit exists OR nothing changed, hooks have fully passed, and no pending issues remain.
 
 # CRITICAL: Write Report (MANDATORY - DO NOT EXIT WITHOUT THIS)
 

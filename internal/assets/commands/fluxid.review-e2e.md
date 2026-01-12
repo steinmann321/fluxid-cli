@@ -31,6 +31,14 @@ Read previous state if needed:
 - Updated report (artifact = epic id token)
 - Updated history with execution notes
 
+**Commits**:
+- All changes committed? Uncommitted changes - whatever they might be - are not allowed: FAIL
+- Changes to hook configs or excludes could point to a config smell. Don't accept broad wildcard excludes, only justified exceptions
+- Test code has to be treated with the same quality standards as production code
+- The hook based quality enforcement system has to be respected - it is strict by purpose
+- Code specific exceptions require justification, not a broader pattern
+- Don't introduce technical depts through false justified exceptions by a lazy developer
+
 # Process
 
 ## 1. Check Previous Context

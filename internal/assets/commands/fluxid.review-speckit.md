@@ -27,31 +27,7 @@ Reviews ONLY newly completed tasks (delta between current and last committed `ta
 
 ## 2. Constitution Compliance (MANDATORY)
 
-**What to verify** from `.specify/memory/constitution.md`:
-
-### Principle I: TDD
-- Tests exist for all implementation tasks
-- Tests not skipped
-- **FAIL if**: No tests, tests skipped, implementation without tests
-
-### Principle II: Pre-Commit Hooks
-- Last commit passed hooks without bypass
-- **FAIL if**: Bypass without justification
-
-### Principle III: 90% Coverage
-- Code coverage >= 90%
-- **FAIL if**: < 90% or decreased
-
-### Principle IV: E2E Coverage
-- User-facing tasks have E2E tests
-- E2E tests pass
-- Screenshots exist if applicable
-- **SKIP if**: Non-UI changes
-- **FAIL if**: UI without E2E, E2E fails, missing screenshots, screenshots doesn't cover expectedations
-
-### Principle V: Separation of Concerns
-- Architectural boundaries respected (infer from plan.md)
-- **FAIL if**: Business logic in wrong layer, cross-layer bypass
+**Verify** the constitution `.specify/memory/constitution.md` is not violated.
 
 **Result**: `PASS` if all pass, `FAIL` if any fails
 
@@ -63,6 +39,15 @@ Reviews ONLY newly completed tasks (delta between current and last committed `ta
 - Files mentioned in task exist
 - Implementation matches task description
 - Tests exist and not skipped
+
+**Commits**:
+- **Philosophy**: Commit hooks are meant to be a tool to enforce code qualiy. **EVERY EXCLUSION SMELLS** and needs *very good* justification. No compromise on quality - may it be production code or tests
+- All changes committed? Uncommitted changes - whatever they might be - are not allowed: FAIL
+- Changes to hook configs or excludes could point to a config smell. Don't accept broad wildcard excludes, only justified exceptions
+- Test code has to be treated with the same quality standards as production code
+- The hook based quality enforcement system has to be respected - it is strict by purpose
+- Code specific exceptions require justification
+- Don't introduce technical debts through false justified exceptions by a lazy developer
 
 **Spec Compliance** (read from `spec.md`):
 - All acceptance criteria satisfied
@@ -101,12 +86,28 @@ Reviews ONLY newly completed tasks (delta between current and last committed `ta
 
 **What must all be YES** (Any NO = FAIL):
 
-1. **All completed tasks have implementations?** (no ghost completions)
-2. **Constitution respected?** (all 5 principles pass)
-3. **Spec satisfied?** (all acceptance criteria met)
-4. **Tests pass?** (100% pass rate, no skips, no flaky)
-5. **Code quality?** (no BLOCKERs, no DEFECTs, no CONCERNS, production-ready)
-6. **Zero doubt?** (would stake reputation, deploy immediately)
+**INSTRUCTION:** Before declaring **PASS**, all questions below must be a definitive **YES**. Any **NO** or hesitation is an immediate and non-negotiable **FAIL**.
+
+1.  **Irrefutable Proof:** Is there objective, undeniable evidence proving that **every single requirement** is met? (e.g., passing test logs, API responses, data validation).
+    - "It looks like it works" is a **FAIL**. Proof must be explicit.
+
+2.  **Evidence Integrity:** Is all provided evidence (test logs, command outputs, etc.) **100% clean**?
+    - Any error, unexpected warning, or anomaly, no matter how "harmless," is a **FAIL**.
+
+3.  **Implementation Hygiene:** Is the implementation clinically clean of all development artifacts and signs of incomplete work?
+    - Any `//TODO`, `//FIXME`, commented-out code blocks, or debug-level logs are a **FAIL**.
+
+4.  **Reputation Stake:** Would you stake your own reputation on this implementation being 100% complete, correct, and safe for immediate production deployment?
+    - If you hesitate for even a second, it's a **FAIL**.
+
+5.  **The "Doubt Yourself" Clause:** Review **YOUR OWN** approach. Aks yourself:
+    - Did I really run all tools to get evidence?
+    - Did I assume a result where I should have been looking into?
+    - Can I really and honestly say, all evidence was taken from the current codebase and spec?
+    - **BETTER SAFE THAN SORRY**: Maybe double check?
+
+6.  **The Doubt Clause:** Do you possess **ANY** doubt, gut-feeling, or uncertainty about any aspect of this review?
+    - Doubt is the signal of a hidden flaw. Doubt is a **FAIL**.
 
 **Verdict**: All YES = `PASS`, Any NO = `FAIL`
 

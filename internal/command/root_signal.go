@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fluxid-cli/internal/process"
 	"log"
 	"os"
 	"os/signal"
@@ -30,28 +31,20 @@ type signalHandler struct {
 	logger      *log.Logger
 }
 
-// handleSignal processes a single signal and returns true if processing should continue.
-func (h *signalHandler) handleSignal(sig os.Signal, count int32) bool {
-	if count == 1 {
-		// First signal: set abort flag for graceful shutdown
-		h.logger.Printf("\nReceived signal %v - requesting graceful abort...", sig)
-		h.logger.Println("Workflow will exit after current phase completes.")
-		h.logger.Println("Press Ctrl+C again to force immediate exit.")
+// handleSignal processes a single signal and immediately exits.
+func (h *signalHandler) handleSignal(sig os.Signal, _ int32) bool {
+	// Immediately exit on any signal - no graceful shutdown
+	h.logger.Printf("\nReceived signal %v - terminating immediately", sig)
 
-		if err := h.abortSetter(h.sessionID); err != nil {
-			h.logger.Printf("Warning: failed to set abort flag: %v", err)
-		}
-		return true
-	}
-	// Second signal: force immediate exit
-	h.logger.Printf("\nReceived signal %v again - forcing immediate exit", sig)
+	// Kill all active child processes and their subprocesses before exiting
+	process.KillAll()
+
 	h.exitFunc(exitCodeInterrupted)
 	return false
 }
 
-// setupSignalHandler installs a signal handler that sets the abort flag on SIGINT/SIGTERM.
-// On the first signal, it sets the abort flag for graceful shutdown.
-// On the second signal, it forces immediate exit.
+// setupSignalHandler installs a signal handler that immediately exits on SIGINT/SIGTERM.
+// The handler forces immediate termination without graceful shutdown.
 func setupSignalHandler(sessionID string) func() {
 	sigChan := make(chan os.Signal, 1)
 	done := make(chan struct{})

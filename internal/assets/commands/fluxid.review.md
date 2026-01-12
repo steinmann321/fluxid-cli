@@ -40,6 +40,14 @@ Follow this non-negotiable protocol. A single negative finding results in an ove
     - Missing dependency declarations (e.g., `package.json`, `requirements.txt`).
     - Leftover debug code, placeholder comments (`// TODO`), or commented-out logic.
 
+**Commits**:
+- All changes committed? Uncommitted changes - whatever they might be - are not allowed: FAIL
+- Changes to hook configs or excludes could point to a config smell. Don't accept broad wildcard excludes, only justified exceptions
+- Test code has to be treated with the same quality standards as production code
+- The hook based quality enforcement system has to be respected - it is strict by purpose
+- Code specific exceptions require justification, not a broader pattern
+- Don't introduce technical depts through false justified exceptions by a lazy developer
+
 ## 4. Diagnose Issues
 Investigate root cause comprehensively. Reference previous report to avoid repeating failed approaches.
 
