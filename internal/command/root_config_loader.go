@@ -35,17 +35,17 @@ func loadAndResolveConfig() (types.Config, int) {
 		TaskFilePath:        "",
 	}
 
-	// Load all configuration sources
-	homeConfig, projectConfig, exitCode := loadAllConfigs()
-	if exitCode != 0 {
-		return emptyConfig, exitCode
-	}
-
-	// Parse command-line arguments
+	// Parse command-line arguments first to get the config path
 	args, err := ParseArgs()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return emptyConfig, 1
+	}
+
+	// Load all configuration sources (pass custom config path if provided)
+	homeConfig, projectConfig, exitCode := loadAllConfigs(args.CLIConfigPath)
+	if exitCode != 0 {
+		return emptyConfig, exitCode
 	}
 
 	// Resolve configuration with precedence: CLI > project > home > defaults
@@ -88,7 +88,13 @@ func loadAndResolveConfig() (types.Config, int) {
 	return cfg, 0
 }
 
-func loadAllConfigs() (*config.HomeConfig, *config.ProjectConfig, int) {
+func loadAllConfigs(customConfigPath *string) (*config.HomeConfig, *config.ProjectConfig, int) {
+	// If custom config path is provided, use it as the project config (takes precedence)
+	if customConfigPath != nil && *customConfigPath != "" {
+		return loadConfigsWithCustom(*customConfigPath)
+	}
+
+	// Otherwise, load from default locations
 	homeConfig, err := config.LoadHomeConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading home configuration: %v\n", err)
@@ -102,6 +108,40 @@ func loadAllConfigs() (*config.HomeConfig, *config.ProjectConfig, int) {
 	}
 
 	return homeConfig, projectConfig, 0
+}
+
+func loadConfigsWithCustom(customConfigPath string) (*config.HomeConfig, *config.ProjectConfig, int) {
+	// Load the custom config
+	customConfig, _, err := config.LoadCustomConfig(customConfigPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading custom configuration from %s: %v\n", customConfigPath, err)
+		return nil, nil, 1
+	}
+
+	// Convert CustomConfig to ProjectConfig (they have identical structure)
+	projectConfig := customConfigToProjectConfig(customConfig)
+
+	// Still load home config as fallback
+	homeConfig, err := config.LoadHomeConfig()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading home configuration: %v\n", err)
+		return nil, nil, 1
+	}
+
+	return homeConfig, projectConfig, 0
+}
+
+func customConfigToProjectConfig(customConfig *config.CustomConfig) *config.ProjectConfig {
+	if customConfig == nil {
+		return nil
+	}
+	return &config.ProjectConfig{
+		Agent:            customConfig.Agent,
+		ImplementRetries: customConfig.ImplementRetries,
+		CommitRetries:    customConfig.CommitRetries,
+		Iterations:       customConfig.Iterations,
+		Commands:         customConfig.Commands,
+	}
 }
 
 func validateAgent(agent string) int {

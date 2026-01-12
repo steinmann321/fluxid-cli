@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-//nolint:funlen // Table-driven test with comprehensive test cases
+//nolint:funlen,gocognit,cyclop // Table-driven test with comprehensive test cases
 func TestLoadAllConfigs(t *testing.T) {
 	t.Run("successful load", func(t *testing.T) {
 		tmpDir := t.TempDir()
@@ -30,7 +30,7 @@ max_review_cycles: 10
 			t.Fatal(err)
 		}
 
-		home, _, exitCode := loadAllConfigs()
+		home, _, exitCode := loadAllConfigs(nil)
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0, got %d", exitCode)
 		}
@@ -45,7 +45,7 @@ max_review_cycles: 10
 		t.Setenv("HOME", "/dev/null/invalid/path/no/way/this/exists")
 		t.Setenv("XDG_CONFIG_HOME", "/dev/null/invalid")
 
-		_, _, exitCode := loadAllConfigs()
+		_, _, exitCode := loadAllConfigs(nil)
 		if exitCode != 1 {
 			t.Errorf("Expected exit code 1 for home config error, got %d", exitCode)
 		}
@@ -67,7 +67,7 @@ max_review_cycles: 10
 			t.Fatal(err)
 		}
 
-		home, _, exitCode := loadAllConfigs()
+		home, _, exitCode := loadAllConfigs(nil)
 		if exitCode != 0 {
 			t.Errorf("Expected exit code 0, got %d", exitCode)
 		}
@@ -75,6 +75,61 @@ max_review_cycles: 10
 			t.Error("Expected home config to be loaded")
 		}
 		// Project config can be nil if no project config is set
+	})
+
+	t.Run("custom config path provided", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("XDG_CONFIG_HOME", tmpDir)
+		t.Setenv("XDG_DATA_HOME", tmpDir)
+
+		// Create a custom config file
+		customConfigPath := filepath.Join(tmpDir, "custom-config.yaml")
+		customConfig := `agent: codex
+iterations: 25
+implement_retries: 5
+commands:
+  implement: /tmp/implement.md
+  review: /tmp/review.md
+  commit: /tmp/commit.md
+`
+		if err := os.WriteFile(customConfigPath, []byte(customConfig), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create the command files referenced in the config
+		for _, file := range []string{"/tmp/implement.md", "/tmp/review.md", "/tmp/commit.md"} {
+			if err := os.WriteFile(file, []byte("# Command"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			defer func(f string) { _ = os.Remove(f) }(file)
+		}
+
+		_, projectConfig, exitCode := loadAllConfigs(&customConfigPath)
+		if exitCode != 0 {
+			t.Errorf("Expected exit code 0, got %d", exitCode)
+		}
+		if projectConfig == nil {
+			t.Error("Expected project config to be loaded from custom config")
+			return
+		}
+		if projectConfig.Agent == nil || *projectConfig.Agent != "codex" {
+			t.Errorf("Expected agent to be 'codex', got %v", projectConfig.Agent)
+		}
+		if projectConfig.Iterations == nil || *projectConfig.Iterations != 25 {
+			t.Errorf("Expected iterations to be 25, got %v", projectConfig.Iterations)
+		}
+	})
+
+	t.Run("custom config path invalid", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+
+		invalidPath := "/nonexistent/config.yaml"
+		_, _, exitCode := loadAllConfigs(&invalidPath)
+		if exitCode != 1 {
+			t.Errorf("Expected exit code 1 for invalid custom config path, got %d", exitCode)
+		}
 	})
 }
 
