@@ -13,7 +13,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"syscall"
 	"time"
 )
 
@@ -37,10 +36,7 @@ func runPhase(config types.Config, phase string, prompt string) (int, error) {
 
 	// Set up process group for proper signal handling
 	// This ensures child processes are killed when fluxid terminates
-	//nolint:exhaustruct // Only Setpgid is needed; other fields intentionally use zero values
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
+	cmd.SysProcAttr = setupProcessGroup()
 
 	// Create pipes for stdout and stderr
 	stdoutPipe, err := cmd.StdoutPipe()

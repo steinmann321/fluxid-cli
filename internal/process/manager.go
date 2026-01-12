@@ -4,7 +4,6 @@ package process
 import (
 	"os"
 	"sync"
-	"syscall"
 )
 
 //nolint:gochecknoglobals // Global state needed for signal handler coordination
@@ -35,17 +34,4 @@ func Unregister(proc *os.Process) {
 // KillAll kills all registered child processes and their process groups.
 // This ensures that not only direct children are killed, but also any
 // subprocesses spawned by those children (e.g., agent spawns a subprocess).
-func KillAll() {
-	childrenMutex.Lock()
-	defer childrenMutex.Unlock()
-
-	for _, proc := range activeChildren {
-		if proc != nil && proc.Pid > 0 {
-			// Kill the entire process group (negative PID kills the group)
-			// This kills the agent AND any subprocesses it spawned
-			// Ignore errors as process might already be dead
-			_ = syscall.Kill(-proc.Pid, syscall.SIGKILL)
-		}
-	}
-	activeChildren = nil
-}
+// Platform-specific implementation in manager_unix.go and manager_windows.go
