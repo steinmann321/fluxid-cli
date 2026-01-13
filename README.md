@@ -4,7 +4,10 @@ A workflow controller that orchestrates coding agents through structured IMPLEME
 
 ## Overview
 
-**fluxid** lets coding agents (Claude, Codex, OpenCode) tackle complex tasks that exceed their context limits. It runs your agent through structured implement-review cycles, automatically tracking progress, validating outputs, and managing state between iterations until the task is complete.
+**fluxid** lets Claude tackle complex tasks that exceed context limits. It runs your agent through structured implement-review cycles, automatically tracking progress, validating outputs, and managing state between iterations until the task is complete.
+
+**Currently supports:** Claude (via [Claude CLI](https://github.com/anthropics/claude-cli))
+**Coming soon:** Additional coding agents
 
 **Key Features:**
 - Orchestrates implement/commit/review cycles automatically
@@ -17,11 +20,14 @@ A workflow controller that orchestrates coding agents through structured IMPLEME
 
 **Install:**
 ```bash
-# Build from source
-make build
+# One-liner install (macOS/Linux)
+curl -fsSL https://raw.githubusercontent.com/steinmann321/fluxid-cli/main/install.sh | sh
 
-# Or install to $GOPATH/bin
-go install ./cmd/fluxid
+# Or install specific version
+curl -fsSL https://raw.githubusercontent.com/steinmann321/fluxid-cli/main/install.sh | sh -s -- v0.1.4
+
+# Or build from source
+make build
 ```
 
 **Initialize:**
@@ -71,7 +77,7 @@ fluxid --claude --file=/path/to/task.md
 **Basic commands:**
 ```bash
 # Run workflow
-fluxid {--claude|--codex|--opencode} --file=PATH [options]
+fluxid --claude --file=PATH [options]
 
 # Initialize configuration
 fluxid init [PATH]
