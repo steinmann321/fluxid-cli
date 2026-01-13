@@ -61,4 +61,19 @@ release-test: ## Test full release build (all platforms)
 	@goreleaser build --snapshot --clean
 	@echo "✓ Built binaries for all platforms in dist/"
 
+release-prepare: ## Build and prepare release binaries with clean names
+	@echo "Building release binaries for all platforms..."
+	@goreleaser build --snapshot --clean
+	@echo "Creating dist/release/ with clean-named binaries..."
+	@mkdir -p dist/release
+	@cp dist/fluxid_darwin_amd64_v1/fluxid dist/release/fluxid-darwin-amd64
+	@cp dist/fluxid_darwin_arm64_v8.0/fluxid dist/release/fluxid-darwin-arm64
+	@cp dist/fluxid_linux_amd64_v1/fluxid dist/release/fluxid-linux-amd64
+	@cp dist/fluxid_linux_arm64_v8.0/fluxid dist/release/fluxid-linux-arm64
+	@cp dist/fluxid_windows_amd64_v1/fluxid.exe dist/release/fluxid-windows-amd64.exe
+	@cp dist/fluxid_windows_arm64_v8.0/fluxid.exe dist/release/fluxid-windows-arm64.exe
+	@cd dist/release && shasum -a 256 fluxid-* > checksums.txt
+	@echo "✓ Release files ready in dist/release/"
+	@ls -lh dist/release/
+
 .DEFAULT_GOAL := help
