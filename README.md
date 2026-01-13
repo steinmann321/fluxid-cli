@@ -7,7 +7,7 @@ A workflow controller that orchestrates coding agents through structured IMPLEME
 **fluxid** lets coding agents (Claude, Codex, OpenCode) tackle complex tasks that exceed their context limits. It runs your agent through structured implement-review cycles, automatically tracking progress, validating outputs, and managing state between iterations until the task is complete.
 
 **Key Features:**
-- Orchestrates implement/review/commit cycles automatically
+- Orchestrates implement/commit/review cycles automatically
 - File-based interface for agent communication
 - Session-scoped storage with YAML validation
 - Configurable retry limits and iteration counts
@@ -88,6 +88,7 @@ fluxid history --get-schema   # Get YAML schema
 **Common options:**
 ```bash
 --file=PATH                    # Task file path (required)
+--config=PATH                  # Custom config file path
 --fluxid-iterations=N          # Max review cycles (default: 20)
 --fluxid-implement-retries=R   # Max retries per cycle (default: 3)
 --fluxid-dry-run               # Simulate without execution
@@ -96,11 +97,10 @@ fluxid history --get-schema   # Get YAML schema
 
 ## Documentation
 
-- **[CLI Reference](docs/cli-reference.md)** - Complete command-line options
-- **[Configuration](docs/configuration.md)** - Config files and precedence
-- **[Workflows](docs/workflows.md)** - Common usage patterns and examples
-- **[Agent Integration](docs/agent-integration.md)** - File-based interface for agents
-- **[Architecture](docs/architecture.md)** - Codebase structure and design
+- **[CLI Reference](docs/cli-reference.md)** - Complete command-line options (WIP)
+- **[Configuration](docs/configuration.md)** - Config files and precedence (WIP)
+- **[Agent Integration](docs/agent-integration.md)** - File-based interface for agents (WIP)
+- **[Architecture](docs/architecture.md)** - Codebase structure and design (WIP)
 
 ## Configuration
 
