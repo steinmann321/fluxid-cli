@@ -358,9 +358,11 @@ func TestM05E03MultiAgentFailureHandling(t *testing.T) {
 			)
 
 			output, err := cmd.CombinedOutput()
-			// Command should fail with non-zero exit code
-			if err == nil {
-				t.Fatalf("Expected failure for %s agent with FAIL reports, but succeeded", agent)
+			// Corrected behavior: Command completes successfully even with FAIL reports
+			// The workflow continues through all phases, logging failures
+			if err != nil {
+				t.Fatalf("Expected success for %s agent (workflow completes all phases), got error: %v\nOutput:\n%s",
+					agent, err, string(output))
 			}
 
 			outputStr := string(output)

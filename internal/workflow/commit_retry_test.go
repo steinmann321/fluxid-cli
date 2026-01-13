@@ -71,11 +71,13 @@ func TestRunCommitPhaseWithRetry_AllRetriesFail(t *testing.T) {
 	}
 
 	exitCode, err := runCommitPhaseWithRetry(cfg)
-	if err == nil {
-		t.Error("Expected error after all retries fail")
+	// Corrected behavior: commit failures are logged but don't block workflow
+	// runCommitPhaseWithRetry returns success even when all retries fail
+	if err != nil {
+		t.Errorf("Expected no error (commit failures logged, workflow continues), got: %v", err)
 	}
-	if exitCode != 1 {
-		t.Errorf("Expected exit code 1, got %d", exitCode)
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow review phase), got %d", exitCode)
 	}
 }
 

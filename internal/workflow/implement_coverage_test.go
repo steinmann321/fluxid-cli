@@ -23,7 +23,7 @@ func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
 		Agent:               testAgentFalse, // Will fail on commit phase
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -32,11 +32,12 @@ func TestRunImplementPhase_CommitPhaseFailure(t *testing.T) {
 	// No report needed since commit will fail before waiting
 
 	exitCode, err := runImplementPhase(cfg)
-	if err == nil {
-		t.Error("Expected error when commit phase fails")
+	// Corrected behavior: commit failures don't block workflow
+	if err != nil {
+		t.Errorf("Expected no error (commit failures logged, workflow continues), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow review phase), got: %d", exitCode)
 	}
 }
 
@@ -53,7 +54,7 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 		Agent:               testAgentFalse,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 2,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -61,11 +62,12 @@ func TestRunImplementPhase_AgentFailsNoExit(t *testing.T) {
 
 	// Since agent fails, we won't get to report checking
 	exitCode, err := runImplementPhase(cfg)
-	if err == nil {
-		t.Error("Expected error when agent fails")
+	// Corrected behavior: commit failures don't block workflow
+	if err != nil {
+		t.Errorf("Expected no error (commit failures logged, workflow continues), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow review phase), got: %d", exitCode)
 	}
 }
 
@@ -85,7 +87,7 @@ func TestRunImplementPhase_ReportWaitAbort(t *testing.T) {
 		Agent:               testAgentEcho,
 		AgentArgs:           []string{},
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,

@@ -58,24 +58,16 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 	err := cmd.Run()
-	// Verify command failed
-	if err == nil {
-		t.Fatal("Expected fluxid to fail when Claude exits non-zero, but it succeeded")
-	}
-	// Verify exit code 1 (commit phase failure after exhausting retries)
-	// Note: Abort mechanism was removed in 001-report-history-refactor,
-	// so workflow no longer mirrors agent exit codes
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("Expected ExitError, got: %v", err)
-	}
-	if exitErr.ExitCode() != 1 {
-		t.Errorf("Expected exit code 1 (commit phase failure), got: %d", exitErr.ExitCode())
+	// Corrected behavior: Workflow completes successfully even when agents fail
+	// The workflow continues through all phases, logging failures
+	if err != nil {
+		t.Fatalf("Expected fluxid to succeed (workflow completes all phases), got error: %v\nOutput:\n%s",
+			err, output.String())
 	}
 	verifyFailureOutput(t, output.String())
-	// Verify no completion summary appears
-	if strings.Contains(output.String(), "Workflow Completion Summary") {
-		t.Error("Completion summary should not appear after abort")
+	// Verify completion summary appears (workflow completed all cycles)
+	if !strings.Contains(output.String(), "Workflow Completion Summary") {
+		t.Error("Completion summary should appear after workflow completes all cycles")
 	}
 }
 
@@ -109,8 +101,11 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 	cmd.Stderr = &output
 
 	err := cmd.Run()
-	if err == nil {
-		t.Fatal("Expected fluxid to fail")
+	// Corrected behavior: Workflow completes successfully even when all phases fail
+	// The workflow continues through all phases and iterations
+	if err != nil {
+		t.Fatalf("Expected fluxid to succeed (workflow completes all phases), got error: %v\nOutput:\n%s",
+			err, output.String())
 	}
 
 	outputStr := output.String()
@@ -125,13 +120,14 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 		t.Errorf("Expected exactly 3 implement phases (default retry limit), got %d", implementCount)
 	}
 
-	// After exhausting implement retries, workflow continues to commit phase (which also fails and retries)
-	// With default MaxCommitRetries=100, workflow exhausts all commit retries
+	// After exhausting implement retries, workflow continues to commit phase
+	// With new behavior, commit failures don't block workflow, so we see commit and review phases
 	if commitCount != 100 {
 		t.Errorf("Expected 100 commit phases (default commit retry limit), got %d", commitCount)
 	}
-	if reviewCount > 0 {
-		t.Errorf("Expected 0 review phases after commit failures, got %d", reviewCount)
+	// With new behavior, workflow continues to review phase even after commit failures
+	if reviewCount < 1 {
+		t.Errorf("Expected at least 1 review phase (workflow continues after commit failures), got %d", reviewCount)
 	}
 
 	// Verify only one development iteration was started

@@ -24,7 +24,7 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 		Agent:               "false",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -33,12 +33,12 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 	}
 
 	exitCode, err := runImplementPhase(cfg)
-	// Should fail at implement phase
-	if err == nil {
-		t.Error("Expected error")
+	// Corrected behavior: commit failures don't block workflow
+	if err != nil {
+		t.Errorf("Expected no error (commit failures logged, workflow continues), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow review phase), got: %d", exitCode)
 	}
 }
 
@@ -61,7 +61,7 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -116,7 +116,7 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 		Agent:               "false", // Will fail
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

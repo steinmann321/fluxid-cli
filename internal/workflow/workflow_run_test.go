@@ -26,7 +26,7 @@ func TestRun_SingleCycleSuccess(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -61,7 +61,7 @@ func TestRun_AbortBeforeImplement(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     2,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -97,7 +97,7 @@ func TestRun_MultipleReviewCycles(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     3,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -134,7 +134,7 @@ func TestRun_WithAgentArgs(t *testing.T) {
 		AgentArgs:           []string{"-n", "test"},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
@@ -169,15 +169,20 @@ func TestRun_ReadReportFailure(t *testing.T) {
 		AgentArgs:           []string{},
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 1,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        &config.ResolvedCommandFiles{},
 		OutputFormat:        output.FormatText,
 	}
 
-	_, err := Run(cfg)
-	if err == nil {
-		t.Error("Expected error due to invalid session ID, got nil")
+	exitCode, err := Run(cfg)
+	// Corrected behavior: Even with invalid session ID, workflow completes all cycles
+	// Missing reports are treated as FAIL status, not errors
+	if err != nil {
+		t.Errorf("Expected no error (FAIL status used for failures), got: %v", err)
+	}
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (workflow completes), got %d", exitCode)
 	}
 }
 
@@ -237,13 +242,14 @@ func TestRun_ImplementPhaseError(t *testing.T) {
 		OutputFormat:        output.FormatText,
 	}
 
-	// Run() should fail in runImplementPhase() due to agent failure
+	// Corrected behavior: Run() continues to review even after commit failures
+	// Missing reports are treated as FAIL status, workflow completes all cycles
 	exitCode, err := Run(cfg)
-	if err == nil {
-		t.Error("Expected error from failing implement phase")
+	if err != nil {
+		t.Errorf("Expected no error (FAIL status used for failures), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code from failing implement phase")
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (workflow completes), got %d", exitCode)
 	}
 }
 

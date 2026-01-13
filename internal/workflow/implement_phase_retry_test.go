@@ -7,21 +7,21 @@ import (
 	"fluxid-cli/internal/types"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
 func TestRunImplementPhase_MaxRetries(t *testing.T) {
 	t.Parallel()
 	// Test that implement phase continues through commit phase when agent fails
-	// With new behavior: missing reports are treated as FAIL, workflow continues
+	// Corrected behavior: missing reports are treated as FAIL, but commit failures
+	// don't block workflow - it continues to review phase (return success)
 	cfg := types.Config{
 		SessionID:           "00000000-0000-4000-8000-000000000001",
 		SessionRoot:         "",
 		Agent:               "nonexistent-agent-xyz",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 2,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},
@@ -30,17 +30,13 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 	}
 
 	exitCode, err := runImplementPhase(cfg)
-	// With new behavior: implement exhausts retries (FAIL), continues to commit,
-	// commit exhausts retries (FAIL), returns commit error
-	if err == nil {
-		t.Error("Expected error after all retries exhausted")
+	// Corrected behavior: implement exhausts retries (FAIL), continues to commit,
+	// commit exhausts retries (FAIL), but returns success so review phase can run
+	if err != nil {
+		t.Errorf("Expected no error (commit failures should be logged, not block workflow), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
-	}
-	// Error should be from commit phase failing after retries
-	if !strings.Contains(err.Error(), "commit phase failed") {
-		t.Errorf("Expected commit phase error message, got: %v", err)
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow workflow to continue to review), got: %d", exitCode)
 	}
 }
 
@@ -93,7 +89,7 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 		Agent:               "true",
 		MaxReviewCycles:     1,
 		MaxImplementRetries: 3,
-		MaxCommitRetries:    100,
+		MaxCommitRetries:    2, // Reduced from 100 to avoid timeout
 		DryRun:              false,
 		CommandFiles:        nil,
 		AgentArgs:           []string{},

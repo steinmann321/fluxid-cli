@@ -109,12 +109,13 @@ func determineNextPhaseAfterCommit(status string, retry, maxRetries int) string 
 	}
 }
 
-// printCommitExhausted prints an error when all commit attempts fail.
+// printCommitExhausted prints a warning when all commit attempts fail.
+// Note: This is a warning, not an error - the workflow continues to review phase.
 func printCommitExhausted(maxRetries int) {
 	separator := strings.Repeat("━", separatorWidth)
 	log.Println(separator)
-	log.Printf("ERROR: All %d commit attempts resulted in FAIL reports", maxRetries)
-	log.Println("Action: Workflow cannot continue")
+	log.Printf("WARNING: All %d commit attempts resulted in FAIL reports", maxRetries)
+	log.Println("Action: Continuing to review phase")
 	log.Println(separator)
 }
 

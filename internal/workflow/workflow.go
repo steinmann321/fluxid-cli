@@ -104,9 +104,10 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		)
 
 		if status == statusPass {
-			// Implement phase succeeded, run commit and return success
-			if exitCode, err := executeCommit(cfg); err != nil {
-				return exitCode, err
+			// Implement phase succeeded, run commit
+			// Note: commit failures are logged but don't block workflow - review phase will still run
+			if _, err := executeCommit(cfg); err != nil {
+				log.Printf("Commit phase failed: %v (continuing to review phase)", err)
 			}
 			return 0, nil
 		}
@@ -119,8 +120,9 @@ func runImplementPhase(cfg types.Config) (int, error) {
 
 	// Run commit phase even when all implement retries failed
 	// This ensures the commit phase executes regardless of implement status
-	if exitCode, err := executeCommit(cfg); err != nil {
-		return exitCode, err
+	// Note: commit failures are logged but don't block workflow - review phase will still run
+	if _, err := executeCommit(cfg); err != nil {
+		log.Printf("Commit phase failed: %v (continuing to review phase)", err)
 	}
 
 	return 0, nil
@@ -213,9 +215,10 @@ func runCommitPhaseWithRetry(cfg types.Config) (int, error) {
 		// status == statusFail: continue to next retry (already printed status above)
 	}
 
-	// All retries exhausted - workflow cannot continue
+	// All retries exhausted - log but allow workflow to continue to review phase
 	printCommitExhausted(cfg.MaxCommitRetries)
-	return 1, fmt.Errorf("commit phase failed after %d retries: %w", cfg.MaxCommitRetries, errCommitPhaseFailed)
+	log.Printf("Commit phase failed after %d retries (continuing to review phase)", cfg.MaxCommitRetries)
+	return 0, nil
 }
 
 func checkAbortBeforeCommit(_ string) (int, error) {

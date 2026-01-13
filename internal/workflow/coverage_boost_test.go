@@ -177,11 +177,12 @@ func TestRunImplementPhase_NonZeroExitFromImplement(t *testing.T) {
 	}
 
 	exitCode, err := runImplementPhase(cfg)
-	if err == nil {
-		t.Error("Expected error for non-existent command")
+	// Corrected behavior: commit failures don't block workflow
+	if err != nil {
+		t.Errorf("Expected no error (commit failures logged, workflow continues), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow review phase), got: %d", exitCode)
 	}
 }
 
@@ -206,11 +207,13 @@ func TestRunCommitPhaseWithRetry_ExecuteError(t *testing.T) {
 	}
 
 	exitCode, err := runCommitPhaseWithRetry(cfg)
-	if err == nil {
-		t.Error("Expected error for non-existent agent")
+	// Corrected behavior: commit failures are logged but don't block workflow
+	// runCommitPhaseWithRetry returns success even when all retries fail
+	if err != nil {
+		t.Errorf("Expected no error (commit failures logged, workflow continues), got: %v", err)
 	}
-	if exitCode == 0 {
-		t.Error("Expected non-zero exit code")
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0 (allow review phase), got %d", exitCode)
 	}
 }
 
