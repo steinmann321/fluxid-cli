@@ -17,6 +17,9 @@ bin/
 # fluxid runtime files
 .tmp/
 
+# GoReleaser build artifacts
+dist/
+
 # Local agent directories
 .claude/
 .opencode/
