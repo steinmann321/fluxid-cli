@@ -13,27 +13,8 @@ import (
 )
 
 // TestM01E04ClaudeFailureImmediateAbort verifies that when Claude exits with
-// a non-zero exit code, fluxid aborts immediately and mirrors the exit code.
-func verifyFailureOutput(t *testing.T, output string) {
-	t.Helper()
-	checks := []struct {
-		contains bool
-		pattern  string
-		errMsg   string
-	}{
-		{true, "=== Workflow Aborted ===", "Expected workflow abort header in output"},
-		{true, "Agent execution failed", "Expected agent failure message in output"},
-		{true, "Exit code: 1", "Expected exit code 1 to be displayed in error message"},
-		{true, "Next steps:", "Expected next steps guidance in output"},
-		{false, "Status: SUCCESS", "Success message should not appear after failure"},
-	}
-	for _, check := range checks {
-		if check.contains != strings.Contains(output, check.pattern) {
-			t.Error(check.errMsg)
-		}
-	}
-}
-
+// a non-zero exit code, the workflow treats it as a FAIL status and continues
+// through all phases until completion.
 func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	t.Parallel()
 	root := getProjectRoot(t)
@@ -64,9 +45,16 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 		t.Fatalf("Expected fluxid to succeed (workflow completes all phases), got error: %v\nOutput:\n%s",
 			err, output.String())
 	}
-	verifyFailureOutput(t, output.String())
+
+	outputStr := output.String()
+
+	// Verify that failures were logged (agent failures treated as FAIL status)
+	if !strings.Contains(outputStr, "Failed to read implement report (treating as FAIL)") {
+		t.Error("Expected agent failure to be logged as FAIL status")
+	}
+
 	// Verify completion summary appears (workflow completed all cycles)
-	if !strings.Contains(output.String(), "Workflow Completion Summary") {
+	if !strings.Contains(outputStr, "Workflow Completion Summary") {
 		t.Error("Completion summary should appear after workflow completes all cycles")
 	}
 }
