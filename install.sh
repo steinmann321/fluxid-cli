@@ -56,6 +56,31 @@ detect_platform() {
     echo "${GREEN}Detected platform: $OS-$ARCH${NC}"
 }
 
+# Check prerequisites
+check_prerequisites() {
+    echo "${YELLOW}Checking prerequisites...${NC}"
+
+    # Check if Claude CLI is installed
+    if ! command -v claude >/dev/null 2>&1; then
+        echo "${RED}Error: Claude CLI is not installed${NC}"
+        echo "${RED}fluxid requires Claude CLI to function${NC}"
+        echo ""
+        echo "Install Claude CLI from: https://github.com/anthropics/claude-cli"
+        exit 1
+    fi
+
+    # Test if Claude CLI is working
+    if ! claude -p "say hi" >/dev/null 2>&1; then
+        echo "${RED}Error: Claude CLI is installed but not working${NC}"
+        echo "${RED}Please ensure Claude CLI is properly configured${NC}"
+        echo ""
+        echo "Test with: claude -p \"say hi\""
+        exit 1
+    fi
+
+    echo "${GREEN}✓ Claude CLI is installed and working${NC}"
+}
+
 # Get latest version from GitHub
 get_latest_version() {
     if [ "$VERSION" = "latest" ]; then
@@ -137,6 +162,7 @@ verify_installation() {
 main() {
     echo "${GREEN}Installing fluxid...${NC}"
     detect_platform
+    check_prerequisites
     get_latest_version
     download_binary
     install_binary
