@@ -93,9 +93,12 @@ func runImplementPhase(cfg types.Config) (int, error) {
 		// Check implement report status IMMEDIATELY after implement phase
 		// CRITICAL: This must happen BEFORE executeCommit(), otherwise the commit phase
 		// will overwrite the implement report with a commit report
-		status, exitCode, err := checkImplementReportStatusWithStatus(cfg.SessionID, cfg.SessionRoot, retry)
+		// Note: errors are treated as FAIL status (e.g., missing report), not workflow errors
+		status, _, err := checkImplementReportStatusWithStatus(cfg.SessionID, cfg.SessionRoot, retry)
 		if err != nil {
-			return exitCode, err
+			// Treat any error reading report as FAIL status, don't abort workflow
+			log.Printf("Error checking implement report (treating as FAIL): %v", err)
+			status = statusFail
 		}
 
 		// Print formatted status with report file link
@@ -199,9 +202,12 @@ func runCommitPhaseWithRetry(cfg types.Config) (int, error) {
 		_ = executeCommitPhaseQuietly(cfg, retry)
 
 		// Check commit report status IMMEDIATELY after commit phase
-		status, exitCode, err := checkCommitReportStatusWithStatus(cfg.SessionID, cfg.SessionRoot, retry)
+		// Note: errors are treated as FAIL status (e.g., missing report), not workflow errors
+		status, _, err := checkCommitReportStatusWithStatus(cfg.SessionID, cfg.SessionRoot, retry)
 		if err != nil {
-			return exitCode, err
+			// Treat any error reading report as FAIL status, don't abort workflow
+			log.Printf("Error checking commit report (treating as FAIL): %v", err)
+			status = statusFail
 		}
 
 		// Print formatted status with report file link
@@ -293,16 +299,20 @@ func runCommitPhase(cfg types.Config) (int, error) {
 }
 
 // runReviewPhase executes the review phase and returns the status.
+//
+//nolint:unparam // exitCode always 0 (errors treated as FAIL status), kept for API consistency
 func runReviewPhase(cfg types.Config) (string, int, error) {
 	// Run review phase (agent execution) - errors are expected, report status matters
 	_, _ = runPhase(cfg, "review", reviewPrompt)
 
 	// Wait for valid review report and check status
+	// Note: errors are treated as FAIL status (e.g., missing report), not workflow errors
 	status, err := waitForValidReport(cfg.SessionID, cfg.SessionRoot, "review")
 	if err != nil {
-		// Note: AbortError handling removed per 001-report-history-refactor
-		// If abort functionality is needed in future, restore error type checking here
-		return "", 1, fmt.Errorf("failed to get review report: %w", err)
+		// Treat any error reading report as FAIL status, don't abort workflow
+		// This allows the development iteration loop to continue
+		log.Printf("Error checking review report (treating as FAIL): %v", err)
+		return statusFail, 0, nil
 	}
 
 	return status, 0, nil
