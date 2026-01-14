@@ -26,6 +26,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 
 	home := &HomeConfig{
 		Agent:            strPtr("home-agent"),
+		AgentArgs:        nil,
 		Iterations:       intPtr(10),
 		ImplementRetries: intPtr(5),
 		CommitRetries:    nil,
@@ -34,6 +35,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 
 	project := &ProjectConfig{
 		Agent:            nil,
+		AgentArgs:        nil,
 		Iterations:       intPtr(20),
 		ImplementRetries: nil,
 		CommitRetries:    nil,
@@ -84,6 +86,7 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 
 	home := &HomeConfig{
 		Agent:            strPtr("home-agent"),
+		AgentArgs:        nil,
 		Iterations:       intPtr(10),
 		ImplementRetries: intPtr(5),
 		CommitRetries:    nil,
@@ -92,6 +95,7 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 
 	project := &ProjectConfig{
 		Agent:            strPtr("opencode"),
+		AgentArgs:        nil,
 		Iterations:       intPtr(15),
 		ImplementRetries: intPtr(7),
 		CommitRetries:    nil,

@@ -23,6 +23,8 @@ All configuration files use the same YAML structure:
 
 ```yaml
 agent: claude                # Agent: claude, codex, or opencode
+agent_args:                  # Optional: agent-specific arguments
+  - --dangerously-skip-permissions
 iterations: 20               # Max review cycles
 implement_retries: 3         # Max retries per cycle
 commands:
@@ -64,6 +66,8 @@ fluxid init
 **Example config:**
 ```yaml
 agent: claude
+agent_args:
+  - --dangerously-skip-permissions
 iterations: 20
 implement_retries: 3
 commands:
@@ -186,6 +190,7 @@ Result: ERROR - project config must provide ALL command paths if it specifies an
 When no config value is provided:
 
 - **agent:** `claude`
+- **agent_args:** **No built-in default** - specify in config file (fluxid init creates config with --dangerously-skip-permissions)
 - **iterations:** `20`
 - **implement_retries:** `3`
 - **commands:** **No default** - must be provided in config

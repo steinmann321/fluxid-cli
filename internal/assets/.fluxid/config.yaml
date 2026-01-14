@@ -1,0 +1,18 @@
+# Fluxid Configuration
+# Workflow automation for coding agents
+
+# Command file paths (must be absolute paths)
+# Placeholders like /Users/jakob.steinmann/vscodeprojects/fluxid-cli/internal/assets/.fluxid are replaced during 'fluxid init'
+commands:
+  implement: /Users/jakob.steinmann/vscodeprojects/fluxid-cli/internal/assets/.fluxid/commands/fluxid.implement-e2e.md
+  review: /Users/jakob.steinmann/vscodeprojects/fluxid-cli/internal/assets/.fluxid/commands/fluxid.review-implementation-e2e.md
+  commit: /Users/jakob.steinmann/vscodeprojects/fluxid-cli/internal/assets/.fluxid/commands/fluxid.commit.md
+
+# Agent configuration
+agent: claude
+agent_args:
+  - --dangerously-skip-permissions
+
+# Optional: Override defaults
+# implement_retries: 3           # Default: 3
+# iterations: 20                 # Default: 20

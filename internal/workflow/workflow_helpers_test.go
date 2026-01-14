@@ -7,24 +7,28 @@ import (
 	"testing"
 )
 
+const (
+	testAgentClaude = "claude"
+)
+
 // TestBuildAgentCommandClaude tests Claude agent command construction.
 func TestBuildAgentCommandClaude(t *testing.T) {
 	t.Parallel()
 
 	//nolint:exhaustruct // Test config with only relevant fields
 	cfg := types.Config{
-		Agent:     "claude",
-		AgentArgs: []string{"--extra-arg"},
+		Agent:     testAgentClaude,
+		AgentArgs: []string{"--dangerously-skip-permissions"},
 	}
 
 	cmd := buildAgentCommand(cfg, "test prompt")
 
 	// Verify command name
-	if filepath.Base(cmd.Path) != "claude" {
-		t.Errorf("Expected command 'claude', got %q", filepath.Base(cmd.Path))
+	if filepath.Base(cmd.Path) != testAgentClaude {
+		t.Errorf("Expected command %q, got %q", testAgentClaude, filepath.Base(cmd.Path))
 	}
 
-	// Verify args structure
+	// Verify args structure: agent args come first, then Claude-specific flags
 	args := cmd.Args[1:] // Skip command name
 	expectedArgs := []string{
 		"--dangerously-skip-permissions",
@@ -33,7 +37,6 @@ func TestBuildAgentCommandClaude(t *testing.T) {
 		"--verbose",
 		"-p",
 		"test prompt",
-		"--extra-arg",
 	}
 
 	if len(args) != len(expectedArgs) {
@@ -54,7 +57,7 @@ func TestBuildAgentCommandCodex(t *testing.T) {
 	//nolint:exhaustruct // Test config with only relevant fields
 	cfg := types.Config{
 		Agent:     "codex",
-		AgentArgs: []string{"--extra-arg"},
+		AgentArgs: []string{},
 	}
 
 	cmd := buildAgentCommand(cfg, "test prompt")
@@ -64,13 +67,12 @@ func TestBuildAgentCommandCodex(t *testing.T) {
 		t.Errorf("Expected command 'codex', got %q", filepath.Base(cmd.Path))
 	}
 
-	// Verify args structure
+	// Verify args structure (AgentArgs not supported for codex)
 	args := cmd.Args[1:] // Skip command name
 	expectedArgs := []string{
 		"exec",
 		"--json",
 		"test prompt",
-		"--extra-arg",
 	}
 
 	if len(args) != len(expectedArgs) {
@@ -91,7 +93,7 @@ func TestBuildAgentCommandOpencode(t *testing.T) {
 	//nolint:exhaustruct // Test config with only relevant fields
 	cfg := types.Config{
 		Agent:     "opencode",
-		AgentArgs: []string{"--extra-arg"},
+		AgentArgs: []string{},
 	}
 
 	cmd := buildAgentCommand(cfg, "test prompt")
@@ -101,14 +103,13 @@ func TestBuildAgentCommandOpencode(t *testing.T) {
 		t.Errorf("Expected command 'opencode', got %q", filepath.Base(cmd.Path))
 	}
 
-	// Verify args structure
+	// Verify args structure (AgentArgs not supported for opencode)
 	args := cmd.Args[1:] // Skip command name
 	expectedArgs := []string{
 		"run",
 		"--format",
 		"json",
 		"test prompt",
-		"--extra-arg",
 	}
 
 	if len(args) != len(expectedArgs) {
@@ -129,7 +130,7 @@ func TestBuildAgentCommandGemini(t *testing.T) {
 	//nolint:exhaustruct // Test config with only relevant fields
 	cfg := types.Config{
 		Agent:     "gemini",
-		AgentArgs: []string{"--extra-arg"},
+		AgentArgs: []string{},
 	}
 
 	cmd := buildAgentCommand(cfg, "test prompt")
@@ -139,13 +140,12 @@ func TestBuildAgentCommandGemini(t *testing.T) {
 		t.Errorf("Expected command 'gemini', got %q", filepath.Base(cmd.Path))
 	}
 
-	// Verify args structure
+	// Verify args structure (AgentArgs not supported for gemini)
 	args := cmd.Args[1:] // Skip command name
 	expectedArgs := []string{
 		"--output-format",
 		"stream-json",
 		"test prompt",
-		"--extra-arg",
 	}
 
 	if len(args) != len(expectedArgs) {
@@ -176,10 +176,87 @@ func TestBuildAgentCommandUnknown(t *testing.T) {
 		t.Errorf("Expected command 'unknown-agent', got %q", filepath.Base(cmd.Path))
 	}
 
-	// Verify args use Claude-style defaults
+	// Verify args use Claude-style (agent args come first, which is empty in this case)
 	args := cmd.Args[1:] // Skip command name
 	expectedArgs := []string{
-		"--dangerously-skip-permissions",
+		"--output-format",
+		"stream-json",
+		"--verbose",
+		"-p",
+		"test prompt",
+	}
+
+	if len(args) != len(expectedArgs) {
+		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(args))
+	}
+
+	for i, expected := range expectedArgs {
+		if args[i] != expected {
+			t.Errorf("Arg %d: expected %q, got %q", i, expected, args[i])
+		}
+	}
+}
+
+// TestBuildAgentCommandClaudeEmptyArgs tests Claude with empty agent args.
+func TestBuildAgentCommandClaudeEmptyArgs(t *testing.T) {
+	t.Parallel()
+
+	//nolint:exhaustruct // Test config with only relevant fields
+	cfg := types.Config{
+		Agent:     testAgentClaude,
+		AgentArgs: []string{},
+	}
+
+	cmd := buildAgentCommand(cfg, "test prompt")
+
+	// Verify command name
+	if filepath.Base(cmd.Path) != testAgentClaude {
+		t.Errorf("Expected command %q, got %q", testAgentClaude, filepath.Base(cmd.Path))
+	}
+
+	// Verify args structure: empty agent args, then Claude-specific flags
+	args := cmd.Args[1:] // Skip command name
+	expectedArgs := []string{
+		"--output-format",
+		"stream-json",
+		"--verbose",
+		"-p",
+		"test prompt",
+	}
+
+	if len(args) != len(expectedArgs) {
+		t.Fatalf("Expected %d args, got %d", len(expectedArgs), len(args))
+	}
+
+	for i, expected := range expectedArgs {
+		if args[i] != expected {
+			t.Errorf("Arg %d: expected %q, got %q", i, expected, args[i])
+		}
+	}
+}
+
+// TestBuildAgentCommandClaudeCustomArgs tests Claude with custom agent args.
+func TestBuildAgentCommandClaudeCustomArgs(t *testing.T) {
+	t.Parallel()
+
+	//nolint:exhaustruct // Test config with only relevant fields
+	cfg := types.Config{
+		Agent:     testAgentClaude,
+		AgentArgs: []string{"--custom-arg1", "--custom-arg2"},
+	}
+
+	cmd := buildAgentCommand(cfg, "test prompt")
+
+	// Verify command name
+	if filepath.Base(cmd.Path) != testAgentClaude {
+		t.Errorf("Expected command %q, got %q", testAgentClaude, filepath.Base(cmd.Path))
+	}
+
+	// Verify args structure: custom agent args come first
+	args := cmd.Args[1:] // Skip command name
+	expectedArgs := []string{
+		"--custom-arg1",
+		"--custom-arg2",
 		"--output-format",
 		"stream-json",
 		"--verbose",

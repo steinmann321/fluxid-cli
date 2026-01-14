@@ -137,6 +137,7 @@ func customConfigToProjectConfig(customConfig *config.CustomConfig) *config.Proj
 	}
 	return &config.ProjectConfig{
 		Agent:            customConfig.Agent,
+		AgentArgs:        customConfig.AgentArgs,
 		ImplementRetries: customConfig.ImplementRetries,
 		CommitRetries:    customConfig.CommitRetries,
 		Iterations:       customConfig.Iterations,
@@ -234,9 +235,15 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 	if args.CLITaskFilePath != nil {
 		taskAbs = *args.CLITaskFilePath
 	}
+	// Resolve agent args with precedence: CLI > config (project/home/default)
+	agentArgs := resolved.AgentArgs
+	if len(args.AgentArgs) > 0 {
+		agentArgs = args.AgentArgs
+	}
+
 	return types.Config{
 		Agent:               resolved.Agent,
-		AgentArgs:           args.AgentArgs,
+		AgentArgs:           agentArgs,
 		SessionID:           sessionID,
 		SessionRoot:         sessionRoot,
 		MaxReviewCycles:     resolved.Iterations,

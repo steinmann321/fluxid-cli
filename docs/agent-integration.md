@@ -12,10 +12,13 @@ When you run `fluxid --claude --file=task.md`, fluxid:
    - Task file path
 3. **Executes the agent** as a subprocess:
    ```bash
+   # Default invocation (agent_args defaults to --dangerously-skip-permissions)
    claude --dangerously-skip-permissions \
           --output-format stream-json \
           --verbose \
           -p "<composed-prompt>"
+
+   # Can be customized via config.yaml agent_args field
    ```
 4. **Sets environment variables**:
    - `FLUXID_SESSION_ID=<session-id>` - UUID identifying the current session

@@ -103,15 +103,16 @@ func buildAgentCommand(config types.Config, prompt string) *exec.Cmd {
 
 	switch config.Agent {
 	case "claude":
-		// Claude: claude --dangerously-skip-permissions --output-format stream-json --verbose -p "prompt"
-		args = []string{
-			"--dangerously-skip-permissions",
+		// Claude: start with config.AgentArgs, then add Claude-specific flags
+		// Example: claude <agent_args> --output-format stream-json --verbose -p "prompt"
+		args = append([]string{}, config.AgentArgs...)
+		args = append(args,
 			"--output-format",
 			"stream-json",
 			"--verbose",
 			"-p",
 			prompt,
-		}
+		)
 
 	case "codex":
 		// Codex: codex exec --json "prompt"
@@ -140,18 +141,15 @@ func buildAgentCommand(config types.Config, prompt string) *exec.Cmd {
 
 	default:
 		// Fallback to Claude-style for unknown agents
-		args = []string{
-			"--dangerously-skip-permissions",
+		args = append([]string{}, config.AgentArgs...)
+		args = append(args,
 			"--output-format",
 			"stream-json",
 			"--verbose",
 			"-p",
 			prompt,
-		}
+		)
 	}
-
-	// Append additional agent-specific arguments
-	args = append(args, config.AgentArgs...)
 
 	// #nosec G204 - Agent name comes from validated config file, not user input
 	return exec.CommandContext(context.Background(), config.Agent, args...)

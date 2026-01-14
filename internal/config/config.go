@@ -23,6 +23,7 @@ type Commands struct {
 // HomeConfig represents the user's ~/.fluxid/config.yaml configuration.
 type HomeConfig struct {
 	Agent            *string   `yaml:"agent"`
+	AgentArgs        []string  `yaml:"agent_args"`
 	ImplementRetries *int      `yaml:"implement_retries"`
 	CommitRetries    *int      `yaml:"commit_retries"`
 	Iterations       *int      `yaml:"iterations"`
@@ -33,6 +34,7 @@ type HomeConfig struct {
 // Structurally identical to HomeConfig but semantically distinct.
 type ProjectConfig struct {
 	Agent            *string   `yaml:"agent"`
+	AgentArgs        []string  `yaml:"agent_args"`
 	ImplementRetries *int      `yaml:"implement_retries"`
 	CommitRetries    *int      `yaml:"commit_retries"`
 	Iterations       *int      `yaml:"iterations"`
@@ -49,6 +51,7 @@ type ResolvedCommandFiles struct {
 // ResolvedConfig contains the final configuration values.
 type ResolvedConfig struct {
 	Agent            string
+	AgentArgs        []string
 	ImplementRetries int
 	CommitRetries    int
 	Iterations       int
@@ -183,6 +186,7 @@ func LoadDefaultConfig() (*ProjectConfig, *HomeConfig, error) {
 // Structurally identical to HomeConfig/ProjectConfig but semantically distinct.
 type CustomConfig struct {
 	Agent            *string   `yaml:"agent"`
+	AgentArgs        []string  `yaml:"agent_args"`
 	ImplementRetries *int      `yaml:"implement_retries"`
 	CommitRetries    *int      `yaml:"commit_retries"`
 	Iterations       *int      `yaml:"iterations"`
@@ -283,6 +287,7 @@ func Resolve(
 ) *ResolvedConfig {
 	resolved := &ResolvedConfig{
 		Agent:            "",
+		AgentArgs:        nil,
 		ImplementRetries: DefaultImplementRetries,
 		CommitRetries:    DefaultCommitRetries,
 		Iterations:       DefaultIterations,
@@ -291,6 +296,7 @@ func Resolve(
 
 	// Extract all config values
 	agentValues := extractAgentValues(projectConfig, homeConfig)
+	agentArgsValues := extractAgentArgsValues(projectConfig, homeConfig)
 	implementRetriesValues := extractImplementRetriesValues(projectConfig, homeConfig)
 	commitRetriesValues := extractCommitRetriesValues(projectConfig, homeConfig)
 	iterationsValues := extractIterationsValues(projectConfig, homeConfig)
@@ -299,6 +305,10 @@ func Resolve(
 	resolved.Agent = resolveField(
 		cliAgent, agentValues.project, agentValues.home, "",
 	)
+	// Resolve agent args with precedence: project > home > empty
+	// CLI args are handled separately in buildFinalConfig
+	// No hardcoded defaults - users must specify agent_args in their config
+	resolved.AgentArgs = resolveAgentArgs(agentArgsValues.project, agentArgsValues.home)
 	resolved.ImplementRetries = resolveField(
 		cliImplementRetries, implementRetriesValues.project, implementRetriesValues.home, DefaultImplementRetries,
 	)
@@ -310,65 +320,4 @@ func Resolve(
 	)
 
 	return resolved
-}
-
-type configValues[T any] struct {
-	project *T
-	home    *T
-}
-
-func extractAgentValues(
-	projectConfig *ProjectConfig,
-	homeConfig *HomeConfig,
-) configValues[string] {
-	var values configValues[string]
-	if projectConfig != nil {
-		values.project = projectConfig.Agent
-	}
-	if homeConfig != nil {
-		values.home = homeConfig.Agent
-	}
-	return values
-}
-
-func extractImplementRetriesValues(
-	projectConfig *ProjectConfig,
-	homeConfig *HomeConfig,
-) configValues[int] {
-	var values configValues[int]
-	if projectConfig != nil {
-		values.project = projectConfig.ImplementRetries
-	}
-	if homeConfig != nil {
-		values.home = homeConfig.ImplementRetries
-	}
-	return values
-}
-
-func extractCommitRetriesValues(
-	projectConfig *ProjectConfig,
-	homeConfig *HomeConfig,
-) configValues[int] {
-	var values configValues[int]
-	if projectConfig != nil {
-		values.project = projectConfig.CommitRetries
-	}
-	if homeConfig != nil {
-		values.home = homeConfig.CommitRetries
-	}
-	return values
-}
-
-func extractIterationsValues(
-	projectConfig *ProjectConfig,
-	homeConfig *HomeConfig,
-) configValues[int] {
-	var values configValues[int]
-	if projectConfig != nil {
-		values.project = projectConfig.Iterations
-	}
-	if homeConfig != nil {
-		values.home = homeConfig.Iterations
-	}
-	return values
 }
