@@ -1,7 +1,7 @@
 # Implementation Plan: Config-Driven Workflow System
 
-**Branch**: `001-config-driven-workflow` | **Date**: 2026-01-18 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-config-driven-workflow/spec.md`
+**Branch**: `002-config-driven-workflow` | **Date**: 2026-01-18 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/002-config-driven-workflow/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 

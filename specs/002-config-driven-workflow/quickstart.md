@@ -1,6 +1,6 @@
 # Quickstart: Config-Driven Workflow System
 
-**Feature**: 001-config-driven-workflow
+**Feature**: 002-config-driven-workflow
 **Date**: 2026-01-18
 **Audience**: Developers implementing the config-driven workflow feature
 

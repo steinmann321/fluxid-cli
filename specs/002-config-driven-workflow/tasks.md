@@ -1,7 +1,7 @@
 # Tasks: Config-Driven Workflow System
 
-**Feature**: 001-config-driven-workflow
-**Input**: Design documents from `/specs/001-config-driven-workflow/`
+**Feature**: 002-config-driven-workflow
+**Input**: Design documents from `/specs/002-config-driven-workflow/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
 **Tests**: MANDATORY - This feature follows TDD principles (Constitution Check requirement II)

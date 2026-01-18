@@ -1,5 +1,5 @@
 // Package contracts defines the Go type signatures for the config-driven workflow system
-// Feature: 001-config-driven-workflow
+// Feature: 002-config-driven-workflow
 // Purpose: Reference implementation for types to be added to internal/config/ and internal/types/
 package contracts
 

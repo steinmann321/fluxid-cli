@@ -1,6 +1,6 @@
 # Feature Specification: Config-Driven Workflow System
 
-**Feature Branch**: `001-config-driven-workflow`
+**Feature Branch**: `002-config-driven-workflow`
 **Created**: 2026-01-18
 **Status**: Draft
 **Input**: User description: "the current workflow needs to be reworked to a pluggable system. currently 3 steps are defined. but all 3 steps do the same, use the same config and are only different in relation to their individual settings. only exception is a mandatory 'review' step that does a final exit assessment and is the only valid exit gate out of the loop besides implement retry exhaustion. i need a new workflow system purely based on the config yaml: a config section configures a workflow of 1..n steps (name, command, iterations, order) and creates a sequential order of steps finished by a mandatory (configurable) review step finally. the workflow controller (fluxid) always checks the report status (PASS?FAIL?) as usual and the loop limit"
