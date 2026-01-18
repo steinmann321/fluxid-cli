@@ -1,0 +1,308 @@
+# YAML Schema: Workflow Configuration
+# Feature: 001-config-driven-workflow
+# Purpose: Define validation rules for workflow section in config.yaml
+
+schema_version: "1.0"
+description: |
+  This schema defines the structure and validation rules for the workflow
+  configuration section in fluxid config.yaml. The workflow section enables
+  users to define custom workflow steps with individual retry limits.
+
+# Root: workflow section
+workflow:
+  type: object
+  required: true
+  description: "Root workflow configuration section"
+
+  properties:
+    # Custom workflow steps (1..10)
+    steps:
+      type: array
+      required: true
+      min_length: 1
+      max_length: 10
+      description: "Ordered list of custom workflow steps"
+
+      items:
+        type: object
+        required: true
+
+        properties:
+          # Step name
+          name:
+            type: string
+            required: true
+            min_length: 1
+            pattern: "^\\S+.*\\S+$|^\\S$"  # Non-empty, not whitespace-only
+            description: "Unique step name (case-sensitive)"
+            examples:
+              - "design"
+              - "implement"
+              - "test"
+              - "lint"
+
+          # Command file path
+          command:
+            type: string
+            required: true
+            min_length: 1
+            description: |
+              File path to command file (absolute or relative to config.yaml).
+              File must exist and be readable at startup.
+            examples:
+              - "commands/implement.md"
+              - "/absolute/path/to/command.md"
+              - "../shared/commands/review.md"
+
+          # Retry limit
+          retries:
+            type: integer
+            required: false
+            default: 1
+            minimum: 0
+            description: |
+              Maximum retry attempts for this step.
+              0 = infinite retries until PASS
+              N > 0 = maximum N retry attempts
+            examples:
+              - 1   # Default: single attempt
+              - 3   # Three retries
+              - 0   # Infinite retries until PASS
+              - 100 # Very high retry limit
+
+    # Mandatory review step
+    review:
+      type: object
+      required: true
+      description: |
+        Mandatory review step configuration. Review step always executes
+        as the final step in each development iteration and acts as the
+        only exit gate (PASS exits workflow, FAIL continues iterations).
+
+      properties:
+        # Review command file path
+        command:
+          type: string
+          required: true
+          min_length: 1
+          description: |
+            File path to review command file (absolute or relative to config.yaml).
+            File must exist and be readable at startup.
+          examples:
+            - "commands/review.md"
+            - "/absolute/path/to/review.md"
+
+        # Review retry limit
+        retries:
+          type: integer
+          required: false
+          default: 1
+          minimum: 0
+          description: |
+            Maximum retry attempts for review step.
+            0 = infinite retries until PASS
+            N > 0 = maximum N retry attempts
+          examples:
+            - 1   # Default: single attempt
+            - 2   # Two retries
+            - 0   # Infinite retries until PASS
+
+# Validation Rules (beyond schema structure)
+validation_rules:
+  - rule_id: V001
+    description: "Workflow section must exist in config.yaml"
+    error: "workflow section is required in config.yaml"
+    reference: "FR-010"
+
+  - rule_id: V002
+    description: "Review section must exist in workflow config"
+    error: "workflow.review section is required"
+    reference: "FR-018"
+
+  - rule_id: V003
+    description: "Review command must be specified"
+    error: "workflow.review.command is required"
+    reference: "FR-017"
+
+  - rule_id: V004
+    description: "At least one custom workflow step required"
+    error: "at least one custom workflow step is required before review"
+    reference: "FR-011"
+
+  - rule_id: V005
+    description: "Step names must be non-empty and not whitespace-only"
+    error: "step name cannot be empty or whitespace-only"
+    reference: "FR-011"
+
+  - rule_id: V006
+    description: "Step names must be unique within workflow"
+    error: "duplicate step name: {name}"
+    reference: "FR-011, A-006"
+
+  - rule_id: V007
+    description: "Command file paths must exist"
+    error: "command file not found: {path}"
+    reference: "FR-015"
+
+  - rule_id: V008
+    description: "Command files must be readable"
+    error: "command file not readable: {path}"
+    reference: "FR-015"
+
+  - rule_id: V009
+    description: "Retries must be non-negative integers"
+    error: "retries cannot be negative"
+    reference: "FR-023"
+
+  - rule_id: V010
+    description: "Max iterations must be non-negative"
+    error: "max_iterations cannot be negative"
+    reference: "FR-019"
+
+# Example: Minimal valid workflow
+examples:
+  minimal:
+    description: "Minimal workflow with 1 custom step + review"
+    config:
+      workflow:
+        steps:
+          - name: implement
+            command: commands/implement.md
+        review:
+          command: commands/review.md
+
+  standard:
+    description: "Standard workflow matching old 3-step behavior"
+    config:
+      workflow:
+        steps:
+          - name: implement
+            command: commands/implement.md
+            retries: 3
+          - name: commit
+            command: commands/commit.md
+            retries: 100
+        review:
+          command: commands/review.md
+          retries: 1
+
+  extended:
+    description: "Extended workflow with 5 custom steps"
+    config:
+      workflow:
+        steps:
+          - name: design
+            command: commands/design.md
+            retries: 2
+          - name: implement
+            command: commands/implement.md
+            retries: 3
+          - name: test
+            command: commands/test.md
+            retries: 1
+          - name: lint
+            command: commands/lint.md
+            retries: 1
+          - name: commit
+            command: commands/commit.md
+            retries: 100
+        review:
+          command: commands/review.md
+          retries: 1
+
+  infinite_retries:
+    description: "Workflow step with infinite retries (retries=0)"
+    config:
+      workflow:
+        steps:
+          - name: critical_step
+            command: commands/critical.md
+            retries: 0  # Infinite retries until PASS
+        review:
+          command: commands/review.md
+          retries: 1
+
+# Invalid Examples (should fail validation)
+invalid_examples:
+  no_workflow_section:
+    description: "Missing workflow section (V001)"
+    config:
+      agent: claude
+      iterations: 20
+    expected_error: "workflow section is required in config.yaml"
+
+  no_review_section:
+    description: "Missing review section (V002)"
+    config:
+      workflow:
+        steps:
+          - name: implement
+            command: commands/implement.md
+    expected_error: "workflow.review section is required"
+
+  no_review_command:
+    description: "Missing review command (V003)"
+    config:
+      workflow:
+        steps:
+          - name: implement
+            command: commands/implement.md
+        review:
+          retries: 1
+    expected_error: "workflow.review.command is required"
+
+  zero_custom_steps:
+    description: "No custom steps before review (V004)"
+    config:
+      workflow:
+        steps: []
+        review:
+          command: commands/review.md
+    expected_error: "at least one custom workflow step is required before review"
+
+  empty_step_name:
+    description: "Empty step name (V005)"
+    config:
+      workflow:
+        steps:
+          - name: ""
+            command: commands/implement.md
+        review:
+          command: commands/review.md
+    expected_error: "step name cannot be empty or whitespace-only"
+
+  whitespace_only_name:
+    description: "Whitespace-only step name (V005)"
+    config:
+      workflow:
+        steps:
+          - name: "   "
+            command: commands/implement.md
+        review:
+          command: commands/review.md
+    expected_error: "step name cannot be empty or whitespace-only"
+
+  duplicate_step_names:
+    description: "Duplicate step names (V006)"
+    config:
+      workflow:
+        steps:
+          - name: implement
+            command: commands/implement.md
+          - name: implement
+            command: commands/other.md
+        review:
+          command: commands/review.md
+    expected_error: "duplicate step name: implement"
+
+  negative_retries:
+    description: "Negative retries value (V009)"
+    config:
+      workflow:
+        steps:
+          - name: implement
+            command: commands/implement.md
+            retries: -1
+        review:
+          command: commands/review.md
+    expected_error: "retries cannot be negative"
