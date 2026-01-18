@@ -212,12 +212,6 @@
 - **Update Existing Tests (Phase 7)**: Depends on User Stories 1-2 completion
 - **Polish (Phase 8)**: Depends on all previous phases
 
-### User Story Dependencies
-
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P1)**: Depends on User Story 1 completion (requires step execution infrastructure)
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - Independent of US1/US2
-
 ### Within Each User Story
 
 - Tests MUST be written and FAIL before implementation (TDD principle)

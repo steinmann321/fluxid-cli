@@ -19,10 +19,10 @@
 - Q: Should the system provide backward compatibility by auto-generating a default workflow when no workflow section is present in config.yaml, or require users to explicitly define workflow steps? → A: No backward compatibility - workflow section is required; users must explicitly configure workflow steps including the mandatory review step
 - Q: Should each workflow step have independent retry logic within its own execution block, or should there be a single generic step execution function that handles retries for any workflow step? → A: Single generic step execution function that handles retries for any workflow step (DRY principle)
 - Q: How should the mandatory review step be configured in the workflow YAML structure? → A: Review step is mandatory in config.yaml under workflow.review section; has default values for command and retries if not specified; fully customizable by users
-- Q: When max_iterations (development cycles) is set to 0 or a negative number in config.yaml, how should the system respond? → A: 0 means infinite loops allowed
+- Q: When max_iterations (development iterations) is set to 0 or a negative number in config.yaml, how should the system respond? → A: 0 means infinite loops allowed
 - Q: When a workflow step name is empty or contains only whitespace, how should the system respond? → A: Not allowed; fail at startup
-- Q: When a workflow step references a command file that exists but has syntax errors (e.g., malformed YAML/Markdown metadata), how should the system respond? → A: Fail at startup validation with syntax error details before any workflow execution begins
-- Q: FR-015 now requires syntax validation of command files at startup. What specific syntax elements should be validated before workflow execution? → A: No check its a text file
+- Q: When a workflow step references a command file that exists but has syntax errors (e.g., malformed YAML/Markdown metadata), how should the system respond? → A: No syntax validation of command file content is performed
+- Q: FR-015 now requires path validation of command files at startup. What specific checks should be performed before workflow execution? → A: No syntax validation required; only verify file exists and is readable as plain text via os.ReadFile
 - Q: How should the system handle retry count values that are unreasonably large (e.g., 1000000)? → A: Accept any positive integer value without upper limits; trust users to configure appropriately
 - Q: What should the system log/output during workflow step execution? → A: Detailed logging: log step transitions, retry attempts, report status checks, command file paths being executed, and iteration cycle boundaries
 - Q: Given that steps execute in array order, how should the system handle circular dependencies or infinite loops in step configurations? → A: Not applicable - steps execute in sequential array order with no dependency specification, making circular dependencies structurally impossible
@@ -89,6 +89,7 @@ A developer wants to configure workflow steps with minimal required fields (name
 
 ### Edge Cases
 
+- **Malformed config.yaml (invalid YAML syntax)**: System fails at startup with YAML parsing error showing line/column of syntax error
 - **Missing workflow section in config.yaml**: System fails at startup with clear error message instructing user to configure workflow steps
 - **Missing workflow.review section**: System fails at startup with clear error message stating review section is mandatory
 - **Missing review command path in workflow.review section**: System fails at startup with clear error message stating review command is mandatory
@@ -111,28 +112,28 @@ A developer wants to configure workflow steps with minimal required fields (name
 ### Functional Requirements
 
 - **FR-001**: System MUST support a `workflow` section in config.yaml that defines an ordered list of workflow steps; the workflow section uses exact field names: `steps` (array) and `review` (object)
-- **FR-002**: System MUST allow each workflow step to specify exact field names: `name` (required, string), `command` (required, string - file path), `retries` (optional, integer, default: 1); when retries is set to 0, the step retries infinitely until PASS status is achieved (consistent with max_iterations=0 behavior)
+- **FR-002**: System MUST allow each workflow step to specify exact field names: `name` (required, string), `command` (required, string - file path to command file), `retries` (optional, integer, default: 1); **WARNING: Non-intuitive behavior**: when retries is explicitly set to 0, the step retries infinitely until PASS status is achieved (consistent with max_iterations=0 behavior for infinite iterations); this differs from typical expectations where 0 would mean "no retries"
 - **FR-003**: System MUST execute workflow steps in the order they are defined in the configuration array
 - **FR-004**: System MUST append a mandatory review step as the final step in every workflow, regardless of custom step configuration
 - **FR-005**: System MUST check report status (PASS/FAIL) after each step execution and respect retry limits
 - **FR-006**: System MUST continue to the next step when a step exhausts all retries with FAIL status (not abort workflow); this allows all steps in an iteration to execute and collect diagnostics regardless of individual step failures; this only applies to steps with retries > 0 (steps with retries=0 retry infinitely until PASS)
 - **FR-007**: System MUST exit the workflow successfully when the review step returns PASS status
 - **FR-008**: System MUST start a new development iteration (from first step) when the review step returns FAIL status and iterations remain
-- **FR-009**: System MUST exit the workflow when max development iterations (review cycles) are exhausted; if max_iterations is set to 0, system MUST allow infinite iterations (workflow continues until review returns PASS)
+- **FR-009**: System MUST exit the workflow when max development iterations (development iterations) are exhausted; if max_iterations is set to 0, system MUST allow infinite iterations (workflow continues until review returns PASS)
 - **FR-019**: System MUST treat negative max_iterations values as errors and fail at startup with clear error message
 - **FR-023**: System MUST treat negative retries values as errors and fail at startup with clear error message; only non-negative integers (0 or positive) are valid retry values
-- **FR-010**: System MUST require a workflow section in config.yaml; if the workflow section is missing, system MUST fail startup with clear error message instructing user to configure workflow steps
+- **FR-010**: System MUST require a workflow section in config.yaml; if missing, system MUST fail startup with clear error message instructing user to configure workflow steps
 - **FR-011**: System MUST validate workflow configuration at startup (before executing any steps) and report clear errors for invalid configurations; validation MUST include checking for duplicate step names and MUST fail immediately with error listing all duplicates if found; validation MUST also ensure at least one custom workflow step exists before the review step and MUST fail with error if zero custom steps are configured; validation MUST also check that all step names are non-empty and contain at least one non-whitespace character
 - **FR-012**: System MUST replace the hardcoded 3-step workflow (implement, commit, review) with the config-driven workflow engine; existing command interface (e.g., `fluxid run`) remains unchanged while internal implementation switches to config-driven approach
 - **FR-013**: System MUST allow workflow steps to have unique retry limits independent of other steps; retry count can be any non-negative integer value without upper bounds; retries=0 enables infinite retry attempts until PASS, while positive values limit retry attempts to that number
 - **FR-014**: System MUST support 1 to N custom workflow steps (where N is at least 10)
-- **FR-015**: System MUST validate that all command file paths in workflow steps exist and are readable text files before workflow execution; system MUST support both absolute and relative paths, resolving relative paths from the config.yaml directory location; if any path is missing, unreadable, or invalid, system MUST fail startup immediately with a clear error message listing all invalid paths and prevent workflow execution (NOTE: This removes the current fallback to built-in prompts for missing command files); system MUST NOT perform syntax validation of command file content - only verify files exist and are readable as text
+- **FR-015**: System MUST validate that all command file paths in workflow steps exist and are accessible before workflow execution; system MUST support both absolute and relative paths, resolving relative paths from the config.yaml directory location; validation MUST check: (1) file exists, (2) file is readable via os.ReadFile (permission check); system MUST NOT validate file content, encoding, or syntax; if any path validation fails, system MUST fail startup immediately with a clear error message listing all invalid paths and prevent workflow execution (NOTE: This removes the current fallback to built-in prompts for missing command files)
 - **FR-016**: System MUST use the same report status checking mechanism (PASS/FAIL) for all workflow steps, whether custom or review
 - **FR-017**: System MUST require a `workflow.review` section in config.yaml with a mandatory command path field; if command path is not specified or not readable, system MUST fail startup with clear error message; retries field is optional and defaults to 1 if not specified
 - **FR-018**: System MUST validate that the `workflow.review` section exists in config.yaml; if missing, system MUST fail startup with clear error message
 - **FR-020**: System MUST provide detailed logging during workflow execution including: step transitions (when each step starts/ends), retry attempts (current attempt number and remaining retries), report status checks (PASS/FAIL results), command file paths being executed, and iteration cycle boundaries (when new development iterations begin); logging MUST output to stdout in human-readable plain text format by default
 - **FR-021**: System MUST support a `--out=json` flag that changes logging output format from human-readable plain text to structured JSON format (written to stdout); this enables programmatic parsing of workflow execution logs
-- **FR-022**: System MUST treat agent invocation failures (command execution errors, agent process crashes, missing report.yaml) as FAIL status and apply the step's retry logic; catastrophic execution failures MUST NOT abort the workflow but instead follow the same retry-then-continue behavior as report-based FAIL status
+- **FR-022**: System MUST treat agent invocation failures as FAIL status and apply the step's retry logic; specific failure scenarios include: (1) command exits with non-zero exit code, (2) report.yaml file missing or unreadable after agent completion, (3) report.yaml contains invalid/malformed YAML, (4) agent process terminated by signal (SIGSEGV, SIGKILL, etc.); catastrophic execution failures MUST NOT abort the workflow but instead follow the same retry-then-continue behavior as report-based FAIL status
 
 ### Key Entities *(include if feature involves data)*
 
@@ -162,6 +163,28 @@ A developer wants to configure workflow steps with minimal required fields (name
         retries: 1
     ```
 
+### Non-Functional Requirements
+
+**Performance:**
+
+- **NFR-001**: Startup validation (workflow configuration parsing and command path verification) MUST complete within 100ms for typical configurations (1-10 workflow steps)
+- **NFR-002**: Workflow step execution has NO timeout enforcement - agents may run indefinitely until completion or user interruption
+- **NFR-003**: Configuration reload is NOT supported during workflow execution - config.yaml changes require workflow restart
+
+**Logging & Observability:**
+
+- **NFR-004**: Human-readable log output MUST be concise and scannable - one line per state transition (step start/end, iteration boundaries), multi-line only for errors
+- **NFR-005**: JSON log output (--out=json) MUST use structured format with fields: timestamp, level, event_type, step_name, iteration, retry_attempt, status, message; example:
+  ```json
+  {"timestamp":"2026-01-18T10:30:00Z","level":"info","event_type":"step_start","step_name":"implement","iteration":1,"retry_attempt":1}
+  ```
+- **NFR-006**: Log output to stdout MUST be unbuffered to enable real-time monitoring via pipes and log aggregators
+
+**Error Messages:**
+
+- **NFR-007**: Startup validation errors MUST follow format: "[validation_rule_id] [what_failed]: [specific_error] (location: [file/field])"
+- **NFR-008**: Error messages MUST include actionable remediation guidance when possible (e.g., "workflow.steps array is empty (expected: at least 1 custom step) - add workflow steps to config.yaml")
+
 ## Dependencies and Assumptions
 
 ### Dependencies
@@ -179,7 +202,7 @@ A developer wants to configure workflow steps with minimal required fields (name
 - **A-004**: Maximum workflow step count of 10 is sufficient for anticipated use cases
 - **A-005**: Command file paths support both absolute and relative paths; relative paths are resolved from the config.yaml directory location, making workflow configurations portable across environments
 - **A-006**: Workflow step names are case-sensitive and must be unique within a workflow
-- **A-007**: The existing "iterations" config value maps to max_iterations (development cycles)
+- **A-007**: The existing "iterations" config value maps to max_iterations (development iterations)
 - **A-008**: Single report.yaml file is used for all steps; each step execution overwrites the previous report (consistent with current implementation)
 - **A-009**: All workflow steps (custom and review) use a unified generic step execution function with retry logic (DRY principle); this replaces the separate `runImplementPhase` and `runCommitPhaseWithRetry` functions
 - **A-010**: Workflow step execution has no timeout enforcement; agents can run indefinitely until completion or user interruption (Ctrl+C); this accommodates complex coding tasks that may require extended execution time
