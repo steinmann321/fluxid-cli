@@ -49,6 +49,8 @@ This is a reimplementation project: the final system must be a pure Go implement
 ## Active Technologies
 - Go 1.25 (001-report-history-refactor)
 - File-based YAML storage in session-specific directories (report.yaml, history.yaml) (001-report-history-refactor)
+- Go 1.25 + gopkg.in/yaml.v3 (YAML parsing), github.com/google/uuid (Session ID generation) (002-config-driven-workflow)
+- File-based YAML storage (report.yaml, history.yaml) in session-specific directories (002-config-driven-workflow)
 
 ## Recent Changes
 - 001-report-history-refactor: Added Go 1.25
