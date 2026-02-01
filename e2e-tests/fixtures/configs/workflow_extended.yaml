@@ -3,14 +3,14 @@ iterations: 2
 workflow:
   steps:
     - name: design
-      command: .fluxid/commands/fluxid.implement.md
+      command: commands/fluxid.implement.md
       retries: 2
     - name: implement
-      command: .fluxid/commands/fluxid.implement.md
+      command: commands/fluxid.implement.md
       retries: 3
     - name: test
-      command: .fluxid/commands/fluxid.implement-e2e.md
+      command: commands/fluxid.implement-e2e.md
       retries: 1
   review:
-    command: .fluxid/commands/fluxid.review.md
+    command: commands/fluxid.review.md
     retries: 1

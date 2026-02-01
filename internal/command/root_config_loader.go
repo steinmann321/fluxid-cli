@@ -59,7 +59,8 @@ func loadAndResolveConfig() (types.Config, int) {
 	)
 
 	// Resolve and validate command files if configured
-	commandFiles, err := config.ResolveCommandFiles(projectConfig, homeConfig)
+	// Skip if workflow is configured (workflow.steps define commands instead)
+	commandFiles, err := resolveCommandFilesIfNeeded(projectConfig, homeConfig)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error resolving command files: %v\n", err)
 		return emptyConfig, 1
@@ -358,4 +359,27 @@ func buildWorkflowIfConfigured(
 	}
 
 	return workflow, nil
+}
+
+// resolveCommandFilesIfNeeded resolves command files only if workflow is not configured.
+func resolveCommandFilesIfNeeded(
+	projectConfig *config.ProjectConfig,
+	homeConfig *config.HomeConfig,
+) (*config.ResolvedCommandFiles, error) {
+	hasWorkflow := isWorkflowConfigured(projectConfig, homeConfig)
+	if hasWorkflow {
+		return nil, nil //nolint:nilnil // nil command files valid when workflow configured
+	}
+
+	commandFiles, err := config.ResolveCommandFiles(projectConfig, homeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve command files: %w", err)
+	}
+	return commandFiles, nil
+}
+
+// isWorkflowConfigured checks if workflow is configured in project or home config.
+func isWorkflowConfigured(projectConfig *config.ProjectConfig, homeConfig *config.HomeConfig) bool {
+	return (projectConfig != nil && projectConfig.Workflow != nil) ||
+		(homeConfig != nil && homeConfig.Workflow != nil)
 }
