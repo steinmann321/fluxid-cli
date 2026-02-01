@@ -7,7 +7,7 @@
 
 ## Summary
 
-Replace the hardcoded 3-step workflow (implement, commit, review) with a config-driven workflow system that allows users to define 1..N custom workflow steps in config.yaml. Each step has a name, command file path, and retry limit. The workflow always ends with a mandatory review step that acts as the only exit gate (PASS exits successfully, FAIL triggers the next development iteration until max iterations exhausted). This enables workflow customization without code changes while maintaining backward-compatible behavior for report status checking and development iteration loops.
+**BREAKING CHANGE**: Replace the hardcoded 3-step workflow (implement, commit, review) with a config-driven workflow system that allows users to define 1..N custom workflow steps in config.yaml. No backward compatibility - users must explicitly configure workflow steps in config.yaml. Each step has a name, command file path, and retry limit. The workflow always ends with a mandatory review step that acts as the only exit gate (PASS exits successfully, FAIL triggers the next development iteration until max iterations exhausted). This enables workflow customization without code changes while maintaining report status checking and development iteration loop behavior.
 
 ## Technical Context
 

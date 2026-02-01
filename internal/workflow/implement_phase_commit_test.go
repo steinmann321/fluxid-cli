@@ -30,6 +30,7 @@ func TestRunImplementPhase_WithCommit(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -67,6 +68,7 @@ func TestRunImplementPhase_SuccessWithCommit(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Write report in background to simulate agent behavior
@@ -122,6 +124,7 @@ func TestRunCommitPhase_Failure(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runCommitPhase(cfg)

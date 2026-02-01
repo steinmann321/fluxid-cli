@@ -20,14 +20,14 @@
 
 **Purpose**: Project initialization and test fixture preparation
 
-- [ ] T001 Create test fixture directory at e2e-tests/fixtures/configs/
-- [ ] T002 [P] Create workflow_minimal.yaml fixture in e2e-tests/fixtures/configs/
-- [ ] T003 [P] Create workflow_standard.yaml fixture in e2e-tests/fixtures/configs/
-- [ ] T004 [P] Create workflow_extended.yaml fixture in e2e-tests/fixtures/configs/
-- [ ] T005 [P] Create workflow_no_workflow_section.yaml fixture in e2e-tests/fixtures/configs/
-- [ ] T006 [P] Create workflow_no_review.yaml fixture in e2e-tests/fixtures/configs/
-- [ ] T007 [P] Create workflow_duplicate_names.yaml fixture in e2e-tests/fixtures/configs/
-- [ ] T008 [P] Create workflow_negative_retries.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T001 Create test fixture directory at e2e-tests/fixtures/configs/
+- [X] T002 [P] Create workflow_minimal.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T003 [P] Create workflow_standard.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T004 [P] Create workflow_extended.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T005 [P] Create workflow_no_workflow_section.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T006 [P] Create workflow_no_review.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T007 [P] Create workflow_duplicate_names.yaml fixture in e2e-tests/fixtures/configs/
+- [X] T008 [P] Create workflow_negative_retries.yaml fixture in e2e-tests/fixtures/configs/
 
 ---
 
@@ -37,15 +37,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T009 Add WorkflowConfig struct to internal/config/config.go
-- [ ] T010 Add WorkflowStepConfig struct to internal/config/config.go
-- [ ] T011 Add ReviewStepConfig struct to internal/config/config.go
-- [ ] T012 Add Workflow field to ProjectConfig struct in internal/config/config.go
-- [ ] T013 Add Workflow field to HomeConfig struct in internal/config/config.go
-- [ ] T014 Add WorkflowStep struct to internal/types/types.go
-- [ ] T015 Add Workflow struct to internal/types/types.go
-- [ ] T016 Add Workflow field to Config struct in internal/types/types.go
-- [ ] T017 Add OutputFormat field to Config struct in internal/types/types.go
+- [X] T009 Add WorkflowConfig struct to internal/config/config.go
+- [X] T010 Add WorkflowStepConfig struct to internal/config/config.go
+- [X] T011 Add ReviewStepConfig struct to internal/config/config.go
+- [X] T012 Add Workflow field to ProjectConfig struct in internal/config/config.go
+- [X] T013 Add Workflow field to HomeConfig struct in internal/config/config.go
+- [X] T014 Add WorkflowStep struct to internal/types/workflow.go (created new file)
+- [X] T015 Add Workflow struct to internal/types/workflow.go (created new file)
+- [X] T016 Add Workflow field to Config struct in internal/types/config.go
+- [X] T017 Add OutputFormat field to Config struct in internal/types/config.go (already existed)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -80,8 +80,8 @@
 - [ ] T033 [US1] Implement LogIterationComplete method in internal/workflow/workflow_logger.go
 - [ ] T034 [US1] Implement LogWorkflowComplete method in internal/workflow/workflow_logger.go
 - [ ] T035 [US1] Refactor Run function in internal/workflow/workflow.go to use config-driven loop
-- [ ] T036 [US1] Remove deprecated runImplementPhase function from internal/workflow/workflow.go
-- [ ] T037 [US1] Remove deprecated runCommitPhaseWithRetry function from internal/workflow/workflow.go
+- [ ] T036 [US1] Remove old runImplementPhase function from internal/workflow/workflow.go (replaced by ExecuteStepWithRetry)
+- [ ] T037 [US1] Remove old runCommitPhaseWithRetry function from internal/workflow/workflow.go (replaced by ExecuteStepWithRetry)
 - [ ] T038 [US1] Run E2E tests for User Story 1 and verify they PASS
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can configure custom workflow steps

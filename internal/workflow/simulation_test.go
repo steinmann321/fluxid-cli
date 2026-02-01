@@ -30,6 +30,7 @@ func TestRunSimulation(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode := RunSimulation(cfg)
@@ -75,6 +76,7 @@ func TestGetCommandFilePath_NoCommandFiles(t *testing.T) {
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	result := getCommandFilePath(cfg, "implement")
@@ -100,6 +102,7 @@ func TestGetCommandFilePath_WithCommandFiles(t *testing.T) {
 		},
 		OutputFormat: output.FormatText,
 		TaskFilePath: "",
+		Workflow:     nil,
 	}
 
 	tests := []struct {
@@ -139,6 +142,7 @@ func TestGetCommandFilePath_PartialCommandFiles(t *testing.T) {
 		},
 		OutputFormat: output.FormatText,
 		TaskFilePath: "",
+		Workflow:     nil,
 	}
 
 	// Test that we fall back to built-in prompt for missing command files

@@ -27,6 +27,7 @@ func TestRunImplementPhase_MaxRetries(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runImplementPhase(cfg)
@@ -59,6 +60,7 @@ func TestRunImplementPhase_NonZeroExitCode(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Pre-write PASS commit report so commit phase succeeds
@@ -95,6 +97,7 @@ func TestRunImplementPhase_FailRetryThenPass(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Pre-write PASS report before workflow starts
@@ -211,6 +214,7 @@ func TestExecuteImplementPhase_Success(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := executeImplementPhase(cfg)
@@ -241,6 +245,7 @@ func TestExecuteImplementPhase_Failure(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := executeImplementPhase(cfg)
@@ -283,6 +288,7 @@ func TestExecuteCommit_Success(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Pre-write PASS commit report

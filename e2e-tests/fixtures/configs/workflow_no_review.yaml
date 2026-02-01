@@ -1,0 +1,6 @@
+agent: claude
+iterations: 2
+workflow:
+  steps:
+    - name: implement
+      command: .fluxid/commands/fluxid.implement.md

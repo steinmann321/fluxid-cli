@@ -1,6 +1,4 @@
 // Package types contains shared types used across fluxid packages.
-//
-//nolint:revive // "types" is a standard Go package name for shared type definitions.
 package types
 
 import (
@@ -21,4 +19,5 @@ type Config struct {
 	CommandFiles        *config.ResolvedCommandFiles
 	OutputFormat        output.Format
 	TaskFilePath        string
+	Workflow            *Workflow // Config-driven workflow (replaces hardcoded 3-step loop)
 }

@@ -39,6 +39,7 @@ func TestRunImplementPhase_WithAbort(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runImplementPhase(cfg)

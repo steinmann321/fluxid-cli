@@ -1,0 +1,13 @@
+agent: claude
+iterations: 2
+workflow:
+  steps:
+    - name: implement
+      command: .fluxid/commands/fluxid.implement.md
+      retries: 3
+    - name: commit
+      command: .fluxid/commands/fluxid.commit.md
+      retries: 5
+  review:
+    command: .fluxid/commands/fluxid.review.md
+    retries: 1

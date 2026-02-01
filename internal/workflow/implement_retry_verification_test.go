@@ -28,6 +28,7 @@ func TestRunImplementPhase_RetriesExactlyMaxTimes(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Pre-write PASS commit report so commit phase succeeds
@@ -59,6 +60,7 @@ func TestRunImplementPhase_100RetriesActuallyRuns(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Pre-write PASS commit report
@@ -104,6 +106,7 @@ func TestRunImplementPhase_RetriesWithDifferentMaxValues(t *testing.T) {
 				AgentArgs:           []string{},
 				OutputFormat:        output.FormatText,
 				TaskFilePath:        "",
+				Workflow:            nil,
 			}
 
 			// Pre-write PASS commit report
@@ -136,6 +139,7 @@ func TestRunImplementPhase_SucceedsOnRetry(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Pre-write PASS implement report and commit report

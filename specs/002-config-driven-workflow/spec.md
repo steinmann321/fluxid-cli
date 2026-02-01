@@ -122,7 +122,7 @@ A developer wants to configure workflow steps with minimal required fields (name
 - **FR-009**: System MUST exit the workflow when max development iterations (development iterations) are exhausted; if max_iterations is set to 0, system MUST allow infinite iterations (workflow continues until review returns PASS)
 - **FR-019**: System MUST treat negative max_iterations values as errors and fail at startup with clear error message
 - **FR-023**: System MUST treat negative retries values as errors and fail at startup with clear error message; only non-negative integers (0 or positive) are valid retry values
-- **FR-010**: System MUST require a workflow section in config.yaml; if missing, system MUST fail startup with clear error message instructing user to configure workflow steps
+- **FR-010**: System MUST require a workflow section in config.yaml; if missing, system MUST fail startup with clear error message instructing user to configure workflow steps; **BREAKING CHANGE: No fallback to hardcoded 3-step workflow** - this is a hard requirement for all configurations
 - **FR-011**: System MUST validate workflow configuration at startup (before executing any steps) and report clear errors for invalid configurations; validation MUST include checking for duplicate step names and MUST fail immediately with error listing all duplicates if found; validation MUST also ensure at least one custom workflow step exists before the review step and MUST fail with error if zero custom steps are configured; validation MUST also check that all step names are non-empty and contain at least one non-whitespace character
 - **FR-012**: System MUST replace the hardcoded 3-step workflow (implement, commit, review) with the config-driven workflow engine; existing command interface (e.g., `fluxid run`) remains unchanged while internal implementation switches to config-driven approach
 - **FR-013**: System MUST allow workflow steps to have unique retry limits independent of other steps; retry count can be any non-negative integer value without upper bounds; retries=0 enables infinite retry attempts until PASS, while positive values limit retry attempts to that number
@@ -138,7 +138,7 @@ A developer wants to configure workflow steps with minimal required fields (name
 ### Key Entities *(include if feature involves data)*
 
 - **WorkflowStep**: Represents a single step in the workflow execution sequence
-  - Attributes: name (string), command_file_path (string), max_retries (integer), order (implicit from array position)
+  - Attributes: name (string), command_file_path (string), retries (integer), order (implicit from array position)
   - Relationships: belongs to a Workflow, executed in sequence with other WorkflowSteps
 
 - **Workflow**: Represents the complete workflow configuration
@@ -206,6 +206,45 @@ A developer wants to configure workflow steps with minimal required fields (name
 - **A-008**: Single report.yaml file is used for all steps; each step execution overwrites the previous report (consistent with current implementation)
 - **A-009**: All workflow steps (custom and review) use a unified generic step execution function with retry logic (DRY principle); this replaces the separate `runImplementPhase` and `runCommitPhaseWithRetry` functions
 - **A-010**: Workflow step execution has no timeout enforcement; agents can run indefinitely until completion or user interruption (Ctrl+C); this accommodates complex coding tasks that may require extended execution time
+
+## Breaking Changes *(mandatory)*
+
+This feature introduces breaking changes that require user migration. No backward compatibility is provided.
+
+### Removed Functionality
+
+- **Hardcoded 3-step workflow**: The implicit implement → commit → review sequence is removed
+- **Built-in command fallbacks**: System no longer falls back to built-in prompts when command files are missing
+
+### Migration Required
+
+**Before (hardcoded workflow):**
+```yaml
+# config.yaml - workflow was implicit
+iterations: 20
+commit_iterations: 100
+```
+
+**After (config-driven workflow):**
+```yaml
+# config.yaml - workflow must be explicit
+iterations: 20
+workflow:
+  steps:
+    - name: "implement"
+      command: "commands/implement.md"
+      retries: 3
+    - name: "commit"
+      command: "commands/commit.md"
+      retries: 100
+  review:
+    command: "commands/review.md"
+    retries: 1
+```
+
+**Migration Impact**: Users MUST add workflow section to config.yaml or system will fail at startup with clear error message (FR-010).
+
+**Justification**: Early beta allows breaking changes. Clean replacement eliminates technical debt and enables workflow customization without maintaining legacy code paths.
 
 ## Success Criteria *(mandatory)*
 

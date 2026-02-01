@@ -29,6 +29,7 @@ func TestExecuteImplementPhase_AgentExitCodeError(t *testing.T) {
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := executeImplementPhase(cfg)

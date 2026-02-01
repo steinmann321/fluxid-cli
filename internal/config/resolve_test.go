@@ -31,6 +31,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 		ImplementRetries: intPtr(5),
 		CommitRetries:    nil,
 		Commands:         nil,
+		Workflow:         nil,
 	}
 
 	project := &ProjectConfig{
@@ -40,6 +41,7 @@ func TestResolveWithMixedSources(t *testing.T) {
 		ImplementRetries: nil,
 		CommitRetries:    nil,
 		Commands:         nil,
+		Workflow:         nil,
 	}
 
 	cliIterations := 30
@@ -91,6 +93,7 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 		ImplementRetries: intPtr(5),
 		CommitRetries:    nil,
 		Commands:         nil,
+		Workflow:         nil,
 	}
 
 	project := &ProjectConfig{
@@ -100,6 +103,7 @@ func TestResolveProjectOverridesHome(t *testing.T) {
 		ImplementRetries: intPtr(7),
 		CommitRetries:    nil,
 		Commands:         nil,
+		Workflow:         nil,
 	}
 
 	resolved := Resolve(project, home, nil, nil, nil, nil)

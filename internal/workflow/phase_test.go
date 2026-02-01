@@ -23,6 +23,7 @@ func TestRunCommitPhase(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -52,6 +53,7 @@ func TestRunReviewPhase(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
@@ -86,6 +88,7 @@ func TestRunPhase_ExitCodeExtraction(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runPhase(cfg, "test-phase", "test prompt")
@@ -115,6 +118,7 @@ func TestRunPhase_Success(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runPhase(cfg, "test-phase", "test prompt")
@@ -140,6 +144,7 @@ func TestRunCommitPhase_CommitDisabled(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runCommitPhase(cfg)
@@ -165,6 +170,7 @@ func TestRunReviewPhase_NonZeroExitCode(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	status, exitCode, err := runReviewPhase(cfg)
@@ -196,6 +202,7 @@ func TestRunCommitPhase_Success(t *testing.T) {
 		AgentArgs:           []string{},
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	exitCode, err := runCommitPhase(cfg)

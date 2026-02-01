@@ -20,25 +20,46 @@ type Commands struct {
 	Commit    *string `yaml:"commit"`
 }
 
+// WorkflowStepConfig represents a single workflow step in config.yaml.
+type WorkflowStepConfig struct {
+	Name    string `yaml:"name"`
+	Command string `yaml:"command"`
+	Retries int    `yaml:"retries,omitempty"` // Default: 1
+}
+
+// ReviewStepConfig represents the mandatory review step in config.yaml.
+type ReviewStepConfig struct {
+	Command string `yaml:"command"`
+	Retries int    `yaml:"retries,omitempty"` // Default: 1
+}
+
+// WorkflowConfig represents the workflow section in config.yaml.
+type WorkflowConfig struct {
+	Steps  []WorkflowStepConfig `yaml:"steps"`
+	Review ReviewStepConfig     `yaml:"review"`
+}
+
 // HomeConfig represents the user's ~/.fluxid/config.yaml configuration.
 type HomeConfig struct {
-	Agent            *string   `yaml:"agent"`
-	AgentArgs        []string  `yaml:"agent_args"`
-	ImplementRetries *int      `yaml:"implement_retries"`
-	CommitRetries    *int      `yaml:"commit_retries"`
-	Iterations       *int      `yaml:"iterations"`
-	Commands         *Commands `yaml:"commands"`
+	Agent            *string         `yaml:"agent"`
+	AgentArgs        []string        `yaml:"agent_args"`
+	ImplementRetries *int            `yaml:"implement_retries"`
+	CommitRetries    *int            `yaml:"commit_retries"`
+	Iterations       *int            `yaml:"iterations"`
+	Commands         *Commands       `yaml:"commands"`
+	Workflow         *WorkflowConfig `yaml:"workflow"`
 }
 
 // ProjectConfig represents the project's ./.fluxid/config.yaml configuration.
 // Structurally identical to HomeConfig but semantically distinct.
 type ProjectConfig struct {
-	Agent            *string   `yaml:"agent"`
-	AgentArgs        []string  `yaml:"agent_args"`
-	ImplementRetries *int      `yaml:"implement_retries"`
-	CommitRetries    *int      `yaml:"commit_retries"`
-	Iterations       *int      `yaml:"iterations"`
-	Commands         *Commands `yaml:"commands"`
+	Agent            *string         `yaml:"agent"`
+	AgentArgs        []string        `yaml:"agent_args"`
+	ImplementRetries *int            `yaml:"implement_retries"`
+	CommitRetries    *int            `yaml:"commit_retries"`
+	Iterations       *int            `yaml:"iterations"`
+	Commands         *Commands       `yaml:"commands"`
+	Workflow         *WorkflowConfig `yaml:"workflow"`
 }
 
 // ResolvedCommandFiles contains the resolved absolute paths to command files.
@@ -185,12 +206,13 @@ func LoadDefaultConfig() (*ProjectConfig, *HomeConfig, error) {
 // CustomConfig represents a custom config file loaded via --config flag.
 // Structurally identical to HomeConfig/ProjectConfig but semantically distinct.
 type CustomConfig struct {
-	Agent            *string   `yaml:"agent"`
-	AgentArgs        []string  `yaml:"agent_args"`
-	ImplementRetries *int      `yaml:"implement_retries"`
-	CommitRetries    *int      `yaml:"commit_retries"`
-	Iterations       *int      `yaml:"iterations"`
-	Commands         *Commands `yaml:"commands"`
+	Agent            *string         `yaml:"agent"`
+	AgentArgs        []string        `yaml:"agent_args"`
+	ImplementRetries *int            `yaml:"implement_retries"`
+	CommitRetries    *int            `yaml:"commit_retries"`
+	Iterations       *int            `yaml:"iterations"`
+	Commands         *Commands       `yaml:"commands"`
+	Workflow         *WorkflowConfig `yaml:"workflow"`
 }
 
 // LoadCustomConfig reads and parses a custom config file from the given path.

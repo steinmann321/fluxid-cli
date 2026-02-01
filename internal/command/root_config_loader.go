@@ -33,6 +33,7 @@ func loadAndResolveConfig() (types.Config, int) {
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 
 	// Parse command-line arguments first to get the config path
@@ -142,6 +143,7 @@ func customConfigToProjectConfig(customConfig *config.CustomConfig) *config.Proj
 		CommitRetries:    customConfig.CommitRetries,
 		Iterations:       customConfig.Iterations,
 		Commands:         customConfig.Commands,
+		Workflow:         customConfig.Workflow,
 	}
 }
 
@@ -212,6 +214,7 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		CommandFiles:        nil,
 		OutputFormat:        output.FormatText,
 		TaskFilePath:        "",
+		Workflow:            nil,
 	}
 	// Generate or use provided UUID v4 session ID
 	sessionID := os.Getenv("FLUXID_SESSION_ID")
@@ -253,5 +256,6 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		CommandFiles:        resolved.CommandFiles,
 		OutputFormat:        outputFormat,
 		TaskFilePath:        taskAbs,
+		Workflow:            nil, // Workflow building will be implemented in US-001
 	}, nil
 }
