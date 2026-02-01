@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	wf "fluxid-cli/internal/workflow"
+
 	"github.com/google/uuid"
 )
 
@@ -44,7 +46,7 @@ func loadAndResolveConfig() (types.Config, int) {
 	}
 
 	// Load all configuration sources (pass custom config path if provided)
-	homeConfig, projectConfig, exitCode := loadAllConfigs(args.CLIConfigPath)
+	homeConfig, projectConfig, configDir, exitCode := loadAllConfigsWithDir(args.CLIConfigPath)
 	if exitCode != 0 {
 		return emptyConfig, exitCode
 	}
@@ -65,7 +67,7 @@ func loadAndResolveConfig() (types.Config, int) {
 	resolved.CommandFiles = commandFiles
 
 	// Build final configuration
-	cfg, err := buildFinalConfig(resolved, args)
+	cfg, err := buildFinalConfig(resolved, args, projectConfig, homeConfig, configDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return emptyConfig, 1
@@ -90,25 +92,46 @@ func loadAndResolveConfig() (types.Config, int) {
 }
 
 func loadAllConfigs(customConfigPath *string) (*config.HomeConfig, *config.ProjectConfig, int) {
+	homeConfig, projectConfig, _, exitCode := loadAllConfigsWithDir(customConfigPath)
+	return homeConfig, projectConfig, exitCode
+}
+
+func loadAllConfigsWithDir(customConfigPath *string) (*config.HomeConfig, *config.ProjectConfig, string, int) {
 	// If custom config path is provided, use it as the project config (takes precedence)
 	if customConfigPath != nil && *customConfigPath != "" {
-		return loadConfigsWithCustom(*customConfigPath)
+		homeConfig, projectConfig, exitCode := loadConfigsWithCustom(*customConfigPath)
+		if exitCode != 0 {
+			return nil, nil, "", exitCode
+		}
+		// Config dir is the directory containing the custom config file
+		configDir := filepath.Dir(*customConfigPath)
+		return homeConfig, projectConfig, configDir, 0
 	}
 
 	// Otherwise, load from default locations
 	homeConfig, err := config.LoadHomeConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading home configuration: %v\n", err)
-		return nil, nil, 1
+		return nil, nil, "", 1
 	}
 
 	projectConfig, err := config.LoadProjectConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading project configuration: %v\n", err)
-		return nil, nil, 1
+		return nil, nil, "", 1
 	}
 
-	return homeConfig, projectConfig, 0
+	// Determine config dir: project config takes precedence if it has workflow
+	configDir := ""
+	if projectConfig != nil && projectConfig.Workflow != nil {
+		projectConfigPath, _ := config.GetProjectConfigPath()
+		configDir = filepath.Dir(projectConfigPath)
+	} else if homeConfig != nil && homeConfig.Workflow != nil {
+		homeConfigPath, _ := config.GetHomeConfigPath()
+		configDir = filepath.Dir(homeConfigPath)
+	}
+
+	return homeConfig, projectConfig, configDir, 0
 }
 
 func loadConfigsWithCustom(customConfigPath string) (*config.HomeConfig, *config.ProjectConfig, int) {
@@ -201,47 +224,34 @@ func validateTaskFile(taskPath string) error {
 	return nil
 }
 
-func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Config, error) {
-	emptyConfig := types.Config{
-		Agent:               "",
-		AgentArgs:           nil,
-		SessionID:           "",
-		SessionRoot:         "",
-		MaxReviewCycles:     0,
-		MaxImplementRetries: 0,
-		MaxCommitRetries:    0,
-		DryRun:              false,
-		CommandFiles:        nil,
-		OutputFormat:        output.FormatText,
-		TaskFilePath:        "",
-		Workflow:            nil,
-	}
-	// Generate or use provided UUID v4 session ID
-	sessionID := os.Getenv("FLUXID_SESSION_ID")
-	if sessionID == "" {
-		sessionID = uuid.New().String()
-	}
-	// Read optional session root override
+func buildFinalConfig(
+	resolved *config.ResolvedConfig,
+	args *CLIArgs,
+	projectConfig *config.ProjectConfig,
+	homeConfig *config.HomeConfig,
+	configDir string,
+) (types.Config, error) {
+	emptyConfig := getEmptyConfig()
+
+	// Resolve basic config values
+	sessionID := getSessionID()
 	sessionRoot := os.Getenv("FLUXID_SESSION_ROOT")
-	// Determine dry-run mode
 	dryRun := args.CLIDryRun != nil && *args.CLIDryRun
-	// Determine output format
-	outputFormat := output.FormatText
-	if args.CLIOutputFormat != nil {
-		if err := output.ValidateFormat(*args.CLIOutputFormat); err != nil {
-			return emptyConfig, fmt.Errorf("invalid output format: %w", err)
-		}
-		outputFormat = output.Format(*args.CLIOutputFormat)
+
+	// Resolve output format
+	outputFormat, err := resolveOutputFormat(args)
+	if err != nil {
+		return emptyConfig, err
 	}
-	// Extract task file path (validation happens in loadAndResolveConfig)
-	var taskAbs string
-	if args.CLITaskFilePath != nil {
-		taskAbs = *args.CLITaskFilePath
-	}
-	// Resolve agent args with precedence: CLI > config (project/home/default)
-	agentArgs := resolved.AgentArgs
-	if len(args.AgentArgs) > 0 {
-		agentArgs = args.AgentArgs
+
+	// Resolve task file path and agent args
+	taskAbs := getTaskFilePath(args)
+	agentArgs := resolveAgentArgs(resolved, args)
+
+	// Build workflow if configured
+	builtWorkflow, err := buildWorkflowIfConfigured(projectConfig, homeConfig, configDir, resolved.Iterations)
+	if err != nil {
+		return emptyConfig, err
 	}
 
 	return types.Config{
@@ -256,6 +266,96 @@ func buildFinalConfig(resolved *config.ResolvedConfig, args *CLIArgs) (types.Con
 		CommandFiles:        resolved.CommandFiles,
 		OutputFormat:        outputFormat,
 		TaskFilePath:        taskAbs,
-		Workflow:            nil, // Workflow building will be implemented in US-001
+		Workflow:            builtWorkflow,
 	}, nil
+}
+
+// getEmptyConfig returns an empty Config for error cases.
+func getEmptyConfig() types.Config {
+	return types.Config{
+		Agent:               "",
+		AgentArgs:           nil,
+		SessionID:           "",
+		SessionRoot:         "",
+		MaxReviewCycles:     0,
+		MaxImplementRetries: 0,
+		MaxCommitRetries:    0,
+		DryRun:              false,
+		CommandFiles:        nil,
+		OutputFormat:        output.FormatText,
+		TaskFilePath:        "",
+		Workflow:            nil,
+	}
+}
+
+// getSessionID returns the session ID from env or generates a new one.
+func getSessionID() string {
+	sessionID := os.Getenv("FLUXID_SESSION_ID")
+	if sessionID == "" {
+		sessionID = uuid.New().String()
+	}
+	return sessionID
+}
+
+// resolveOutputFormat resolves and validates the output format.
+func resolveOutputFormat(args *CLIArgs) (output.Format, error) {
+	outputFormat := output.FormatText
+	if args.CLIOutputFormat != nil {
+		if err := output.ValidateFormat(*args.CLIOutputFormat); err != nil {
+			return outputFormat, fmt.Errorf("invalid output format: %w", err)
+		}
+		outputFormat = output.Format(*args.CLIOutputFormat)
+	}
+	return outputFormat, nil
+}
+
+// getTaskFilePath extracts the task file path from CLI args.
+func getTaskFilePath(args *CLIArgs) string {
+	if args.CLITaskFilePath != nil {
+		return *args.CLITaskFilePath
+	}
+	return ""
+}
+
+// resolveAgentArgs resolves agent args with CLI precedence.
+func resolveAgentArgs(resolved *config.ResolvedConfig, args *CLIArgs) []string {
+	agentArgs := resolved.AgentArgs
+	if len(args.AgentArgs) > 0 {
+		agentArgs = args.AgentArgs
+	}
+	return agentArgs
+}
+
+// buildWorkflowIfConfigured builds the workflow if it's configured.
+func buildWorkflowIfConfigured(
+	projectConfig *config.ProjectConfig,
+	homeConfig *config.HomeConfig,
+	configDir string,
+	iterations int,
+) (*types.Workflow, error) {
+	// Get workflow config with precedence: project > home
+	var workflowCfg *config.WorkflowConfig
+	if projectConfig != nil && projectConfig.Workflow != nil {
+		workflowCfg = projectConfig.Workflow
+	} else if homeConfig != nil && homeConfig.Workflow != nil {
+		workflowCfg = homeConfig.Workflow
+	}
+
+	if workflowCfg == nil {
+		return nil, nil //nolint:nilnil // nil workflow is valid when not configured
+	}
+
+	// Validate workflow config at startup (fail-fast)
+	if err := config.ValidateWorkflowConfig(workflowCfg, configDir); err != nil {
+		return nil, fmt.Errorf("workflow configuration error: %w", err)
+	}
+
+	// Build runtime workflow
+	wf := wf.BuildWorkflow
+	workflow, err := wf(workflowCfg, configDir, iterations)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build workflow: %w", err)
+	}
+
+	return workflow, nil
 }

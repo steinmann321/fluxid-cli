@@ -4,6 +4,7 @@ package workflow
 import (
 	"context"
 	"errors"
+	"fluxid-cli/internal/config"
 	"fluxid-cli/internal/process"
 	"fluxid-cli/internal/storage"
 	"fluxid-cli/internal/stream"
@@ -11,10 +12,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 )
+
+var errNilWorkflowConfig = errors.New("workflow config cannot be nil")
 
 func runPhase(config types.Config, phase string, prompt string) (int, error) {
 	timestamp := time.Now().Format("15:04:05")
@@ -283,4 +288,64 @@ func getCommandFilePath(cfg types.Config, phase string) string {
 		}
 	}
 	return builtInPrompt
+}
+
+// BuildWorkflow constructs a runtime Workflow from WorkflowConfig.
+// It resolves command paths, applies defaults, and creates the final WorkflowStep slice.
+func BuildWorkflow(cfg *config.WorkflowConfig, configDir string, maxIterations int) (*types.Workflow, error) {
+	if cfg == nil {
+		return nil, errNilWorkflowConfig
+	}
+
+	steps := make([]types.WorkflowStep, 0, len(cfg.Steps)+1)
+
+	// Add custom steps
+	for stepIndex, stepCfg := range cfg.Steps {
+		retries := stepCfg.Retries
+		if retries == 0 {
+			retries = 1 // Default: 1 retry
+		}
+
+		steps = append(steps, types.WorkflowStep{
+			Name:            stepCfg.Name,
+			CommandFilePath: resolveCommandPath(stepCfg.Command, configDir),
+			Retries:         retries,
+			IsReview:        false,
+			Order:           stepIndex,
+		})
+	}
+
+	// Add review step (mandatory, always last)
+	reviewRetries := cfg.Review.Retries
+	if reviewRetries == 0 {
+		reviewRetries = 1 // Default: 1 retry
+	}
+
+	steps = append(steps, types.WorkflowStep{
+		Name:            "review",
+		CommandFilePath: resolveCommandPath(cfg.Review.Command, configDir),
+		Retries:         reviewRetries,
+		IsReview:        true,
+		Order:           len(cfg.Steps),
+	})
+
+	// Handle infinite iterations (0 = infinite)
+	finalMaxIterations := maxIterations
+	if maxIterations == 0 {
+		finalMaxIterations = math.MaxInt
+	}
+
+	return &types.Workflow{
+		Steps:            steps,
+		MaxIterations:    finalMaxIterations,
+		CurrentIteration: 0,
+	}, nil
+}
+
+// resolveCommandPath resolves a command file path (absolute or relative to configDir).
+func resolveCommandPath(path string, configDir string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Clean(filepath.Join(configDir, path))
 }
