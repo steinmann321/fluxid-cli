@@ -106,15 +106,29 @@ func getRetryTestStubScript() string {
 	return `#!/bin/bash
 # Retry test stub - tracks implement step attempts and fails first N times
 
-IMPLEMENT_ATTEMPT_FILE="/tmp/fluxid_implement_attempts_$$"
-
 # Write report
 FLUXID_BIN="$(dirname "$0")/fluxid"
+# Use session ID for attempt tracking file to persist across stub invocations
+IMPLEMENT_ATTEMPT_FILE="/tmp/fluxid_implement_attempts_${FLUXID_SESSION_ID}"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 REPORT_FILE=$("$FLUXID_BIN" report --get-file)
 
-# Check if this is the implement step by looking at the command file name in ARGV
-if echo "$@" | grep -q "fluxid.implement.md"; then
+# Extract prompt from arguments (after -p flag)
+PROMPT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p)
+      PROMPT="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+# Check if this is the implement step by looking for "Run implement command file" in the prompt
+if echo "$PROMPT" | grep -q "Run implement command file"; then
   # This is the implement step - track attempts
   if [ -f "$IMPLEMENT_ATTEMPT_FILE" ]; then
     ATTEMPTS=$(cat "$IMPLEMENT_ATTEMPT_FILE")
@@ -200,15 +214,29 @@ func getReviewFailStubScript() string {
 	return `#!/bin/bash
 # Review fail stub - passes implement, fails review first time, passes review second time
 
-REVIEW_ATTEMPT_FILE="/tmp/fluxid_review_attempts_$$"
-
 # Write report
 FLUXID_BIN="$(dirname "$0")/fluxid"
+# Use session ID for attempt tracking file to persist across stub invocations
+REVIEW_ATTEMPT_FILE="/tmp/fluxid_review_attempts_${FLUXID_SESSION_ID}"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 REPORT_FILE=$("$FLUXID_BIN" report --get-file)
 
-# Check if this is the review step
-if echo "$@" | grep -q "fluxid.review.md"; then
+# Extract prompt from arguments (after -p flag)
+PROMPT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p)
+      PROMPT="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+# Check if this is the review step by looking for "Run review command file" in the prompt
+if echo "$PROMPT" | grep -q "Run review command file"; then
   # This is the review step - track attempts
   if [ -f "$REVIEW_ATTEMPT_FILE" ]; then
     ATTEMPTS=$(cat "$REVIEW_ATTEMPT_FILE")
@@ -302,8 +330,22 @@ FLUXID_BIN="$(dirname "$0")/fluxid"
 TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 REPORT_FILE=$("$FLUXID_BIN" report --get-file)
 
-# Check if this is the review step
-if echo "$@" | grep -q "fluxid.review.md"; then
+# Extract prompt from arguments (after -p flag)
+PROMPT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p)
+      PROMPT="$2"
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+# Check if this is the review step by looking for "Run review command file" in the prompt
+if echo "$PROMPT" | grep -q "Run review command file"; then
   # Always fail review
   echo "REVIEW: FAIL (always fails for iteration exhaustion test)" >&2
   cat > "$REPORT_FILE" <<-REPORT_EOF
