@@ -107,8 +107,6 @@ func TestConfigDrivenWorkflowExtended(t *testing.T) {
 // TestConfigDrivenWorkflowStepRetries validates step-specific retry configuration.
 // Verifies that different steps can have different retry limits configured.
 func TestConfigDrivenWorkflowStepRetries(t *testing.T) {
-	t.Skip("Retry behavior test requires mock agent - skipping for now")
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
 	createRetryTestStub(t, root)
@@ -182,10 +180,9 @@ func TestReviewExitGatePass(t *testing.T) {
 
 // TestReviewExitGateFail validates that review FAIL triggers next iteration (T040).
 func TestReviewExitGateFail(t *testing.T) {
-	t.Skip("Requires mock agent that returns FAIL for review - skipping for now")
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
+	createReviewFailStub(t, root) // Custom stub that fails review once, then passes
 
 	tmpHome := setupWorkflowTest(t, root, "workflow_minimal.yaml")
 	createWorkflowCommandFiles(t, tmpHome, []string{"implement", "review"})
@@ -193,20 +190,32 @@ func TestReviewExitGateFail(t *testing.T) {
 
 	output := runFluxidWorkflow(t, root, tmpHome, taskPath)
 
-	// Verify multiple iterations occurred
-	if !strings.Contains(output, "ITERATION 1") && !strings.Contains(output, "ITERATION 2") {
-		t.Error("Multiple iterations not detected after review FAIL")
+	// Log output for debugging
+	t.Logf("Output:\n%s", output)
+
+	// Verify multiple iterations occurred (review FAIL should trigger iteration 2)
+	// Look for iteration markers in output
+	iterationCount := strings.Count(output, "DEVELOPMENT ITERATION")
+	if iterationCount < 2 {
+		t.Errorf("Expected at least 2 iterations after review FAIL, found %d\nOutput:\n%s", iterationCount, output)
 	}
 
-	t.Logf("Review exit gate FAIL test passed")
+	// Verify review was attempted multiple times
+	if !strings.Contains(output, "REVIEW Attempt 1: FAIL") {
+		t.Errorf("Review first attempt FAIL not detected\nOutput:\n%s", output)
+	}
+	if !strings.Contains(output, "REVIEW Attempt 2: PASS") {
+		t.Errorf("Review second attempt PASS not detected\nOutput:\n%s", output)
+	}
+
+	t.Logf("Review exit gate FAIL test passed: %d iterations executed", iterationCount)
 }
 
 // TestReviewExitGateIterationsExhausted validates that workflow exits after max iterations (T041).
 func TestReviewExitGateIterationsExhausted(t *testing.T) {
-	t.Skip("Requires mock agent that always returns FAIL - skipping for now")
-
 	root := getProjectRoot(t)
 	buildFluxid(t, root)
+	createReviewAlwaysFailStub(t, root) // Custom stub that always fails review
 
 	tmpHome := setupWorkflowTest(t, root, "workflow_minimal.yaml")
 	createWorkflowCommandFiles(t, tmpHome, []string{"implement", "review"})
@@ -216,10 +225,18 @@ func TestReviewExitGateIterationsExhausted(t *testing.T) {
 
 	// Verify all configured iterations executed
 	// The config has iterations: 2 in workflow_minimal.yaml
-	iterationCount := strings.Count(output, "ITERATION")
-	if iterationCount < 2 {
-		t.Errorf("Expected at least 2 iterations, found %d", iterationCount)
+	iterationCount := strings.Count(output, "DEVELOPMENT ITERATION")
+	if iterationCount != 2 {
+		t.Errorf("Expected exactly 2 iterations (from config), found %d", iterationCount)
 	}
 
-	t.Logf("Iterations exhausted test passed")
+	// Verify review failed each time (never passed, iterations exhausted workflow)
+	reviewFailCount := strings.Count(output, "REVIEW: FAIL")
+	if reviewFailCount < 2 {
+		t.Errorf("Expected review to fail at least 2 times (once per iteration), found %d", reviewFailCount)
+	}
+
+	// Verify workflow completed (didn't abort) despite all review failures
+	// runFluxidWorkflow will fail the test if command returns non-zero, so reaching here means exit code 0
+	t.Logf("Iterations exhausted test passed: %d iterations executed, workflow completed with exit 0", iterationCount)
 }

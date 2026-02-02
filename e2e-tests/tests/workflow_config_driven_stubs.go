@@ -179,3 +179,165 @@ fi
 exit 0
 `
 }
+
+// createReviewFailStub creates a stub agent that passes implement but fails review once (then passes).
+// This enables testing that review FAIL triggers next iteration.
+func createReviewFailStub(t *testing.T, root string) {
+	t.Helper()
+
+	stubPath := filepath.Join(root, "bin", "claude")
+	stubScript := getReviewFailStubScript()
+
+	if err := writeExecutableStub(stubPath, []byte(stubScript)); err != nil {
+		t.Fatalf("Failed to create stub: %v", err)
+	}
+}
+
+// getReviewFailStubScript returns the bash script for review FAIL testing.
+//
+//nolint:funlen // Function length is acceptable - it's a single string literal.
+func getReviewFailStubScript() string {
+	return `#!/bin/bash
+# Review fail stub - passes implement, fails review first time, passes review second time
+
+REVIEW_ATTEMPT_FILE="/tmp/fluxid_review_attempts_$$"
+
+# Write report
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+REPORT_FILE=$("$FLUXID_BIN" report --get-file)
+
+# Check if this is the review step
+if echo "$@" | grep -q "fluxid.review.md"; then
+  # This is the review step - track attempts
+  if [ -f "$REVIEW_ATTEMPT_FILE" ]; then
+    ATTEMPTS=$(cat "$REVIEW_ATTEMPT_FILE")
+  else
+    ATTEMPTS=0
+  fi
+
+  # Increment attempt count
+  ATTEMPTS=$((ATTEMPTS + 1))
+  echo "$ATTEMPTS" > "$REVIEW_ATTEMPT_FILE"
+
+  echo "REVIEW Attempt $ATTEMPTS" >&2
+
+  # Fail first attempt, pass on second
+  if [ "$ATTEMPTS" -eq 1 ]; then
+    echo "REVIEW Attempt $ATTEMPTS: FAIL" >&2
+    cat > "$REPORT_FILE" <<-REPORT_EOF
+command: review
+artifact: stub-review
+timestamp: $TIMESTAMP
+status: FAIL
+issues:
+  blockers:
+    - message: "Test blocker for review FAIL iteration testing"
+      location: "test"
+      code: "TEST-001"
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+summary: Review failed on first attempt (test scenario)
+REPORT_EOF
+  else
+    echo "REVIEW Attempt $ATTEMPTS: PASS" >&2
+    cat > "$REPORT_FILE" <<-REPORT_EOF
+command: review
+artifact: stub-review
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+summary: Review passed on second attempt (test scenario)
+REPORT_EOF
+    # Clean up attempt tracker
+    rm -f "$REVIEW_ATTEMPT_FILE"
+  fi
+else
+  # Implement and other steps always pass
+  cat > "$REPORT_FILE" <<-REPORT_EOF
+command: other
+artifact: stub-other
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
+fi
+
+exit 0
+`
+}
+
+// createReviewAlwaysFailStub creates a stub agent that always fails review.
+// This enables testing iteration exhaustion when review never passes.
+func createReviewAlwaysFailStub(t *testing.T, root string) {
+	t.Helper()
+
+	stubPath := filepath.Join(root, "bin", "claude")
+	stubScript := getReviewAlwaysFailStubScript()
+
+	if err := writeExecutableStub(stubPath, []byte(stubScript)); err != nil {
+		t.Fatalf("Failed to create stub: %v", err)
+	}
+}
+
+// getReviewAlwaysFailStubScript returns the bash script for review always-fail testing.
+func getReviewAlwaysFailStubScript() string {
+	return `#!/bin/bash
+# Review always-fail stub - passes implement, always fails review
+
+# Write report
+FLUXID_BIN="$(dirname "$0")/fluxid"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+REPORT_FILE=$("$FLUXID_BIN" report --get-file)
+
+# Check if this is the review step
+if echo "$@" | grep -q "fluxid.review.md"; then
+  # Always fail review
+  echo "REVIEW: FAIL (always fails for iteration exhaustion test)" >&2
+  cat > "$REPORT_FILE" <<-REPORT_EOF
+command: review
+artifact: stub-review
+timestamp: $TIMESTAMP
+status: FAIL
+issues:
+  blockers:
+    - message: "Test blocker - review always fails for iteration exhaustion testing"
+      location: "test"
+      code: "TEST-EXHAUST"
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+summary: Review always fails (test scenario for iteration exhaustion)
+REPORT_EOF
+else
+  # Implement and other steps always pass
+  cat > "$REPORT_FILE" <<-REPORT_EOF
+command: other
+artifact: stub-other
+timestamp: $TIMESTAMP
+status: PASS
+issues:
+  blockers: []
+  defects: []
+  concerns: []
+  observations: []
+  enhancements: []
+REPORT_EOF
+fi
+
+exit 0
+`
+}
