@@ -154,7 +154,9 @@ func TestReportGetFileWithMissingSessionID(t *testing.T) {
 
 	binPath := filepath.Join(root, "bin", "fluxid")
 	cmd := exec.CommandContext(testCtx(30*time.Second), binPath, "report", "--get-file")
-	cmd.Env = append(os.Environ(),
+	// Filter out FLUXID_SESSION_ID to test error handling when it's not set
+	cmd.Env = filterSessionIDFromEnv(os.Environ())
+	cmd.Env = append(cmd.Env,
 		"FLUXID_SESSION_ROOT="+tmpDir,
 		// FLUXID_SESSION_ID not set
 	)

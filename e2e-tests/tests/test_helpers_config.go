@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -11,6 +12,19 @@ const (
 	permDir  = 0o755 // Directory permissions for test fixtures
 	permFile = 0o644 // File permissions for test fixtures
 )
+
+// filterSessionIDFromEnv removes FLUXID_SESSION_ID from the environment slice.
+// This is used in tests to ensure that child processes generate fresh session IDs
+// rather than inheriting the parent process's session ID.
+func filterSessionIDFromEnv(env []string) []string {
+	filtered := make([]string, 0, len(env))
+	for _, e := range env {
+		if !strings.HasPrefix(e, "FLUXID_SESSION_ID=") {
+			filtered = append(filtered, e)
+		}
+	}
+	return filtered
+}
 
 // setupConfigDir creates a .fluxid config directory and returns its path.
 func setupConfigDir(t *testing.T, baseDir string) string {

@@ -31,7 +31,9 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 		t.Fatal(err)
 	}
 	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
-	cmd.Env = append(os.Environ(),
+	// Filter out FLUXID_SESSION_ID to ensure test generates its own session
+	cmd.Env = filterSessionIDFromEnv(os.Environ())
+	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("PATH=%s:%s:%s", stubDir, filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
@@ -49,7 +51,8 @@ func TestM01E04ClaudeFailureImmediateAbort(t *testing.T) {
 	outputStr := output.String()
 
 	// Verify that failures were logged (agent failures treated as FAIL status)
-	if !strings.Contains(outputStr, "Failed to read implement report (treating as FAIL)") {
+	if !strings.Contains(outputStr, "Error checking implement report (treating as FAIL)") &&
+		!strings.Contains(outputStr, "Failed to read implement report (treating as FAIL)") {
 		t.Error("Expected agent failure to be logged as FAIL status")
 	}
 
@@ -79,7 +82,9 @@ func TestM01E04NoFurtherPhasesAfterFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
-	cmd.Env = append(os.Environ(),
+	// Filter out FLUXID_SESSION_ID to ensure test generates its own session
+	cmd.Env = filterSessionIDFromEnv(os.Environ())
+	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("PATH=%s:%s:%s", stubDir, filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)
@@ -176,7 +181,9 @@ func runPhaseFailureTest(t *testing.T, failOnInvoke, expectedExitCode int) {
 		t.Fatal(err)
 	}
 	cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
-	cmd.Env = append(os.Environ(),
+	// Filter out FLUXID_SESSION_ID to ensure test generates its own session
+	cmd.Env = filterSessionIDFromEnv(os.Environ())
+	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("PATH=%s:%s:%s", stubDir, filepath.Join(root, "bin"), os.Getenv("PATH")),
 		"HOME="+tmpHome,
 	)

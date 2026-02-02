@@ -36,6 +36,7 @@ dist/
 *.coverage
 *.coverprofile
 coverage.html
+*_cov.html
 
 # Go workspace file
 go.work.sum

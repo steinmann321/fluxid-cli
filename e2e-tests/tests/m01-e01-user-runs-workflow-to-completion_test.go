@@ -49,7 +49,9 @@ func TestM01E01SessionIDUniqueness(t *testing.T) {
 			t.Fatalf("Failed to write task file: %v", err)
 		}
 		cmd := exec.CommandContext(t.Context(), binPath, "--claude", "--fluxid-iterations=1", "--file="+taskPath)
-		cmd.Env = append(os.Environ(),
+		// Filter out FLUXID_SESSION_ID to ensure each run generates a unique session ID
+		cmd.Env = filterSessionIDFromEnv(os.Environ())
+		cmd.Env = append(cmd.Env,
 			fmt.Sprintf("PATH=%s:%s", filepath.Join(root, "bin"), os.Getenv("PATH")),
 			"HOME="+tmpHome,
 		)

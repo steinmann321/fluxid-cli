@@ -330,7 +330,9 @@ issues:
 					"FLUXID_SESSION_ID="+sessionID,
 				)
 			} else {
-				cmd.Env = append(os.Environ(),
+				// Filter out FLUXID_SESSION_ID to test error handling when it's not set
+				cmd.Env = filterSessionIDFromEnv(os.Environ())
+				cmd.Env = append(cmd.Env,
 					"FLUXID_SESSION_ROOT="+sessionRoot,
 				)
 			}
