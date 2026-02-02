@@ -59,30 +59,30 @@
 
 ### Tests for User Story 1 (TDD: Write FIRST, ensure they FAIL)
 
-- [ ] T018 [P] [US1] Create e2e-tests/tests/workflow_config_driven_test.go with TestConfigDrivenWorkflowMinimal
-- [ ] T019 [P] [US1] Add TestConfigDrivenWorkflowStandard to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T020 [P] [US1] Add TestConfigDrivenWorkflowExtended to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T021 [P] [US1] Add TestConfigDrivenWorkflowStepRetries to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T022 [US1] Run tests to verify they FAIL (expected: config parsing not implemented)
+- [X] T018 [P] [US1] Create e2e-tests/tests/workflow_config_driven_test.go with TestConfigDrivenWorkflowMinimal
+- [X] T019 [P] [US1] Add TestConfigDrivenWorkflowStandard to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T020 [P] [US1] Add TestConfigDrivenWorkflowExtended to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T021 [P] [US1] Add TestConfigDrivenWorkflowStepRetries to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T022 [US1] Run tests to verify they FAIL (expected: config parsing not implemented)
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Create internal/config/validate_workflow.go with ValidateWorkflowConfig function
-- [ ] T024 [US1] Implement ValidateCommandPath function in internal/config/validate_workflow.go
-- [ ] T025 [US1] Add validation call to loadAndResolveConfig in internal/command/root_config_loader.go
-- [ ] T026 [US1] Create internal/workflow/workflow_helpers.go with resolveCommandPath function
-- [ ] T027 [US1] Implement BuildWorkflow function in internal/workflow/workflow.go
-- [ ] T028 [US1] Create internal/workflow/step_executor.go with ExecuteStepWithRetry function
-- [ ] T029 [US1] Create internal/workflow/workflow_logger.go with WorkflowLogger struct
-- [ ] T030 [US1] Implement LogStepStart method in internal/workflow/workflow_logger.go
-- [ ] T031 [US1] Implement LogStepComplete method in internal/workflow/workflow_logger.go
-- [ ] T032 [US1] Implement LogIterationStart method in internal/workflow/workflow_logger.go
-- [ ] T033 [US1] Implement LogIterationComplete method in internal/workflow/workflow_logger.go
-- [ ] T034 [US1] Implement LogWorkflowComplete method in internal/workflow/workflow_logger.go
-- [ ] T035 [US1] Refactor Run function in internal/workflow/workflow.go to use config-driven loop
-- [ ] T036 [US1] Remove old runImplementPhase function from internal/workflow/workflow.go (replaced by ExecuteStepWithRetry)
-- [ ] T037 [US1] Remove old runCommitPhaseWithRetry function from internal/workflow/workflow.go (replaced by ExecuteStepWithRetry)
-- [ ] T038 [US1] Run E2E tests for User Story 1 and verify they PASS
+- [X] T023 [US1] Create internal/config/validate_workflow.go with ValidateWorkflowConfig function
+- [X] T024 [US1] Implement ValidateCommandPath function in internal/config/validate_workflow.go
+- [X] T025 [US1] Add validation call to loadAndResolveConfig in internal/command/root_config_loader.go
+- [X] T026 [US1] Create internal/workflow/workflow_helpers.go with resolveCommandPath function
+- [X] T027 [US1] Implement BuildWorkflow function in internal/workflow/workflow.go
+- [X] T028 [US1] Create internal/workflow/step_executor.go with ExecuteStepWithRetry function
+- [X] T029 [US1] Create internal/workflow/workflow_logger.go with WorkflowLogger struct
+- [X] T030 [US1] Implement LogStepStart method in internal/workflow/workflow_logger.go
+- [X] T031 [US1] Implement LogStepComplete method in internal/workflow/workflow_logger.go
+- [X] T032 [US1] Implement LogIterationStart method in internal/workflow/workflow_logger.go
+- [X] T033 [US1] Implement LogIterationComplete method in internal/workflow/workflow_logger.go
+- [X] T034 [US1] Implement LogWorkflowComplete method in internal/workflow/workflow_logger.go
+- [X] T035 [US1] Refactor Run function in internal/workflow/workflow.go to use config-driven loop
+- [X] T036 [US1] Remove old runImplementPhase function from internal/workflow/workflow.go (replaced by ExecuteStepWithRetry)
+- [X] T037 [US1] Remove old runCommitPhaseWithRetry function from internal/workflow/workflow.go (replaced by ExecuteStepWithRetry)
+- [X] T038 [US1] Run E2E tests for User Story 1 and verify they PASS
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can configure custom workflow steps
 
@@ -96,18 +96,18 @@
 
 ### Tests for User Story 2 (TDD: Write FIRST, ensure they FAIL)
 
-- [ ] T039 [P] [US2] Add TestReviewExitGatePass to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T040 [P] [US2] Add TestReviewExitGateFail to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T041 [P] [US2] Add TestReviewExitGateIterationsExhausted to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T042 [US2] Run tests to verify they FAIL (expected: review exit gate logic not implemented)
+- [X] T039 [P] [US2] Add TestReviewExitGatePass to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T040 [P] [US2] Add TestReviewExitGateFail to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T041 [P] [US2] Add TestReviewExitGateIterationsExhausted to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T042 [US2] Run tests to verify they FAIL (expected: review exit gate logic not implemented)
 
 ### Implementation for User Story 2
 
-- [ ] T043 [US2] Add review exit gate check to Run function in internal/workflow/workflow.go
-- [ ] T044 [US2] Implement iteration exhaustion check in Run function in internal/workflow/workflow.go
-- [ ] T045 [US2] Add exit code 0 on review PASS in internal/workflow/workflow.go
-- [ ] T046 [US2] Add iteration continuation logic on review FAIL in internal/workflow/workflow.go
-- [ ] T047 [US2] Run E2E tests for User Story 2 and verify they PASS
+- [X] T043 [US2] Add review exit gate check to Run function in internal/workflow/workflow.go
+- [X] T044 [US2] Implement iteration exhaustion check in Run function in internal/workflow/workflow.go
+- [X] T045 [US2] Add exit code 0 on review PASS in internal/workflow/workflow.go
+- [X] T046 [US2] Add iteration continuation logic on review FAIL in internal/workflow/workflow.go
+- [X] T047 [US2] Run E2E tests for User Story 2 and verify they PASS
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - review step acts as exit gate
 
@@ -121,18 +121,18 @@
 
 ### Tests for User Story 3 (TDD: Write FIRST, ensure they FAIL)
 
-- [ ] T048 [P] [US3] Add TestMinimalStepConfiguration to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T049 [P] [US3] Add TestExplicitRetriesConfiguration to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T050 [P] [US3] Add TestInfiniteRetriesConfiguration to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T051 [P] [US3] Add TestSequentialExecutionOrder to e2e-tests/tests/workflow_config_driven_test.go
-- [ ] T052 [US3] Run tests to verify they FAIL (expected: default handling not implemented)
+- [X] T048 [P] [US3] Add TestMinimalStepConfiguration to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T049 [P] [US3] Add TestExplicitRetriesConfiguration to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T050 [P] [US3] Add TestInfiniteRetriesConfiguration to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T051 [P] [US3] Add TestSequentialExecutionOrder to e2e-tests/tests/workflow_config_driven_test.go
+- [X] T052 [US3] Run tests to verify they FAIL (expected: default handling not implemented)
 
 ### Implementation for User Story 3
 
-- [ ] T053 [US3] Add default retry value handling (default=1) in BuildWorkflow in internal/workflow/workflow.go
-- [ ] T054 [US3] Add infinite retry support (retries=0) in ExecuteStepWithRetry in internal/workflow/step_executor.go
-- [ ] T055 [US3] Add sequential execution enforcement in Run function in internal/workflow/workflow.go
-- [ ] T056 [US3] Run E2E tests for User Story 3 and verify they PASS
+- [X] T053 [US3] Add default retry value handling (default=1) in BuildWorkflow in internal/workflow/workflow.go
+- [X] T054 [US3] Add infinite retry support (retries=0) in ExecuteStepWithRetry in internal/workflow/step_executor.go
+- [X] T055 [US3] Add sequential execution enforcement in Run function in internal/workflow/workflow.go
+- [X] T056 [US3] Run E2E tests for User Story 3 and verify they PASS
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -144,28 +144,28 @@
 
 ### Tests for Startup Validation (TDD: Write FIRST, ensure they FAIL)
 
-- [ ] T057 [P] Create e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T058 [P] Add TestStartupValidationMissingWorkflow to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T059 [P] Add TestStartupValidationMissingReview to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T060 [P] Add TestStartupValidationDuplicateNames to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T061 [P] Add TestStartupValidationEmptyStepName to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T062 [P] Add TestStartupValidationNegativeRetries to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T063 [P] Add TestStartupValidationNegativeIterations to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T064 [P] Add TestStartupValidationInvalidCommandPath to e2e-tests/tests/workflow_startup_validation_test.go
-- [ ] T065 Run validation tests to verify they FAIL (expected: validation rules not all implemented)
+- [X] T057 [P] Create e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T058 [P] Add TestStartupValidationMissingWorkflow to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T059 [P] Add TestStartupValidationMissingReview to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T060 [P] Add TestStartupValidationDuplicateNames to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T061 [P] Add TestStartupValidationEmptyStepName to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T062 [P] Add TestStartupValidationNegativeRetries to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T063 [P] Add TestStartupValidationNegativeIterations to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T064 [P] Add TestStartupValidationInvalidCommandPath to e2e-tests/tests/workflow_startup_validation_test.go
+- [X] T065 Run validation tests to verify they FAIL (expected: validation rules not all implemented)
 
 ### Implementation for Startup Validation
 
-- [ ] T066 Add V001 validation (workflow section exists) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T067 Add V002 validation (review section exists) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T068 Add V003 validation (review command specified) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T069 Add V004 validation (at least 1 custom step) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T070 Add V005 validation (step names non-empty) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T071 Add V006 validation (step names unique) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T072 Add V007-V008 validation (command paths exist and readable) to ValidateCommandPath in internal/config/validate_workflow.go
-- [ ] T073 Add V009 validation (retries non-negative) to ValidateWorkflowConfig in internal/config/validate_workflow.go
-- [ ] T074 Add V010 validation (max_iterations non-negative) to loadAndResolveConfig in internal/command/root_config_loader.go
-- [ ] T075 Run validation tests and verify they PASS
+- [X] T066 Add V001 validation (workflow section exists) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T067 Add V002 validation (review section exists) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T068 Add V003 validation (review command specified) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T069 Add V004 validation (at least 1 custom step) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T070 Add V005 validation (step names non-empty) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T071 Add V006 validation (step names unique) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T072 Add V007-V008 validation (command paths exist and readable) to ValidateCommandPath in internal/config/validate_workflow.go
+- [X] T073 Add V009 validation (retries non-negative) to ValidateWorkflowConfig in internal/config/validate_workflow.go
+- [X] T074 Add V010 validation (max_iterations non-negative) to loadAndResolveConfig in internal/command/root_config_loader.go
+- [X] T075 Run validation tests and verify they PASS
 
 ---
 
@@ -185,13 +185,13 @@
 
 **Purpose**: Final improvements and validation
 
-- [ ] T081 [P] Add unit tests for WorkflowConfig YAML parsing in internal/config/config_test.go
-- [ ] T082 [P] Add unit tests for ValidateWorkflowConfig in internal/config/validate_workflow_test.go
-- [ ] T083 [P] Add unit tests for BuildWorkflow in internal/workflow/workflow_test.go
-- [ ] T084 [P] Add unit tests for ExecuteStepWithRetry in internal/workflow/step_executor_test.go
-- [ ] T085 [P] Add unit tests for WorkflowLogger in internal/workflow/workflow_logger_test.go
-- [ ] T086 Run all unit tests and verify coverage >= 90%
-- [ ] T087 Run full E2E test suite (cd e2e-tests && go test -v ./tests/)
+- [X] T081 [P] Add unit tests for WorkflowConfig YAML parsing in internal/config/config_test.go
+- [X] T082 [P] Add unit tests for ValidateWorkflowConfig in internal/config/validate_workflow_test.go
+- [X] T083 [P] Add unit tests for BuildWorkflow in internal/workflow/workflow_test.go
+- [X] T084 [P] Add unit tests for ExecuteStepWithRetry in internal/workflow/step_executor_test.go
+- [X] T085 [P] Add unit tests for WorkflowLogger in internal/workflow/workflow_logger_test.go
+- [X] T086 Run all unit tests and verify coverage >= 90%
+- [X] T087 Run full E2E test suite (cd e2e-tests && go test -v ./tests/)
 - [ ] T088 Verify pre-commit hooks pass (formatting, linting, security)
 - [ ] T089 Run quickstart.md validation (manual verification)
 - [ ] T090 Update CLAUDE.md with new workflow system information

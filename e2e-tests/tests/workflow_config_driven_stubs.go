@@ -77,11 +77,11 @@ func runFluxidWorkflow(t *testing.T, root, tmpHome, taskPath string) string {
 }
 
 // createTaskFile creates a simple task file for testing.
-func createTaskFile(t *testing.T, tmpHome, content string) string {
+func createTaskFile(t *testing.T, tmpHome string) string {
 	t.Helper()
 
 	taskPath := filepath.Join(tmpHome, "task.txt")
-	if err := os.WriteFile(taskPath, []byte(content), permFile); err != nil {
+	if err := os.WriteFile(taskPath, []byte("test task"), permFile); err != nil {
 		t.Fatalf("Failed to write task file: %v", err)
 	}
 	return taskPath
